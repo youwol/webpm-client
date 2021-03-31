@@ -236,21 +236,43 @@ export async function fetchJavascriptAddOn(
 
 
 
-function encode_url_safe_b64(buffer){
+/**
+ * Returns the assetId in the assets store of a CDN asset from its name.
+ * It does not imply that the asset exist.  
+ * 
+ * @param name name of the package (as defined in package.json) 
+ * @returns assetId used in the assets store
+ */
+export function getAssetId(name: string){
 
-    return btoa(buffer)
+    return btoa(name)
     //.replace(/\+/g, '-') // Convert '+' to '-'
     //.replace(/\//g, '_') // Convert '/' to '_'
     //.replace(/=+$/, ''); // Remove ending '='
 }
+
+/**
+ * Returns the base url to access a CDN asset from its name & version.
+ * It does not imply that the asset exist.  
+ * 
+ * @param name name of the package (as defined in package.json) 
+ * @param version version of the package (as defined in package.json) 
+ * @returns base url to access the CDN resource (valid only if the asset is actually stored in the asset store)
+ */
+ export function getUrlBase(name: string, version: string){
+
+    let assetId =  getAssetId(name)
+    return `/api/assets-gateway/raw/package/${assetId}/libraries/${name.replace('@','')}/${version}`
+}
+
 
 function parseResourceId( resourceId: string ){
 
     let name = resourceId.split("#")[0]
     let version = resourceId.split("#")[1].split('~')[0]
     let path = resourceId.split("#")[1].split('~')[1]
-    let assetId =  encode_url_safe_b64(name)
-    let url = `/api/assets-gateway/raw/package/${assetId}/libraries/${name.replace('@','')}/${version}/${path}`
+    let assetId =  getAssetId(name)
+    let url = `${getUrlBase(name, version)}/${path}`
     return { name,version, path, assetId, url}
 }
 
