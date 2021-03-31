@@ -1,11 +1,11 @@
 {
   "name": "@youwol/cdn-client",
-  "version": "0.0.0",
+  "version": "0.0.1",
   "description": "Library for dynamic dependencies fetching from YouWol's CDN",
   "author": "",
   "keywords": [],
   "homepage": "https://github.com/youwol/cdn-client#README.md",
-  "main": "dist/@youwol/cdn.js",
+  "main": "dist/@youwol/cdn-client.js",
   "types": "src/index.ts",
   "scripts": {
     "build": "yarn build:dev",
@@ -13,7 +13,8 @@
     "build:prod": "webpack --mode production",
     "test": "jest -c ./jest.config.js --rootDir .",
     "test-coverage": "jest -c ./jest.config.js --rootDir . --collect-coverage --collectCoverageFrom=./src/lib/**/*.ts ",
-    "doc": "typedoc src/ --exclude src/index.ts --exclude src/tests --out dist/docs --theme default"
+    "doc": "typedoc src/ --exclude src/index.ts --exclude src/tests --out dist/docs --theme default",
+    "publish-npm-public": "yarn build:prod && yarn test-coverage && yarn publish --access public"
   },
   "dependencies": {
   },
