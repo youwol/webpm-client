@@ -1,6 +1,6 @@
 {
   "name": "@youwol/cdn-client",
-  "version": "0.0.1",
+  "version": "0.0.2",
   "description": "Library for dynamic dependencies fetching from YouWol's CDN",
   "author": "",
   "keywords": [],
