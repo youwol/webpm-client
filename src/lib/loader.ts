@@ -110,8 +110,8 @@ export async function fetchLoadingGraph(
                 return true
 
             if(importedBundles[libName] != version){
-                console.warn(`Loading ${libName}#${version}: A different version of the package has been already fetched (${importedBundles[libName]}), the initial version is updated`)
-                return true 
+                console.warn(`Loading ${libName}#${version}: A different version of the package has been already fetched (${importedBundles[libName]}), the initial version is not updated`)
+                return false 
             }    
             sideEffects && sideEffects[libName] && sideEffects[libName](executingWindow)
             return false
