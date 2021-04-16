@@ -103,7 +103,7 @@ export async function fetchLoadingGraph(
             let version = libraries[assetId].version
             // This one essentially prevent clearing the cache
             // ...we need extra care on backward compatibility 
-            if(libName=='@youwol/cdn')
+            if(libName=='@youwol/cdn-client')
                 return false
 
             if(!importedBundles[libName])
