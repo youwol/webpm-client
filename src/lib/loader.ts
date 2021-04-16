@@ -117,7 +117,7 @@ export async function fetchLoadingGraph(
             return false
         })
         .map( ([assetId, cdn_url]) => {
-            let src =  `/api/assets-gateway/raw/package/${assetId}${cdn_url.replace('/api/cdn-backend','')}`
+            let src =  `/api/assets-gateway/raw/package/${cdn_url}`
             let libName = libraries[assetId].name
             let sideEffect = sideEffects && sideEffects[libName] ? sideEffects[libName] : () => {}
             importedBundles[libName] = libraries[assetId].version
@@ -260,7 +260,7 @@ export function getAssetId(name: string){
  export function getUrlBase(name: string, version: string){
 
     let assetId =  getAssetId(name)
-    return `/api/assets-gateway/raw/package/${assetId}/libraries/${name.replace('@','')}/${version}`
+    return `/api/assets-gateway/raw/package/${assetId}/${version}`
 }
 
 
