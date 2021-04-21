@@ -72,7 +72,7 @@ export async function getLoadingGraph(
     body: { libraries:{[key:string]: string} } 
     ): Promise<LoadingGraph> {
 
-    let url = `/api/cdn-backend/queries/loading-graph`
+    let url = `/api/assets-gateway/cdn/queries/loading-graph`
     let request = new Request(url, { method:'POST', body: JSON.stringify(body)})
 
     return await fetch(request).then( content => content.json())
@@ -196,7 +196,7 @@ export async function fetchBundles(
     .reduce( (acc,[k,v]:[string, any]) => ({...acc,...{[k]: v.sideEffects}}), {} )
 
     let request = new Request(
-        "/api/cdn-backend/queries/loading-graph",
+        "/api/assets-gateway/cdn/queries/loading-graph",
         {
             method:'POST',
             body: JSON.stringify(body)
