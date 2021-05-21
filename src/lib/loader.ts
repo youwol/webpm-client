@@ -181,7 +181,6 @@ export async function fetchBundles(
     ): Promise<{[key:string]: {version:string, sideEffects: ((Window)=>void)}}>{
 
     executingWindow = executingWindow || window
-    let toLoad = {}
     dependencies = Object
     .entries(dependencies)
     .map( ([k,v]) => typeof(v) == "string" ? [k, { version: v, sideEffects: (w)=>{} }] : [k,v])
@@ -204,7 +203,7 @@ export async function fetchBundles(
         
     let loadingGraph = await fetch(request).then(resp=>resp.json())
     await fetchLoadingGraph( loadingGraph, executingWindow, sideEffects)
-    return toLoad
+    return loadingGraph
 } 
 
 /**
