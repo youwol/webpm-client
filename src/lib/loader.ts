@@ -321,7 +321,7 @@ export async function fetchBundles(
 export async function fetchJavascriptAddOn(
     resources: string | Array<string>,
     executingWindow?: Window,
-    onEvent?: (CdnEvent) => void): Promise<{assetName, assetId, url}[]> {
+    onEvent?: (CdnEvent) => void): Promise<{assetName, assetId, url, src}[]> {
 
     let _resources = typeof resources == 'string' ? [resources] : resources
 
@@ -341,7 +341,7 @@ export async function fetchJavascriptAddOn(
         onEvent && onEvent(new SourceParsedEvent(name,  assetId, url))
     })
 
-    return sources.map( ({assetId, url, name}) => { return {assetId, url, assetName:name} })
+    return sources.map( ({assetId, url, name, content}) => { return {assetId, url, assetName:name, src:content} })
 }
 
 
