@@ -411,7 +411,7 @@ function getLoadedModule(fullname: string, executingWindow?: Window) {
 }
 
 
-function fetchSource(
+export function fetchSource(
     name: string, 
     assetId: string,
     url: string,
