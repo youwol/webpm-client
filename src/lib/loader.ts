@@ -3,78 +3,78 @@ let importedBundles = {}
 export class LoadingGraphError extends Error {
 
     constructor(public readonly errorResponse) {
-      super("Failed to retrieve the loading graph"); // (1)
-      this.name = "LoadingGraphError"; // (2)
+        super("Failed to retrieve the loading graph"); // (1)
+        this.name = "LoadingGraphError"; // (2)
     }
-  }
+}
 
 /**
  * Base class for CDN's HTTP request event
  */
-export class CdnEvent{
+export class CdnEvent {
     constructor(
         public readonly targetName: string,
         public readonly assetId: string,
-        public readonly url: string){}
-    }
+        public readonly url: string) { }
+}
 
 /**
  * Request just sent
  */
-export class StartEvent extends CdnEvent{
+export class StartEvent extends CdnEvent {
     constructor(
         targetName: string,
         assetId: string,
-        url: string){
-            super(targetName, assetId, url)
-        }
+        url: string) {
+        super(targetName, assetId, url)
+    }
 }
 /**
  * Request loading content
  */
-export class SourceLoadingEvent extends CdnEvent{
-    constructor( 
+export class SourceLoadingEvent extends CdnEvent {
+    constructor(
         targetName: string,
         assetId: string,
         url: string,
         public readonly progress: ProgressEvent<XMLHttpRequestEventTarget>
-        ){
-            super(targetName, assetId, url)
-        }
+    ) {
+        super(targetName, assetId, url)
+    }
 }
 /**
  * Request's content loaded
  */
-export class SourceLoadedEvent extends CdnEvent{
-    constructor(  
+export class SourceLoadedEvent extends CdnEvent {
+    constructor(
         targetName: string,
         assetId: string,
         url: string,
-        public readonly progress: ProgressEvent<XMLHttpRequestEventTarget>){ 
-            super(targetName, assetId, url)
-        }
+        public readonly progress: ProgressEvent<XMLHttpRequestEventTarget>) {
+        super(targetName, assetId, url)
+    }
 }
 /**
  * Request's content parsed
  */
-export class SourceParsedEvent extends CdnEvent{
+export class SourceParsedEvent extends CdnEvent {
     constructor(
         targetName: string,
         assetId: string,
-        url: string){
-            super(targetName, assetId, url)
-        }
+        url: string) {
+        super(targetName, assetId, url)
+    }
 }
 /**
  * Unauthorized to fetch resource
  */
-export class UnauthorizedEvent extends CdnEvent{
+export class UnauthorizedEvent extends CdnEvent {
     constructor(
         targetName: string,
         assetId: string,
-        url: string){
-            super(targetName, assetId, url)
-        }
+        url: string) {
+        super(targetName, assetId, url)
+    }
 }
 
 export interface Library {
@@ -163,13 +163,13 @@ export async function getLoadingGraph(
 export async function fetchLoadingGraph(
     loadingGraph: LoadingGraph,
     executingWindow?: Window,
-    sideEffects?: { [key: string]: (Window) => void},
-    onEvent?:  ( event: CdnEvent) => void 
+    sideEffects?: { [key: string]: (Window) => void },
+    onEvent?: (event: CdnEvent) => void
 ) {
 
     executingWindow = executingWindow || window
     let libraries = loadingGraph.lock.reduce((acc, e) => ({ ...acc, ...{ [e.id]: e } }), {})
-    
+
     let isToDownload = (assetId: string) => {
         let libName = libraries[assetId].name
         let version = libraries[assetId].version
@@ -181,7 +181,7 @@ export async function fetchLoadingGraph(
         if (!importedBundles[libName])
             return true
 
-        if (importedBundles[libName] != version) { 
+        if (importedBundles[libName] != version) {
             console.warn(`Loading ${libName}#${version}: A different version of the package has been already fetched (${importedBundles[libName]}), the initial version is not updated`)
             return false
         }
@@ -189,32 +189,32 @@ export async function fetchLoadingGraph(
         return false
     }
     let selecteds = loadingGraph.definition
-    .flat()
-    .filter( ([assetId, cdn_url]) => isToDownload(assetId))
-    .map(([assetId, cdn_url]) => {
-        return {
-            assetId,
-            url: `/api/assets-gateway/raw/package/${cdn_url}`,
-            name: libraries[assetId].name
-        }
-    })
-    let sources =  selecteds.map( ({assetId, name, url}) => {
+        .flat()
+        .filter(([assetId, cdn_url]) => isToDownload(assetId))
+        .map(([assetId, cdn_url]) => {
+            return {
+                assetId,
+                url: `/api/assets-gateway/raw/package/${cdn_url}`,
+                name: libraries[assetId].name
+            }
+        })
+    let sources = selecteds.map(({ assetId, name, url }) => {
         return fetchSource(name, assetId, url, onEvent)
     })
 
     let contents = await Promise.all(sources)
-    var head     = document.getElementsByTagName('head')[0];
-    contents.forEach( ({name, assetId, url, content}) => {
+    var head = document.getElementsByTagName('head')[0];
+    contents.forEach(({ name, assetId, url, content }) => {
         var script = document.createElement("script") as any;
         //script.async = 'true';
         script.innerHTML = content
-        
+
         head.appendChild(script);
         let sideEffect = sideEffects && sideEffects[name]
         let target = getLoadedModule(name, executingWindow)
-        if(target && !executingWindow[name])
+        if (target && !executingWindow[name])
             executingWindow[name] = target
-        sideEffect && sideEffect(executingWindow)   
+        sideEffect && sideEffect(executingWindow)
         onEvent && onEvent(new SourceParsedEvent(name, assetId, url))
         importedBundles[name] = libraries[assetId].version
     })
@@ -252,7 +252,6 @@ export async function fetchStyleSheets(
                 renderingWindow.document.getElementsByTagName("head")[0].appendChild(link)
                 link.onload = () => {
                     resolveCb(link);
-                    //Can add setTimeout to attempt to wait for the styles to be applied to DOM
                 };
             })
         })
@@ -271,7 +270,7 @@ export async function fetchStyleSheets(
 export async function fetchBundles(
     dependencies: { [key: string]: string | { version: string, sideEffects: ((Window) => void) } },
     executingWindow?: Window,
-    onEvent?: ( event: CdnEvent) => void
+    onEvent?: (event: CdnEvent) => void
 ): Promise<{ [key: string]: { version: string, sideEffects: ((Window) => void) } }> {
 
     executingWindow = executingWindow || window
@@ -296,13 +295,13 @@ export async function fetchBundles(
         })
 
     let loadingGraph = await fetch(request)
-    .then(resp =>{
-        if(resp.status == 200)
-            return resp.json() 
-        else{
-            throw new LoadingGraphError(resp.json())
-        }
-    })
+        .then(resp => {
+            if (resp.status == 200)
+                return resp.json()
+            else {
+                throw new LoadingGraphError(resp.json())
+            }
+        })
     await fetchLoadingGraph(loadingGraph, executingWindow, sideEffects, onEvent)
     return loadingGraph
 }
@@ -321,27 +320,27 @@ export async function fetchBundles(
 export async function fetchJavascriptAddOn(
     resources: string | Array<string>,
     executingWindow?: Window,
-    onEvent?: (CdnEvent) => void): Promise<{assetName, assetId, url, src}[]> {
+    onEvent?: (CdnEvent) => void): Promise<{ assetName, assetId, url, src }[]> {
 
     let _resources = typeof resources == 'string' ? [resources] : resources
 
     executingWindow = executingWindow || window
     let ids = _resources
         .map(resourceId => parseResourceId(resourceId))
-        
+
     let futures = ids.map(({ name, assetId, url }) => fetchSource(name, assetId, url, onEvent))
-    
+
     let sources = await Promise.all(futures)
 
-    var head     = document.getElementsByTagName('head')[0];
-    sources.forEach( ({name, assetId, url, content}) => {
+    var head = document.getElementsByTagName('head')[0];
+    sources.forEach(({ name, assetId, url, content }) => {
         var script = document.createElement("script") as any;
-        script.innerHTML = content        
+        script.innerHTML = content
         head.appendChild(script);
-        onEvent && onEvent(new SourceParsedEvent(name,  assetId, url))
+        onEvent && onEvent(new SourceParsedEvent(name, assetId, url))
     })
 
-    return sources.map( ({assetId, url, name, content}) => { return {assetId, url, assetName:name, src:content} })
+    return sources.map(({ assetId, url, name, content }) => { return { assetId, url, assetName: name, src: content } })
 }
 
 
@@ -384,7 +383,7 @@ export function getUrlBase(name: string, version: string) {
  * @param resourceId resource id in the form *{libraryName}#{version}~{rest-of-path}*
  */
 export function parseResourceId(resourceId: string
-    ) :  { name: string, version: string, path: string, assetId: string, url: string } {
+): { name: string, version: string, path: string, assetId: string, url: string } {
 
     let name = resourceId.split("#")[0]
     let version = resourceId.split("#")[1].split('~')[0]
@@ -412,11 +411,11 @@ function getLoadedModule(fullname: string, executingWindow?: Window) {
 
 
 export function fetchSource(
-    name: string, 
+    name: string,
     assetId: string,
     url: string,
-    onEvent?:  ( event: CdnEvent) => void 
-): Promise<{name, assetId, url, content}> {
+    onEvent?: (event: CdnEvent) => void
+): Promise<{ name, assetId, url, content }> {
 
     let promise = new Promise(
         (resolve, reject) => {
@@ -425,20 +424,20 @@ export function fetchSource(
             // report progress events
             req.addEventListener("progress", function (event) {
                 onEvent && onEvent(new SourceLoadingEvent(name, assetId, url, event))
-                
+
             }, false);
 
             req.addEventListener("load", function (event: any) {
-                if(event.target.status==200){
-                    let content = event.target['responseText'] + `\n//# sourceURL=${url.split('/').slice(0,-1).join('/')}/`;
+                if (event.target.status == 200) {
+                    let content = event.target['responseText'] + `\n//# sourceURL=${url.split('/').slice(0, -1).join('/')}/`;
                     onEvent && onEvent(new SourceLoadedEvent(name, assetId, url, event))
-                    resolve({name, assetId, url, content})
+                    resolve({ name, assetId, url, content })
                 }
-                if(event.target.status==401){
+                if (event.target.status == 401) {
                     onEvent && onEvent(new UnauthorizedEvent(name, assetId, url))
                     resolve({})
                 }
-                }, 
+            },
                 false);
 
             req.open("GET", url);
@@ -446,5 +445,5 @@ export function fetchSource(
             onEvent && onEvent(new StartEvent(name, assetId, url))
         }
     )
-    return promise as Promise<{name, assetId, url, content}>
+    return promise as Promise<{ name, assetId, url, content }>
 }
