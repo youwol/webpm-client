@@ -220,6 +220,88 @@ export async function fetchLoadingGraph(
     })
 }
 
+
+/**
+ * 
+ * Install a set of resources. 
+ * 
+ * Modules stand for javascript's module. 
+ * If some required dependencies of the module are missing they are also loaded. 
+ * 
+ * Scripts stand for standalone javascript file; they are fetched after all modules 
+ * have been loaded.
+ * 
+ * CSS stand for stylesheets.
+ * 
+ * Aliases allow to use a different name to refer to the loaded resources.
+ * @param resources The resources:
+ * -    modules: either a `{name, version}` object or a string. 
+ * If a string is provided, version is 'latest'.
+ * -    scripts: array of path for javascript scripts in the format 
+ * {libraryName}#{version}~{rest-of-path}
+ * -    css: array of path for css stylesheets in the format 
+ * {libraryName}#{version}~{rest-of-path}
+ * -    aliases: a set of aliases that are applied after all the resources 
+ * have been loaded. A dictionary {key: value} where key is the alias in 
+ * executingWindow and value is either:
+ *       - a string => `executingWindow[alias] = executingWindow[value]`
+ *       - a function => `executingWindow[alias] = value(executingWindow)`
+ * 
+ * @param executingWindow the window in witch to load scripts & stylesheets
+ * @returns a promise over the executingWindow
+ */
+export function install(
+    resources: {
+        modules?: ({
+            name: string,
+            version: string
+        } | string)[],
+        scripts?: string[],
+        css?: string[],
+        aliases?: { [key: string]: (string | ((Window) => unknown)) }
+    },
+    executingWindow: Window = window
+):
+    Promise<Window> {
+
+    let modules = resources.modules || []
+    let scripts = resources.scripts || []
+    let css = resources.css || []
+    let aliases = resources.aliases || {}
+
+    let cssPromise = fetchStyleSheets(css, executingWindow)
+
+    let bundles = modules.reduce((acc, e) => {
+        let elem = (typeof (e) == 'string')
+            ? {
+                name: e,
+                version: 'latest'
+            }
+            : e
+
+        return {
+            ...acc,
+            [elem.name]: elem
+        }
+    }, {})
+
+    let jsPromise = fetchBundles(bundles, executingWindow)
+        .then((bundles) =>
+            fetchJavascriptAddOn(scripts, executingWindow)
+                .then(jsAddOns => ({ bundles, jsAddOns })))
+
+    return Promise
+        .all([jsPromise, cssPromise])
+        .then(() => {
+            Object.entries(aliases).forEach(([alias, original]) => {
+                executingWindow[alias] = typeof (original) == 'string'
+                    ? executingWindow[original]
+                    : original(executingWindow)
+            })
+            return executingWindow
+        })
+}
+
 /**
  * 
  * @param resources a resource description or a list of resource description.
