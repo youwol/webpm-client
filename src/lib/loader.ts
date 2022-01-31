@@ -15,7 +15,8 @@ export class CdnEvent {
     constructor(
         public readonly targetName: string,
         public readonly assetId: string,
-        public readonly url: string) { }
+        public readonly url: string) {
+    }
 }
 
 /**
@@ -260,7 +261,8 @@ export function install(
         css?: string[],
         aliases?: { [key: string]: (string | ((Window) => unknown)) }
     },
-    executingWindow: Window = window
+    executingWindow: Window = window,
+    onEvent?: (event: CdnEvent) => void
 ):
     Promise<Window> {
 
@@ -285,7 +287,7 @@ export function install(
         }
     }, {})
 
-    let jsPromise = fetchBundles(bundles, executingWindow)
+    let jsPromise = fetchBundles(bundles, executingWindow, onEvent)
         .then((bundles) =>
             fetchJavascriptAddOn(scripts, executingWindow)
                 .then(jsAddOns => ({ bundles, jsAddOns })))
