@@ -86,38 +86,25 @@ export class LoadingScreenView {
             this.contentDiv.appendChild(divLib)
         }
         if (event instanceof StartEvent) {
-            divLib.style.setProperty("color", "lightgray")
-            divLib.innerText = `> ${libraryName} ... loading: 0 kB`
+            divLib.style.setProperty('color', 'lightgray')
+            divLib.textContent = `> ${libraryName} ... loading: 0 kB`
         }
         if (event instanceof SourceLoadingEvent) {
-            divLib.style.setProperty("color", "lightgray")
-            divLib.innerText = `> ${libraryName} ... loading: ${event.progress.loaded / 1000} kB`
+            divLib.style.setProperty('color', 'lightgray')
+            divLib.textContent = `> ${libraryName} ... loading: ${
+                event.progress.loaded / 1000
+            } kB`
         }
         if (event instanceof SourceLoadedEvent) {
-            divLib.style.setProperty("color", "green")
-            divLib.innerText = `> ${libraryName} ${event.progress.loaded / 1000} kB`
+            divLib.style.setProperty('color', 'green')
+            divLib.textContent = `> ${libraryName} ${
+                event.progress.loaded / 1000
+            } kB`
         }
         if (event instanceof UnauthorizedEvent) {
-            divLib.style.setProperty("color", "red")
-            divLib.style.setProperty("font-size", "small")
-            divLib.innerText = `> ${libraryName} : You don't have permission to access this resource.`
-        }
-    }
-
-    error(error: LoadingGraphError) {
-        const divError = document.createElement('div')
-
-        if (error instanceof LoadingGraphError) {
-            divError.style.setProperty("color", "red")
-            this.contentDiv.appendChild(divError)
-
-            error.errorResponse.then(r => {
-                divError.innerText = `x -> ${r.detail}\n`
-                if (r.parameters && r.parameters.packages) {
-                    divError.innerText += r.parameters.packages
-                }
-                console.log(r)
-            })
+            divLib.style.setProperty('color', 'red')
+            divLib.style.setProperty('font-size', 'small')
+            divLib.textContent = `> ${libraryName} : You don't have permission to access this resource.`
         }
     }
 
