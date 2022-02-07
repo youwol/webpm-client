@@ -1,0 +1,1 @@
+window['root'] = { name: 'root' }

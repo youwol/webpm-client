@@ -1,0 +1,3 @@
+window.c = {
+    name: 'c',
+}

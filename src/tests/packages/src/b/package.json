@@ -1,0 +1,15 @@
+{
+  "name": "b",
+  "version": "1.0.0",
+  "main": "b.js",
+  "dependencies": {
+    "a": "^1.0.0",
+    "c": "^1.0.0"
+  },
+  "youwol": {
+    "cdnDependencies": {
+      "a": "^1.0.0",
+      "c": "^1.0.0"
+    }
+  }
+}
