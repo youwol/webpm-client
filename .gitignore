@@ -3,3 +3,8 @@ node_modules
 dist/
 coverage/
 junit.xml
+cdn.zip
+/src/tests/html-outputs/circular_dependencies.html
+/src/tests/html-outputs/indirect_not_found.html
+/src/tests/html-outputs/loading-view.html
+/src/tests/html-outputs/packages_not_found.html
