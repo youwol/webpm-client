@@ -6,43 +6,27 @@ import {
     raiseHTTPErrors,
     RootRouter,
 } from '@youwol/http-clients'
-import { Client } from '../lib/client'
-import zlib from 'zlib'
+import { Client } from '../lib'
 import { mergeMap, reduce, take } from 'rxjs/operators'
 import { from } from 'rxjs'
-import { readFileSync } from 'fs'
+import { readFileSync, writeFileSync } from 'fs'
 import path from 'path'
+import { ScreenView } from '../lib/utils.view'
 
 RootRouter.HostName = getPyYouwolBasePath()
 RootRouter.Headers = { 'py-youwol-local-only': 'true' }
 Client.HostName = RootRouter.HostName
 Client.Headers = RootRouter.Headers
 
-Client.responseParser = (req: XMLHttpRequest) => {
-    const contentEncoding = req.getResponseHeader('content-encoding')
-    if (contentEncoding == 'br') {
-        return new Promise((resolve) => {
-            const blob = req.response
-            const fileReader = new FileReader()
-            fileReader.onload = function (event) {
-                const decoded = zlib
-                    .brotliDecompressSync(event.target.result)
-                    .toString('utf8')
-                resolve(decoded)
-            }
-            fileReader.readAsArrayBuffer(blob)
-        })
-    }
-    if (contentEncoding == 'identity') {
-        return Promise.resolve(req.responseText)
-    }
-    throw Error("Only 'br' or 'identity' content encoding supported")
-}
-
 export function installPackages$() {
     const assetsGtw = new AssetsGateway.AssetsGatewayClient()
-
+    const pyYouwol = new PyYouwol.PyYouwolClient()
     return resetPyYouwolDbs$().pipe(
+        mergeMap(() => {
+            return pyYouwol.admin.environment.login$({
+                email: 'int_tests_yw-users@test-user',
+            })
+        }),
         mergeMap(() => assetsGtw.explorer.getDefaultUserDrive$()),
         raiseHTTPErrors(),
         mergeMap((resp: AssetsGateway.DefaultDriveResponse) => {
@@ -84,4 +68,19 @@ export function getPyYouwolBasePath() {
 
 export function resetPyYouwolDbs$() {
     return new PyYouwol.PyYouwolClient().admin.customCommands.doGet$('reset')
+}
+
+export function cleanDocument() {
+    document.body.innerHTML = ''
+    document.head.innerHTML = ''
+    Client.importedBundles = {}
+    ScreenView.fadingTimeout = 0
+}
+
+export function saveScreen(filename: string) {
+    expect(document.getElementById('loading-screen')).toBeTruthy()
+    writeFileSync(
+        `${__dirname}/html-outputs/${filename}`,
+        document.documentElement.innerHTML,
+    )
 }

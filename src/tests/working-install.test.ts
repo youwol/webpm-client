@@ -5,13 +5,28 @@
 
 import './mock-requests'
 
-import { installPackages$ } from './common'
-import { getLoadingGraph, getUrlBase, install } from '../lib/loader'
+import { cleanDocument, installPackages$ } from './common'
+import {
+    fetchSource,
+    getLoadingGraph,
+    getUrlBase,
+    install,
+    InstallDoneEvent,
+    SourceLoadedEvent,
+    SourceLoadingEvent,
+    SourceParsedEvent,
+    StartEvent,
+} from '../lib'
+import { writeFileSync } from 'fs'
 
 beforeAll((done) => {
     installPackages$().subscribe(() => {
         done()
     })
+})
+
+beforeEach(() => {
+    cleanDocument()
 })
 
 test('install root', async () => {
@@ -52,18 +67,74 @@ test('loading graph a', async () => {
             [['YQ==', 'YQ==/1.0.0/a.js']],
         ],
     })
+    const src = await fetchSource('a', 'YQ==', 'YQ==/1.0.0/a.js')
+    expect(src.content).toBe(`window.a = {
+    rootName: window['root'].name,
+    name: 'a',
+    addOn: [],
+}
+
+//# sourceURL=/api/assets-gateway/raw/package/YQ==/1.0.0/`)
 })
 
-test('install a', async () => {
-    await install({
-        modules: ['a'],
-    })
+test('install a', async (done) => {
+    const events = []
+    await install(
+        {
+            modules: ['a'],
+        },
+        {
+            displayLoadingScreen: true,
+            onEvent: (event) => {
+                events.push(event)
+                if (event instanceof InstallDoneEvent) {
+                    // eslint-disable-next-line jest/no-conditional-expect -- some comment
+                    expect(
+                        document.getElementById('loading-screen'),
+                    ).toBeTruthy()
+                    writeFileSync(
+                        `${__dirname}/html-outputs/loading-view.html`,
+                        document.documentElement.innerHTML,
+                    )
+                }
+            },
+        },
+    )
     expect(document.scripts).toHaveLength(2)
     expect(window['a']).toEqual({
         name: 'a',
         rootName: 'root',
         addOn: [],
     })
+    expect(
+        events
+            .filter((e) => e instanceof StartEvent)
+            .map((e) => e.targetName)
+            .sort(),
+    ).toEqual(['a', 'root'])
+    expect(
+        events
+            .filter((e) => e instanceof SourceLoadingEvent)
+            .map((e) => e.targetName)
+            .sort(),
+    ).toEqual(['a', 'root'])
+    expect(
+        events
+            .filter((e) => e instanceof SourceLoadedEvent)
+            .map((e) => e.targetName)
+            .sort(),
+    ).toEqual(['a', 'root'])
+    expect(
+        events
+            .filter((e) => e instanceof SourceParsedEvent)
+            .map((e) => e.targetName)
+            .sort(),
+    ).toEqual(['a', 'root'])
+
+    setTimeout(() => {
+        expect(document.getElementById('loading-screen')).toBeFalsy()
+        done()
+    }, 0)
 })
 
 test('install a with add-on', async () => {
