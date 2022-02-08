@@ -7,6 +7,54 @@ export class LoadingGraphError extends CdnError {
     }
 }
 
+export class Unauthorized extends CdnError {
+    static exceptionType = 'Unauthorized'
+
+    constructor(public readonly detail: { assetId; name; url }) {
+        super()
+    }
+
+    static isInstance(resp): resp is Unauthorized {
+        return resp.exceptionType == Unauthorized.exceptionType
+    }
+}
+
+export class UrlNotFound extends CdnError {
+    static exceptionType = 'UrlNotFound'
+
+    constructor(public readonly detail: { assetId; name; url }) {
+        super()
+    }
+
+    static isInstance(resp): resp is UrlNotFound {
+        return resp.exceptionType == UrlNotFound.exceptionType
+    }
+}
+
+export class FetchErrors extends CdnError {
+    static exceptionType = 'FetchErrors'
+
+    constructor(public readonly detail: { errors }) {
+        super()
+    }
+
+    static isInstance(resp): resp is FetchErrors {
+        return resp.exceptionType == FetchErrors.exceptionType
+    }
+}
+
+export class SourceParsingFailed extends CdnError {
+    static exceptionType = 'SourceParsingFailed'
+
+    constructor(public readonly detail: { assetId; name; url }) {
+        super()
+    }
+
+    static isInstance(resp): resp is SourceParsingFailed {
+        return resp.exceptionType == SourceParsingFailed.exceptionType
+    }
+}
+
 export class PackagesNotFound extends LoadingGraphError {
     static exceptionType = 'PackagesNotFound'
 
@@ -55,7 +103,7 @@ export class CircularDependencies extends LoadingGraphError {
     }
 }
 
-export function loadingGraphErrorFactory(error) {
+export function errorFactory(error) {
     if (PackagesNotFound.isInstance(error)) {
         return new PackagesNotFound(error.detail)
     }
@@ -65,6 +113,9 @@ export function loadingGraphErrorFactory(error) {
     if (IndirectPackagesNotFound.isInstance(error)) {
         return new IndirectPackagesNotFound(error.detail)
     }
+    if (Unauthorized.isInstance(error)) {
+        return new Unauthorized(error.detail)
+    }
 }
 
 export class CdnEvent {}
@@ -72,12 +123,20 @@ export class CdnEvent {}
 /**
  * Base class for CDN's HTTP request event
  */
-export class CdnFetchEvent {
+export class CdnFetchEvent extends CdnEvent {
     constructor(
         public readonly targetName: string,
         public readonly assetId: string,
         public readonly url: string,
-    ) {}
+    ) {
+        super()
+    }
+}
+
+export class FetchErrorEvent extends CdnFetchEvent {
+    constructor(targetName: string, assetId: string, url: string) {
+        super(targetName, assetId, url)
+    }
 }
 
 /**
@@ -126,7 +185,10 @@ export class SourceParsedEvent extends CdnFetchEvent {
     }
 }
 
-export class ErrorEvent extends CdnFetchEvent {
+/**
+ * Unauthorized to fetch resource
+ */
+export class UnauthorizedEvent extends FetchErrorEvent {
     constructor(targetName: string, assetId: string, url: string) {
         super(targetName, assetId, url)
     }
@@ -135,7 +197,16 @@ export class ErrorEvent extends CdnFetchEvent {
 /**
  * Unauthorized to fetch resource
  */
-export class UnauthorizedEvent extends ErrorEvent {
+export class UrlNotFoundEvent extends FetchErrorEvent {
+    constructor(targetName: string, assetId: string, url: string) {
+        super(targetName, assetId, url)
+    }
+}
+
+/**
+ * Unable to parse resource
+ */
+export class ParseErrorEvent extends FetchErrorEvent {
     constructor(targetName: string, assetId: string, url: string) {
         super(targetName, assetId, url)
     }
@@ -143,6 +214,12 @@ export class UnauthorizedEvent extends ErrorEvent {
 
 export class CdnLoadingGraphErrorEvent extends CdnEvent {
     constructor(public readonly error: LoadingGraphError) {
+        super()
+    }
+}
+
+export class InstallDoneEvent extends CdnEvent {
+    constructor() {
         super()
     }
 }

@@ -1,5 +1,11 @@
 import {
+    CdnEvent,
     CdnFetchEvent,
+    CdnLoadingGraphErrorEvent,
+    CircularDependencies,
+    IndirectPackagesNotFound,
+    PackagesNotFound,
+    ParseErrorEvent,
     SourceLoadedEvent,
     SourceLoadingEvent,
     StartEvent,
@@ -60,35 +66,128 @@ export class LoadingScreenView extends ScreenView {
         </div>`
     }
 
-    next(event: CdnFetchEvent) {
-        const libraryName = event.targetName
-        const cssId = libraryName.replace('/', '-').replace('@', '')
-        let divLib: HTMLDivElement = document.querySelector(`#${cssId}`)
-        if (!divLib) {
-            divLib = document.createElement('div')
-            divLib.id = cssId
-            this.contentDiv.appendChild(divLib)
+    next(event: CdnEvent) {
+        if (event instanceof CdnLoadingGraphErrorEvent) {
+            insertLoadingGraphError(this.contentDiv, event)
         }
-        if (event instanceof StartEvent) {
-            divLib.style.setProperty('color', 'lightgray')
-            divLib.textContent = `> ${libraryName} ... loading: 0 kB`
-        }
-        if (event instanceof SourceLoadingEvent) {
-            divLib.style.setProperty('color', 'lightgray')
-            divLib.textContent = `> ${libraryName} ... loading: ${
-                event.progress.loaded / 1000
-            } kB`
-        }
-        if (event instanceof SourceLoadedEvent) {
-            divLib.style.setProperty('color', 'green')
-            divLib.textContent = `> ${libraryName} ${
-                event.progress.loaded / 1000
-            } kB`
-        }
-        if (event instanceof UnauthorizedEvent) {
-            divLib.style.setProperty('color', 'red')
-            divLib.style.setProperty('font-size', 'small')
-            divLib.textContent = `> ${libraryName} : You don't have permission to access this resource.`
+
+        if (event instanceof CdnFetchEvent) {
+            const libraryName = event.targetName
+            const cssId = libraryName.replace('/', '-').replace('@', '')
+            let divLib: HTMLDivElement = document.querySelector(`#${cssId}`)
+            if (!divLib) {
+                divLib = document.createElement('div')
+                divLib.id = cssId
+                this.contentDiv.appendChild(divLib)
+            }
+            updateLibStatusView(libraryName, divLib, event)
         }
     }
+}
+
+function setErrorCssProperties(div: HTMLDivElement) {
+    div.style.setProperty('font-size', 'larger')
+    div.style.setProperty('color', 'orange')
+}
+
+function insertLoadingGraphError(
+    contentDiv: HTMLDivElement,
+    event: CdnLoadingGraphErrorEvent,
+) {
+    setErrorCssProperties(contentDiv)
+    if (event.error instanceof PackagesNotFound) {
+        contentDiv.appendChild(packagesNotFoundView(event.error))
+    }
+    if (event.error instanceof IndirectPackagesNotFound) {
+        contentDiv.appendChild(indirectPackagesNotFoundView(event.error))
+    }
+    if (event.error instanceof CircularDependencies) {
+        contentDiv.appendChild(circularDependenciesView(event.error))
+    }
+}
+
+export function indirectPackagesNotFoundView(error: IndirectPackagesNotFound) {
+    const errorDiv = document.createElement('div')
+    const innerHTML = Object.entries(error.detail.paths).map(
+        ([name, paths]) => {
+            return `
+        <li> <b>${name}</b>: requested by 
+        <ul>
+        ${listView(paths)}
+        </ul>
+        </li>
+        `
+        },
+    )
+    errorDiv.innerHTML = `Some indirect dependencies do not exist in the CDN
+    ${innerHTML}
+    `
+    return errorDiv
+}
+
+export function circularDependenciesView(error: CircularDependencies) {
+    const errorDiv = document.createElement('div')
+    const innerHTML = Object.entries(error.detail.packages).map(
+        ([name, paths]) => {
+            return `
+        <li> <b>${name}</b>: problem with following dependencies 
+        <ul>
+        ${listView(paths)}
+        </ul>
+        </li>
+        `
+        },
+    )
+    errorDiv.innerHTML = `Circular dependencies found
+    ${innerHTML}
+    `
+    return errorDiv
+}
+
+export function packagesNotFoundView(error: PackagesNotFound) {
+    const errorDiv = document.createElement('div')
+    const innerHTML = error.detail.packages.map(
+        (name) => `<li> <b>${name}</b></li>`,
+    )
+    errorDiv.innerHTML = `Some dependencies do not exist in the CDN
+    ${innerHTML}
+    `
+    return errorDiv
+}
+
+function updateLibStatusView(
+    libraryName: string,
+    divLib: HTMLDivElement,
+    event: CdnFetchEvent,
+) {
+    if (event instanceof StartEvent) {
+        divLib.style.setProperty('color', 'lightgray')
+        divLib.textContent = `> ${libraryName} ... loading: 0 kB`
+    }
+    if (event instanceof SourceLoadingEvent) {
+        divLib.style.setProperty('color', 'lightgray')
+        divLib.textContent = `> ${libraryName} ... loading: ${
+            event.progress.loaded / 1000
+        } kB`
+    }
+    if (event instanceof SourceLoadedEvent) {
+        divLib.style.setProperty('color', 'green')
+        divLib.textContent = `> ${libraryName} ${
+            event.progress.loaded / 1000
+        } kB`
+    }
+    if (event instanceof UnauthorizedEvent) {
+        setErrorCssProperties(divLib)
+        divLib.textContent = `> ${libraryName} : You don't have permission to access this resource.`
+    }
+    if (event instanceof ParseErrorEvent) {
+        setErrorCssProperties(divLib)
+        divLib.textContent = `> ${libraryName} : an error occurred while parsing the source`
+    }
+}
+
+function listView(list: string[]) {
+    return list.map((path) => {
+        return `<li> ${path}</li>`
+    })
 }

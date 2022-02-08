@@ -1,22 +1,23 @@
 import {
     CdnFetchEvent,
+    errorFactory,
     LoadingGraph,
-    LoadingGraphError,
-    loadingGraphErrorFactory,
     SourceLoadedEvent,
     SourceLoadingEvent,
     StartEvent,
+    Unauthorized,
     UnauthorizedEvent,
+    UrlNotFound,
+    UrlNotFoundEvent,
 } from './models'
 
 export class Client {
     static Headers: { [key: string]: string } = {}
     static HostName = '' // By default, relative resolution is used. Otherwise, protocol + hostname
 
-    static responseParser = (request: XMLHttpRequest): Promise<string> =>
-        Promise.resolve(request.responseText)
+    static importedBundles = {}
 
-    async getLoadingGraph(body): Promise<LoadingGraph | LoadingGraphError> {
+    async getLoadingGraph(body): Promise<LoadingGraph> {
         const url = `${Client.HostName}/api/assets-gateway/cdn/queries/loading-graph`
         const request = new Request(url, {
             method: 'POST',
@@ -28,7 +29,7 @@ export class Client {
         if (resp.ok) {
             return content
         }
-        return loadingGraphErrorFactory(content)
+        throw errorFactory(content)
     }
 
     async fetchSource({
@@ -43,17 +44,14 @@ export class Client {
         url: string
         version?: string
         onEvent?: (event: CdnFetchEvent) => void
-    }): Promise<
-        | {
-              name: string
-              version?: string
-              assetId: string
-              url: string
-              content: string
-          }
-        | UnauthorizedEvent
-    > {
-        return new Promise((resolve) => {
+    }): Promise<{
+        name: string
+        version?: string
+        assetId: string
+        url: string
+        content: string
+    }> {
+        return new Promise((resolve, reject) => {
             const req = new XMLHttpRequest()
             // report progress events
             req.addEventListener(
@@ -71,30 +69,28 @@ export class Client {
                 'load',
                 function (event: ProgressEvent<XMLHttpRequestEventTarget>) {
                     if (req.status == 200) {
-                        Client.responseParser(req).then((stringContent) => {
-                            const content =
-                                stringContent +
-                                `\n//# sourceURL=${url
-                                    .split('/')
-                                    .slice(0, -1)
-                                    .join('/')}/`
+                        const content =
+                            req.responseText +
+                            `\n//# sourceURL=${url
+                                .split('/')
+                                .slice(0, -1)
+                                .join('/')}/`
 
-                            onEvent &&
-                                onEvent(
-                                    new SourceLoadedEvent(
-                                        name,
-                                        assetId,
-                                        url,
-                                        event,
-                                    ),
-                                )
-                            resolve({
-                                name,
-                                version,
-                                assetId,
-                                url,
-                                content, //content as any,
-                            })
+                        onEvent &&
+                            onEvent(
+                                new SourceLoadedEvent(
+                                    name,
+                                    assetId,
+                                    url,
+                                    event,
+                                ),
+                            )
+                        resolve({
+                            name,
+                            version,
+                            assetId,
+                            url,
+                            content, //content as any,
                         })
                     }
                     if (req.status == 401) {
@@ -104,14 +100,22 @@ export class Client {
                             url,
                         )
                         onEvent && onEvent(unauthorized)
-                        resolve(unauthorized)
+                        reject(new Unauthorized({ assetId, name, url }))
+                    }
+                    if (req.status == 404) {
+                        const urlNotFound = new UrlNotFoundEvent(
+                            name,
+                            assetId,
+                            url,
+                        )
+                        onEvent && onEvent(urlNotFound)
+                        reject(new UrlNotFound({ assetId, name, url }))
                     }
                 },
                 false,
             )
             req.open('GET', url)
-            req.responseType = 'blob'
-            req.setRequestHeader('accept-encoding', 'br')
+            req.responseType = 'text' // Client.responseParser ? 'blob' : 'text'
             req.send()
             onEvent && onEvent(new StartEvent(name, assetId, url))
         })

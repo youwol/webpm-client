@@ -1,17 +1,16 @@
 import {
-    CdnError,
     CdnEvent,
     CdnFetchEvent,
     CdnLoadingGraphErrorEvent,
-    ErrorEvent,
+    FetchErrors,
+    InstallDoneEvent,
     LoadingGraph,
-    LoadingGraphError,
+    ParseErrorEvent,
     SourceParsedEvent,
+    SourceParsingFailed,
 } from './models'
 import { Client } from './client'
-import { LoadingGraphErrorScreen } from './error.view'
-
-const importedBundles = {}
+import { LoadingScreenView } from './loader.view'
 
 /**
  * Return the loading graph from a mapping *library-name*=>*version*.
@@ -23,8 +22,36 @@ const importedBundles = {}
  */
 export async function getLoadingGraph(body: {
     libraries: { [key: string]: string }
-}): Promise<LoadingGraph | LoadingGraphError> {
+}): Promise<LoadingGraph> {
     return new Client().getLoadingGraph(body)
+}
+
+function isToDownload(
+    assetId: string,
+    libraries,
+    sideEffects,
+    executingWindow,
+) {
+    const libName = libraries[assetId].name
+    const version = libraries[assetId].version
+    // This one essentially prevent clearing the cache
+    // ...we need extra care on backward compatibility
+    if (libName == '@youwol/cdn-client') {
+        return false
+    }
+
+    if (!Client.importedBundles[libName]) {
+        return true
+    }
+
+    if (Client.importedBundles[libName] != version) {
+        console.warn(
+            `Loading ${libName}#${version}: A different version of the package has been already fetched (${Client.importedBundles[libName]}), the initial version is not updated`,
+        )
+        return false
+    }
+    sideEffects && sideEffects[libName] && sideEffects[libName](executingWindow)
+    return false
 }
 
 /**
@@ -49,33 +76,11 @@ export async function fetchLoadingGraph(
         {},
     )
 
-    const isToDownload = (assetId: string) => {
-        const libName = libraries[assetId].name
-        const version = libraries[assetId].version
-        // This one essentially prevent clearing the cache
-        // ...we need extra care on backward compatibility
-        if (libName == '@youwol/cdn-client') {
-            return false
-        }
-
-        if (!importedBundles[libName]) {
-            return true
-        }
-
-        if (importedBundles[libName] != version) {
-            console.warn(
-                `Loading ${libName}#${version}: A different version of the package has been already fetched (${importedBundles[libName]}), the initial version is not updated`,
-            )
-            return false
-        }
-        sideEffects &&
-            sideEffects[libName] &&
-            sideEffects[libName](executingWindow)
-        return false
-    }
     const packagesSelected = loadingGraph.definition
         .flat()
-        .filter(([assetId]) => isToDownload(assetId))
+        .filter(([assetId]) =>
+            isToDownload(assetId, libraries, sideEffects, executingWindow),
+        )
         .map(([assetId, cdn_url]) => {
             return {
                 assetId,
@@ -85,21 +90,44 @@ export async function fetchLoadingGraph(
             }
         })
 
+    const errors = []
     const futures = packagesSelected.map(({ assetId, name, version, url }) => {
-        return client.fetchSource({ name, version, assetId, url, onEvent })
+        return client
+            .fetchSource({ name, version, assetId, url, onEvent })
+            .catch((error) => {
+                errors.push(error)
+            })
     })
     const sourcesOrErrors = await Promise.all(futures)
-    const contents = sourcesOrErrors.filter(
-        (d) => !(d instanceof ErrorEvent),
-    ) as { name; version; assetId; url; content }[]
+    if (errors.length > 0) {
+        throw new FetchErrors({ errors })
+    }
+    const sources = sourcesOrErrors.filter((d) => d != undefined) as {
+        name
+        version
+        assetId
+        url
+        content
+    }[]
 
     const head = document.getElementsByTagName('head')[0]
-    contents.forEach(({ name, version, assetId, url, content }) => {
+    sources.forEach(({ name, version, assetId, url, content }) => {
         const script = document.createElement('script')
         script.innerHTML = content
         script.id = url
         script.classList.add(name, version, assetId)
+        let error = false
+        const onErrorParsing = () => {
+            error = true
+        }
+        executingWindow.addEventListener('error', onErrorParsing)
         head.appendChild(script)
+        executingWindow.removeEventListener('error', onErrorParsing)
+        if (error) {
+            onEvent && onEvent(new ParseErrorEvent(name, assetId, url))
+            throw new SourceParsingFailed({ assetId, name, url })
+        }
+
         const sideEffect = sideEffects && sideEffects[name]
         const target = getLoadedModule(name, executingWindow)
         if (target && !executingWindow[name]) {
@@ -107,8 +135,33 @@ export async function fetchLoadingGraph(
         }
         sideEffect && sideEffect(executingWindow)
         onEvent && onEvent(new SourceParsedEvent(name, assetId, url))
-        importedBundles[name] = libraries[assetId].version
+        Client.importedBundles[name] = libraries[assetId].version
     })
+}
+
+type ModulesInput = (
+    | {
+          name: string
+          version: string
+      }
+    | string
+)[]
+
+function sanitizeModules(modules: ModulesInput) {
+    return modules.reduce((acc, e) => {
+        const elem =
+            typeof e == 'string'
+                ? {
+                      name: e,
+                      version: 'latest',
+                  }
+                : e
+
+        return {
+            ...acc,
+            [elem.name]: elem,
+        }
+    }, {})
 }
 
 /**
@@ -125,13 +178,13 @@ export async function fetchLoadingGraph(
  *
  * Aliases allow to use a different name to refer to the loaded resources.
  * @param resources what needs to be installed
- * @param resources.modules: either a `{name, version}` object or a string.
+ * @param resources.modules either a `{name, version}` object or a string.
  * If a string is provided, version is 'latest'.
- * @param resources.scripts: array of path for javascript scripts in the format
+ * @param resources.scripts array of path for javascript scripts in the format
  * {libraryName}#{version}~{rest-of-path}
- * @param resources.css: array of path for css stylesheets in the format
+ * @param resources.css array of path for css stylesheets in the format
  * {libraryName}#{version}~{rest-of-path}
- * @param resources.aliases: a set of aliases that are applied after all the resources
+ * @param resources.aliases a set of aliases that are applied after all the resources
  * have been loaded. A dictionary {key: value} where key is the alias in
  * executingWindow and value is either:
  *       - a string => `executingWindow[alias] = executingWindow[value]`
@@ -141,71 +194,53 @@ export async function fetchLoadingGraph(
  * @param options.executingWindow the 'window' object where the install is done.
  * If not provided, use 'window'
  * @param options.onEvent callback called at every CDN event
- * @param options.onError callback called with the first occurring error.
- * If not provided, a callback displaying the error as a full screen modal is used
  * @returns a promise over the executingWindow
  */
 export function install(
     resources: {
-        modules?: (
-            | {
-                  name: string
-                  version: string
-              }
-            | string
-        )[]
+        modules?: ModulesInput
         scripts?: string[]
         css?: string[]
         aliases?: { [key: string]: string | ((Window) => unknown) }
     },
     options: {
         executingWindow?: Window
-        onEvent?: (event: CdnFetchEvent) => void
-        onError?: (event: CdnError) => void
+        onEvent?: (event: CdnEvent) => void
+        displayLoadingScreen?: boolean
     } = {},
-): Promise<Window | CdnError> {
-    const modules = resources.modules || []
+): Promise<Window> {
+    const modules = sanitizeModules(resources.modules || [])
     const scripts = resources.scripts || []
     const css = resources.css || []
     const aliases = resources.aliases || {}
     const executingWindow = options.executingWindow || window
-    const onError =
-        options.onError ||
-        ((error) => {
-            const screen = new LoadingGraphErrorScreen({
-                container: window.document.body,
-                error,
-            })
-            screen.render()
-        })
     const cssPromise = fetchStyleSheets(css, executingWindow)
+    const display = options.displayLoadingScreen || false
+    let loadingScreen = undefined
+    let onEvent =
+        options.onEvent ||
+        (() => {
+            /*no-op*/
+        })
 
-    const bundles = modules.reduce((acc, e) => {
-        const elem =
-            typeof e == 'string'
-                ? {
-                      name: e,
-                      version: 'latest',
-                  }
-                : e
+    if (display) {
+        loadingScreen = new LoadingScreenView({
+            container: document.body,
+            mode: 'svg',
+        })
+        loadingScreen.render()
+        onEvent = options.onEvent
+            ? (ev) => {
+                  loadingScreen.next(ev)
+                  options.onEvent(ev)
+              }
+            : (ev) => loadingScreen.next(ev)
+    }
 
-        return {
-            ...acc,
-            [elem.name]: elem,
-        }
-    }, {})
-
-    const jsPromise: Promise<
-        | CdnError
-        | {
-              fetchedBundles
-              jsAddOns
-          }
-    > = fetchBundles(bundles, executingWindow, options.onEvent).then(
-        (fetchedBundles) => {
-            if (fetchedBundles instanceof CdnError) {
-                return Promise.resolve(fetchedBundles)
-            }
+    const jsPromise = fetchBundles(modules, executingWindow, onEvent).then(
+        (fetchedBundles: {
+            [key: string]: { version: string; sideEffects: (Window) => void }
+        }) => {
             return fetchJavascriptAddOn(scripts, executingWindow).then(
                 (jsAddOns) => ({
                     fetchedBundles,
@@ -215,17 +250,15 @@ export function install(
         },
     )
 
-    return Promise.all([jsPromise, cssPromise]).then(([jsResult, _]) => {
-        if (jsResult instanceof CdnError) {
-            onError(jsResult)
-            return jsResult
-        }
+    return Promise.all([jsPromise, cssPromise]).then(() => {
         Object.entries(aliases).forEach(([alias, original]) => {
             executingWindow[alias] =
                 typeof original == 'string'
                     ? executingWindow[original]
                     : original(executingWindow)
         })
+        onEvent && onEvent(new InstallDoneEvent())
+        loadingScreen && loadingScreen.done()
         return executingWindow
     })
 }
@@ -300,12 +333,9 @@ export async function fetchBundles(
     },
     executingWindow?: Window,
     onEvent?: (event: CdnEvent) => void,
-): Promise<
-    | {
-          [key: string]: { version: string; sideEffects: (Window) => void }
-      }
-    | CdnError
-> {
+): Promise<{
+    [key: string]: { version: string; sideEffects: (Window) => void }
+}> {
     executingWindow = executingWindow || window
     type TTargetValue = { version: string; sideEffects: (Window) => void }
 
@@ -332,15 +362,19 @@ export async function fetchBundles(
         (acc, [k, v]) => ({ ...acc, ...{ [k]: v.sideEffects } }),
         {},
     )
-    const loadingGraph = await new Client().getLoadingGraph(body)
-    if (loadingGraph instanceof LoadingGraphError) {
-        onEvent && onEvent(new CdnLoadingGraphErrorEvent(loadingGraph))
-        console.error('Failed to resolve packages versions', loadingGraph)
-        return loadingGraph
+    try {
+        const loadingGraph = await new Client().getLoadingGraph(body)
+        await fetchLoadingGraph(
+            loadingGraph,
+            executingWindow,
+            sideEffects,
+            onEvent,
+        )
+        return cleanedDependencies
+    } catch (error) {
+        onEvent && onEvent(new CdnLoadingGraphErrorEvent(error))
+        throw error
     }
-
-    await fetchLoadingGraph(loadingGraph, executingWindow, sideEffects, onEvent)
-    return cleanedDependencies
 }
 
 /**
@@ -450,4 +484,24 @@ function getLoadedModule(fullname: string, executingWindow?: Window) {
         return executingWindow[namespace][name]
     }
     return undefined
+}
+
+/**
+ *
+ * @param name
+ * @param assetId
+ * @param url
+ * @param onEvent
+ */
+export function fetchSource(
+    name: string,
+    assetId: string,
+    url: string,
+    onEvent?: (event: CdnEvent) => void,
+): Promise<{ name; assetId; url; content }> {
+    if (!url.startsWith('/api/assets-gateway/raw/package')) {
+        url = url.startsWith('/') ? url : `/${url}`
+        url = `/api/assets-gateway/raw/package${url}`
+    }
+    return new Client().fetchSource({ name, assetId, url, onEvent })
 }
