@@ -20,21 +20,25 @@ yarn
 ```
 
 To build for development:
+
 ```shell
 yarn build:dev
 ```
 
 To build for production:
+
 ```shell
 yarn build:prod
 ```
 
-To test:
+Tests require py-youwol to run on port 2001 using the configuration defined in the test directory.
+
 ```shell
 yarn test
 ```
 
 To generate code documentation:
+
 ```shell
 yarn doc
 ```
@@ -44,11 +48,12 @@ yarn doc
 This library is used to dynamically fetch dependencies from YouWol's CDN in a front-end application, e.g.:
 
 ```typescript
-await cdn.fetchBundles(
+await cdn.install(
     {
-        'd3': '5.15.0',
-        "@youwol/fv-tree": "0.0.3",
-        "@youwol/flux-lib-core": '1.8.0'
+        modules: [ 'd3',  {name:'@youwol/fv-tree', version:"latest"}],
+        css:[
+            'bootstrap#4.4.1~bootstrap.min.css'
+        ]
     })
 ```
 Missing dependencies from the provided mapping will be fetched using their latest version.
