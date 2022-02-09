@@ -920,10 +920,10 @@
   resolved "https://registry.yarnpkg.com/@xtuc/long/-/long-4.2.2.tgz#d291c6a4e97989b5c61d9acf396ae4fe133a718d"
   integrity sha512-NuHqBY1PB/D8xU6s/thBgOAiAP7HOYDQ32+BFZILJ8ivkUkAHQnWfn6WhL79Owj1qmUnoN/YPhktdIoucipkAQ==
 
-"@youwol/http-clients@^0.0.1":
-  version "0.0.1"
-  resolved "https://registry.yarnpkg.com/@youwol/http-clients/-/http-clients-0.0.1.tgz#848d97e950502f65477e5690f09fd531af0ec68b"
-  integrity sha512-iPBKQ9XuE3NcLGNA00RotyXlxic4eB+DVi33ui6s1IYlEUyuJJrytPV8LfU0Jy/7hYsnAckjCAPAY7nJAqJ+Lg==
+"@youwol/http-clients@^0.0.2":
+  version "0.0.2"
+  resolved "https://registry.yarnpkg.com/@youwol/http-clients/-/http-clients-0.0.2.tgz#70b4daab9591c09c837b3c7dd31fd7f59c0e74d3"
+  integrity sha512-jHGScuqfR5/rDZndgnVtjntbpt86Kv1VF6lE+Ud6EKEZ5DcsgAXmY/KCemhT2lPa/M7Z81NfA1qhC09AkSQQxg==
 
 abab@^2.0.3, abab@^2.0.5:
   version "2.0.5"
