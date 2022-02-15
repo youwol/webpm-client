@@ -50,8 +50,8 @@ This library is used to dynamically fetch dependencies from YouWol's CDN in a fr
 ```typescript
 await cdn.install(
     {
-        modules: [ 'd3',  {name:'@youwol/fv-tree', version:"latest"}],
-        css:[
+        modules: ['d3', '@youwol/fv-tree'],
+        css: [
             'bootstrap#4.4.1~bootstrap.min.css'
         ]
     })
