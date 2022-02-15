@@ -62,12 +62,17 @@ function isToDownload(
  * @param sideEffects if sideEffects[*libName*] exist => execute the associated function after
  * the library has been installed in executingWindow
  * @param onEvent if provided, callback called at each HTTP request event
+ * @param domAttributes if domAttributes[*libName*] exist => the associated id & class are
+ * attributed to the script dom element
  */
 export async function fetchLoadingGraph(
     loadingGraph: LoadingGraph,
     executingWindow?: Window,
     sideEffects?: { [key: string]: (Window) => void },
     onEvent?: (event: CdnFetchEvent) => void,
+    domAttributes?: {
+        [key: string]: { domId?: string; domClasses?: string[] }
+    },
 ) {
     executingWindow = executingWindow || window
     const client = new Client()
@@ -111,11 +116,14 @@ export async function fetchLoadingGraph(
     }[]
 
     const head = document.getElementsByTagName('head')[0]
-    sources.forEach(({ name, version, assetId, url, content }) => {
+    sources.forEach(({ name, assetId, url, content }) => {
         const script = document.createElement('script')
         script.innerHTML = content
-        script.id = url
-        script.classList.add(name, version, assetId)
+        const dom = domAttributes && domAttributes[name]
+        const id = dom?.domId || url
+        const classes = dom?.domClasses || []
+        script.id = id
+        script.classList.add(...classes)
         let error = false
         const onErrorParsing = () => {
             error = true
@@ -139,13 +147,50 @@ export async function fetchLoadingGraph(
     })
 }
 
-type ModulesInput = (
+/**
+ * Describe multiple bundle resource(s).
+ */
+export type ModulesInput = (
     | {
           name: string
           version: string
+          domId?: string
+          domClasses?: string[]
       }
     | string
 )[]
+
+/**
+ * Describe one or multiple CSS resource(s).
+ *
+ * Resource are like: {libraryName}#{version}~{rest-of-path}
+ */
+export type CssInput =
+    | (
+          | {
+                resource: string
+                domId?: string
+                domClasses?: string[]
+            }
+          | string
+      )[]
+    | string
+
+/**
+ * Describe one or multiple scripts resource(s).
+ *
+ * Resource are like: {libraryName}#{version}~{rest-of-path}
+ */
+export type ScriptsInput =
+    | (
+          | {
+                resource: string
+                domId?: string
+                domClasses?: string[]
+            }
+          | string
+      )[]
+    | string
 
 function sanitizeModules(modules: ModulesInput) {
     return modules.reduce((acc, e) => {
@@ -164,9 +209,54 @@ function sanitizeModules(modules: ModulesInput) {
     }, {})
 }
 
-/**
- *
- * Install a set of resources.
+function sanitizeBase(input: ScriptsInput | CssInput):
+    | {
+          resource: string
+          domId?: string
+          domClasses?: string[]
+      }[]
+    | undefined {
+    if (typeof input == 'string') {
+        return [{ resource: input }]
+    }
+    if (Array.isArray(input)) {
+        return input.map((elem) => {
+            if (typeof elem == 'string') {
+                return { resource: elem }
+            }
+            return elem
+        })
+    }
+    return undefined
+}
+
+function sanitizeScripts(input: ScriptsInput): {
+    resource: string
+    domId?: string
+    domClasses?: string[]
+}[] {
+    const sanitized = sanitizeBase(input)
+    if (sanitized) {
+        return sanitized
+    }
+    console.error('@youwol/cdn-client: Can not parse scripts input', input)
+    return []
+}
+
+function sanitizeCss(input: CssInput): {
+    resource: string
+    domId?: string
+    domClasses?: string[]
+}[] {
+    const sanitized = sanitizeBase(input)
+    if (sanitized) {
+        return sanitized
+    }
+    console.error('@youwol/cdn-client: Can not parse css input', input)
+    return []
+}
+
+/** Install a set of resources.
  *
  * Modules stand for javascript's module.
  * If some required dependencies of the module are missing they are also loaded.
@@ -174,16 +264,13 @@ function sanitizeModules(modules: ModulesInput) {
  * Scripts stand for standalone javascript file; they are fetched after all modules
  * have been loaded.
  *
- * CSS stand for stylesheets.
+ * CSS stands for stylesheets.
  *
  * Aliases allow to use a different name to refer to the loaded resources.
  * @param resources what needs to be installed
- * @param resources.modules either a `{name, version}` object or a string.
- * If a string is provided, version is 'latest'.
- * @param resources.scripts array of path for javascript scripts in the format
- * {libraryName}#{version}~{rest-of-path}
- * @param resources.css array of path for css stylesheets in the format
- * {libraryName}#{version}~{rest-of-path}
+ * @param resources.modules the bundles
+ * @param resources.scripts the scripts
+ * @param resources.css the css
  * @param resources.aliases a set of aliases that are applied after all the resources
  * have been loaded. A dictionary {key: value} where key is the alias in
  * executingWindow and value is either:
@@ -191,7 +278,8 @@ function sanitizeModules(modules: ModulesInput) {
  *       - a function => `executingWindow[alias] = value(executingWindow)`
  *
  * @param options extra options
- * @param options.executingWindow the 'window' object where the install is done.
+ * @param options.displayLoadingScreen if true, display the loading screen
+ * @param options.executingWindow the 'window' object where the 'install' is done.
  * If not provided, use 'window'
  * @param options.onEvent callback called at every CDN event
  * @returns a promise over the executingWindow
@@ -199,8 +287,8 @@ function sanitizeModules(modules: ModulesInput) {
 export function install(
     resources: {
         modules?: ModulesInput
-        scripts?: string[]
-        css?: string[]
+        scripts?: ScriptsInput
+        css?: CssInput
         aliases?: { [key: string]: string | ((Window) => unknown) }
     },
     options: {
@@ -210,11 +298,9 @@ export function install(
     } = {},
 ): Promise<Window> {
     const modules = sanitizeModules(resources.modules || [])
-    const scripts = resources.scripts || []
-    const css = resources.css || []
     const aliases = resources.aliases || {}
     const executingWindow = options.executingWindow || window
-    const cssPromise = fetchStyleSheets(css, executingWindow)
+    const cssPromise = fetchStyleSheets(resources.css || [], executingWindow)
     const display = options.displayLoadingScreen || false
     let loadingScreen = undefined
     let onEvent =
@@ -238,15 +324,14 @@ export function install(
     }
 
     const jsPromise = fetchBundles(modules, executingWindow, onEvent).then(
-        (fetchedBundles: {
-            [key: string]: { version: string; sideEffects: (Window) => void }
-        }) => {
-            return fetchJavascriptAddOn(scripts, executingWindow).then(
-                (jsAddOns) => ({
-                    fetchedBundles,
-                    jsAddOns,
-                }),
-            )
+        (loadingGraph) => {
+            return fetchJavascriptAddOn(
+                resources.scripts || [],
+                executingWindow,
+            ).then((jsAddOns) => ({
+                loadingGraph,
+                jsAddOns,
+            }))
         },
     )
 
@@ -276,21 +361,23 @@ export function install(
  * @returns a Promise on created HTMLLinkElement(s)
  */
 export async function fetchStyleSheets(
-    resources: string | Array<string>,
+    resources: CssInput,
     renderingWindow?: Window,
 ): Promise<Array<HTMLLinkElement>> {
-    const _resources = typeof resources == 'string' ? [resources] : resources
+    const css = sanitizeCss(resources)
     renderingWindow = renderingWindow || window
     const hrefs = Array.from(renderingWindow.document.links).map(
         (link) => link.href,
     )
 
-    const futures = _resources
-        .map((resourceId) => parseResourceId(resourceId))
+    const futures = css
+        .map((elem) => ({ ...elem, ...parseResourceId(elem.resource) }))
         .filter(({ url }) => !hrefs.includes(url))
-        .map(({ url }) => {
+        .map(({ domId, domClasses, url }) => {
             return new Promise<HTMLLinkElement>((resolveCb) => {
                 const link = renderingWindow.document.createElement('link')
+                link.id = domId ? domId : ''
+                domClasses && link.classList.add(...domClasses)
                 link.setAttribute('type', 'text/css')
                 link.href = Client.HostName + url
                 link.rel = 'stylesheet'
@@ -323,42 +410,47 @@ function mapObjectValues<T0, T1>(
  * has been installed.
  * @param executingWindow the window used to install the dependencies, default to the global window
  * @param onEvent if provided, callback called at each HTTP request event
- * @returns Promise resolving to the argument *dependencies* provided as a mapping *libraryName*=>*{version, sideEffects}*
+ * @returns Promise resolving to the loading graph installed
  */
 export async function fetchBundles(
     dependencies: {
         [key: string]:
             | string
-            | { version: string; sideEffects: (Window) => void }
+            | {
+                  version: string
+                  sideEffects?: (Window) => void
+                  domId?: string
+                  domClasses?: string[]
+              }
     },
     executingWindow?: Window,
     onEvent?: (event: CdnEvent) => void,
-): Promise<{
-    [key: string]: { version: string; sideEffects: (Window) => void }
-}> {
+): Promise<LoadingGraph> {
     executingWindow = executingWindow || window
-    type TTargetValue = { version: string; sideEffects: (Window) => void }
+    type TTargetValue = {
+        version: string
+        sideEffects?: (Window) => void
+        domId?: string
+        domClasses?: string[]
+    }
 
-    const cleanedDependencies = mapObjectValues(
+    const sanitizedInput = mapObjectValues(
         dependencies,
         (v: string | TTargetValue): TTargetValue =>
             typeof v == 'string'
                 ? {
                       version: v,
-                      sideEffects: () => {
-                          /*no op*/
-                      },
                   }
                 : v,
     )
 
     const body = {
-        libraries: Object.entries(cleanedDependencies).reduce(
+        libraries: Object.entries(sanitizedInput).reduce(
             (acc, [k, v]) => ({ ...acc, ...{ [k]: v.version } }),
             {},
         ),
     }
-    const sideEffects = Object.entries(cleanedDependencies).reduce(
+    const sideEffects = Object.entries(sanitizedInput).reduce(
         (acc, [k, v]) => ({ ...acc, ...{ [k]: v.sideEffects } }),
         {},
     )
@@ -370,7 +462,7 @@ export async function fetchBundles(
             sideEffects,
             onEvent,
         )
-        return cleanedDependencies
+        return loadingGraph
     } catch (error) {
         onEvent && onEvent(new CdnLoadingGraphErrorEvent(error))
         throw error
@@ -389,16 +481,19 @@ export async function fetchBundles(
  * @param onEvent if provided, callback called at each HTTP request event
  */
 export async function fetchJavascriptAddOn(
-    resources: string | Array<string>,
+    resources: ScriptsInput,
     executingWindow?: Window,
     onEvent?: (CdnEvent) => void,
 ): Promise<{ assetName; assetId; url; src }[]> {
     const client = new Client()
-    const _resources = typeof resources == 'string' ? [resources] : resources
+    const inputs = sanitizeScripts(resources)
 
-    const ids = _resources.map((resourceId) => parseResourceId(resourceId))
+    const scripts = inputs.map((elem) => ({
+        ...elem,
+        ...parseResourceId(elem.resource),
+    }))
 
-    const futures = ids.map(({ name, assetId, url }) =>
+    const futures = scripts.map(({ name, assetId, url }) =>
         client.fetchSource({ name, assetId, url, onEvent }),
     )
 
