@@ -120,6 +120,12 @@ export function errorFactory(error) {
 
 export class CdnEvent {}
 
+export class CdnMessageEvent extends CdnEvent {
+    constructor(public readonly id: string, public readonly text: string) {
+        super()
+    }
+}
+
 /**
  * Base class for CDN's HTTP request event
  */

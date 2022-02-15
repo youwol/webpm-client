@@ -2,6 +2,7 @@ import {
     CdnEvent,
     CdnFetchEvent,
     CdnLoadingGraphErrorEvent,
+    CdnMessageEvent,
     CircularDependencies,
     IndirectPackagesNotFound,
     PackagesNotFound,
@@ -70,7 +71,18 @@ export class LoadingScreenView extends ScreenView {
         if (event instanceof CdnLoadingGraphErrorEvent) {
             insertLoadingGraphError(this.contentDiv, event)
         }
-
+        if (event instanceof CdnMessageEvent) {
+            let divLib: HTMLDivElement = document.querySelector(`#${event.id}`)
+            if (divLib) {
+                divLib.textContent = event.text
+            }
+            if (!divLib) {
+                divLib = document.createElement('div')
+                divLib.id = event.id
+                divLib.textContent = '> ' + event.text
+                this.contentDiv.appendChild(divLib)
+            }
+        }
         if (event instanceof CdnFetchEvent) {
             const libraryName = event.targetName
             const cssId = libraryName.replace('/', '-').replace('@', '')
