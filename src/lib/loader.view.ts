@@ -74,7 +74,7 @@ export class LoadingScreenView extends ScreenView {
         if (event instanceof CdnMessageEvent) {
             let divLib: HTMLDivElement = document.querySelector(`#${event.id}`)
             if (divLib) {
-                divLib.textContent = event.text
+                divLib.textContent = '> ' + event.text
             }
             if (!divLib) {
                 divLib = document.createElement('div')
