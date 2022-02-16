@@ -78,14 +78,14 @@ export class LoadingScreenView extends ScreenView {
             }
             if (!divLib) {
                 divLib = document.createElement('div')
-                divLib.id = event.id
+                divLib.id = sanitizeCssId(event.id)
                 divLib.textContent = '> ' + event.text
                 this.contentDiv.appendChild(divLib)
             }
         }
         if (event instanceof CdnFetchEvent) {
             const libraryName = event.targetName
-            const cssId = libraryName.replace('/', '-').replace('@', '')
+            const cssId = sanitizeCssId(libraryName)
             let divLib: HTMLDivElement = document.querySelector(`#${cssId}`)
             if (!divLib) {
                 divLib = document.createElement('div')
@@ -95,6 +95,10 @@ export class LoadingScreenView extends ScreenView {
             updateLibStatusView(libraryName, divLib, event)
         }
     }
+}
+
+function sanitizeCssId(id: string) {
+    return id.replace('/', '-').replace('.', '-').replace('@', '')
 }
 
 function setErrorCssProperties(div: HTMLDivElement) {
