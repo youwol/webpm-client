@@ -11,25 +11,51 @@ import {
     UrlNotFoundEvent,
 } from './models'
 
+export type Origin = {
+    name: string
+    version?: string
+    assetId: string
+    url: string
+    content: string
+}
+
 export class Client {
     static Headers: { [key: string]: string } = {}
     static HostName = '' // By default, relative resolution is used. Otherwise, protocol + hostname
 
     static importedBundles = {}
+    static fetchedLoadingGraph = new Map<string, Promise<LoadingGraph>>()
+    static importedLoadingGraphs = new Map<string, Promise<Window>>()
+    static importedScripts = new Map<string, Promise<Origin>>()
+
+    static resetCache() {
+        Client.importedBundles = {}
+        Client.importedLoadingGraphs = new Map<string, Promise<Window>>()
+        Client.importedScripts = new Map<string, Promise<Origin>>()
+    }
 
     async getLoadingGraph(body): Promise<LoadingGraph> {
+        const key = JSON.stringify(body)
+        const finalize = async () => {
+            const content = await Client.fetchedLoadingGraph[key]
+            if (content.lock) {
+                return content
+            }
+            throw errorFactory(content)
+        }
+        if (Client.fetchedLoadingGraph[key]) {
+            return finalize()
+        }
         const url = `${Client.HostName}/api/assets-gateway/cdn/queries/loading-graph`
         const request = new Request(url, {
             method: 'POST',
             body: JSON.stringify(body),
             headers: { ...Client.Headers, 'content-type': 'application/json' },
         })
-        const resp = await fetch(request)
-        const content = await resp.json()
-        if (resp.ok) {
-            return content
-        }
-        throw errorFactory(content)
+        Client.fetchedLoadingGraph[key] = fetch(request).then((resp) =>
+            resp.json(),
+        )
+        return finalize()
     }
 
     async fetchSource({
@@ -44,14 +70,11 @@ export class Client {
         url: string
         version?: string
         onEvent?: (event: CdnFetchEvent) => void
-    }): Promise<{
-        name: string
-        version?: string
-        assetId: string
-        url: string
-        content: string
-    }> {
-        return new Promise((resolve, reject) => {
+    }): Promise<Origin> {
+        if (Client.importedScripts[url]) {
+            return Client.importedScripts[url]
+        }
+        Client.importedScripts[url] = new Promise((resolve, reject) => {
             const req = new XMLHttpRequest()
             // report progress events
             req.addEventListener(
@@ -119,5 +142,6 @@ export class Client {
             req.send()
             onEvent && onEvent(new StartEvent(name, assetId, url))
         })
+        return Client.importedScripts[url]
     }
 }

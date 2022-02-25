@@ -7,6 +7,8 @@ import './mock-requests'
 
 import { cleanDocument, installPackages$ } from './common'
 import {
+    CdnEvent,
+    Client,
     fetchSource,
     getLoadingGraph,
     getUrlBase,
@@ -27,17 +29,55 @@ beforeAll((done) => {
 
 beforeEach(() => {
     cleanDocument()
+    Client.resetCache()
 })
 
+function expectEvents(events: CdnEvent[], names: string[]) {
+    expect(
+        events
+            .filter((e) => e instanceof StartEvent)
+            .map((e: StartEvent) => e.targetName)
+            .sort(),
+    ).toEqual(names)
+    expect(
+        events
+            .filter((e) => e instanceof SourceLoadingEvent)
+            .map((e: SourceLoadingEvent) => e.targetName)
+            .sort(),
+    ).toEqual(names)
+    expect(
+        events
+            .filter((e) => e instanceof SourceLoadedEvent)
+            .map((e: SourceLoadedEvent) => e.targetName)
+            .sort(),
+    ).toEqual(names)
+    expect(
+        events
+            .filter((e) => e instanceof SourceParsedEvent)
+            .map((e: SourceParsedEvent) => e.targetName)
+            .sort(),
+    ).toEqual(names)
+}
+
 test('install root', async () => {
-    await install({
-        modules: ['root'],
-    })
+    const events = []
+
+    await install(
+        {
+            modules: ['root'],
+        },
+        {
+            onEvent: (event) => {
+                events.push(event)
+            },
+        },
+    )
     expect(document.scripts).toHaveLength(1)
     const s0 = document.scripts.item(0)
     const target = getUrlBase('root', '1.0.0') + '/root.js'
     expect(s0.id).toBe(target)
     expect(window['root'].name).toBe('root')
+    expectEvents(events, ['root'])
 })
 
 test('loading graph a', async () => {
@@ -106,31 +146,9 @@ test('install a', async (done) => {
         rootName: 'root',
         addOn: [],
     })
-    expect(
-        events
-            .filter((e) => e instanceof StartEvent)
-            .map((e) => e.targetName)
-            .sort(),
-    ).toEqual(['a', 'root'])
-    expect(
-        events
-            .filter((e) => e instanceof SourceLoadingEvent)
-            .map((e) => e.targetName)
-            .sort(),
-    ).toEqual(['a', 'root'])
-    expect(
-        events
-            .filter((e) => e instanceof SourceLoadedEvent)
-            .map((e) => e.targetName)
-            .sort(),
-    ).toEqual(['a', 'root'])
-    expect(
-        events
-            .filter((e) => e instanceof SourceParsedEvent)
-            .map((e) => e.targetName)
-            .sort(),
-    ).toEqual(['a', 'root'])
 
+    expectEvents(events, ['a', 'root'])
+    expect(events.filter((e) => e instanceof InstallDoneEvent)).toHaveLength(1)
     setTimeout(() => {
         expect(document.getElementById('loading-screen')).toBeFalsy()
         done()
@@ -148,6 +166,39 @@ test('install a with add-on', async () => {
         rootName: 'root',
         addOn: ['add-on'],
     })
+})
+
+test('double install a with add-on', async () => {
+    const events1 = []
+    const events2 = []
+    await install(
+        {
+            modules: ['a'],
+            scripts: ['a#1.0.0~folder/add-on.js'],
+        },
+        {
+            onEvent: (event) => events1.push(event),
+        },
+    )
+    await install(
+        {
+            modules: ['a'],
+            scripts: ['a#1.0.0~folder/add-on.js'],
+        },
+        {
+            onEvent: (event) => events2.push(event),
+        },
+    )
+    expect(events1).toHaveLength(9)
+    expect(events2).toHaveLength(1)
+    const scripts = Array.from(document.scripts).map((s) => s.id)
+    expect(scripts).toHaveLength(3)
+    expect(window['a']).toEqual({
+        name: 'a',
+        rootName: 'root',
+        addOn: ['add-on'],
+    })
+    expect(events2[0]).toBeInstanceOf(InstallDoneEvent)
 })
 
 // eslint-disable-next-line jest/no-commented-out-tests -- want to keep it
