@@ -586,24 +586,6 @@ export function parseResourceId(resourceId: string): {
     return { name, version, path, assetId, url }
 }
 
-function getLoadedModule(fullname: string, executingWindow?: Window) {
-    executingWindow = executingWindow || window
-
-    if (
-        executingWindow[fullname] &&
-        Object.entries(executingWindow[fullname]).length > 0
-    ) {
-        return executingWindow[fullname]
-    }
-
-    if (fullname.includes('/')) {
-        const namespace = fullname.split('/')[0].slice(1)
-        const name = fullname.split('/')[1]
-        return executingWindow[namespace][name]
-    }
-    return undefined
-}
-
 /**
  *
  * @param name
