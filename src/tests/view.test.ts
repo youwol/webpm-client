@@ -18,10 +18,7 @@ beforeEach(() => {
 })
 
 test('install success & custom message', async () => {
-    const loadingScreen = new LoadingScreenView({
-        container: document.body,
-        mode: 'svg',
-    })
+    const loadingScreen = new LoadingScreenView()
     loadingScreen.render()
 
     await install(

@@ -6,12 +6,11 @@ import {
     raiseHTTPErrors,
     RootRouter,
 } from '@youwol/http-clients'
-import { Client } from '../lib'
+import { Client, LoadingScreenView } from '../lib'
 import { mergeMap, reduce, take } from 'rxjs/operators'
 import { from } from 'rxjs'
 import { readFileSync, writeFileSync } from 'fs'
 import path from 'path'
-import { ScreenView } from '../lib/utils.view'
 
 RootRouter.HostName = getPyYouwolBasePath()
 RootRouter.Headers = { 'py-youwol-local-only': 'true' }
@@ -74,7 +73,7 @@ export function cleanDocument() {
     document.body.innerHTML = ''
     document.head.innerHTML = ''
     Client.importedBundles = {}
-    ScreenView.fadingTimeout = 0
+    LoadingScreenView.DefaultFadingTimeout = 0
 }
 
 export function saveScreen(filename: string) {
