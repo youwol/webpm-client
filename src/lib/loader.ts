@@ -70,9 +70,6 @@ export async function fetchLoadingGraph(
     executingWindow?: Window,
     sideEffects?: { [key: string]: (Window) => void },
     onEvent?: (event: CdnFetchEvent) => void,
-    domAttributes?: {
-        [key: string]: { domId?: string; domClasses?: string[] }
-    },
 ) {
     executingWindow = executingWindow || window
     const client = new Client()
@@ -107,44 +104,24 @@ export async function fetchLoadingGraph(
     if (errors.length > 0) {
         throw new FetchErrors({ errors })
     }
-    const sources = sourcesOrErrors.filter((d) => d != undefined) as {
-        name
-        version
-        assetId
-        url
-        content
-    }[]
+    const sources = sourcesOrErrors
+        .filter((d) => d != undefined)
+        .map((d) => d as Origin)
+        .filter(({ assetId }) =>
+            isToDownload(assetId, libraries, sideEffects, executingWindow),
+        )
+        .map((src: { name; version; assetId; url; content }) => ({
+            ...src,
+            sideEffect: (window) => {
+                sideEffects &&
+                    sideEffects[src.name] &&
+                    sideEffects[src.name](window)
+                Client.importedBundles[src.name] =
+                    libraries[src.assetId].version
+            },
+        }))
 
-    const head = document.getElementsByTagName('head')[0]
-    sources.forEach(({ name, assetId, url, content }) => {
-        const script = document.createElement('script')
-        script.innerHTML = content
-        const dom = domAttributes && domAttributes[name]
-        const id = dom?.domId || url
-        const classes = dom?.domClasses || []
-        script.id = id
-        script.classList.add(...classes)
-        let error = false
-        const onErrorParsing = () => {
-            error = true
-        }
-        executingWindow.addEventListener('error', onErrorParsing)
-        head.appendChild(script)
-        executingWindow.removeEventListener('error', onErrorParsing)
-        if (error) {
-            onEvent && onEvent(new ParseErrorEvent(name, assetId, url))
-            throw new SourceParsingFailed({ assetId, name, url })
-        }
-
-        const sideEffect = sideEffects && sideEffects[name]
-        const target = getLoadedModule(name, executingWindow)
-        if (target && !executingWindow[name]) {
-            executingWindow[name] = target
-        }
-        sideEffect && sideEffect(executingWindow)
-        onEvent && onEvent(new SourceParsedEvent(name, assetId, url))
-        Client.importedBundles[name] = libraries[assetId].version
-    })
+    addScriptElements(sources, executingWindow, onEvent)
 }
 
 /**
@@ -154,7 +131,6 @@ export type ModulesInput = (
     | {
           name: string
           version: string
-          domId?: string
           domClasses?: string[]
       }
     | string
@@ -169,7 +145,6 @@ export type CssInput =
     | (
           | {
                 resource: string
-                domId?: string
                 domClasses?: string[]
             }
           | string
@@ -185,14 +160,15 @@ export type ScriptsInput =
     | (
           | {
                 resource: string
-                domId?: string
                 domClasses?: string[]
             }
           | string
       )[]
     | string
 
-function sanitizeModules(modules: ModulesInput) {
+function sanitizeModules(modules: ModulesInput): {
+    [key: string]: { name: string; version: string; domClasses?: string[] }
+} {
     return modules.reduce((acc, e) => {
         const elem =
             typeof e == 'string'
@@ -254,6 +230,29 @@ function sanitizeCss(input: CssInput): {
     }
     console.error('@youwol/cdn-client: Can not parse css input', input)
     return []
+}
+
+function applyFinalSideEffects({
+    aliases,
+    executingWindow,
+    onEvent,
+    loadingScreen,
+}: {
+    aliases: Record<string, string | ((window: Window) => unknown)>
+    executingWindow: Window
+    onEvent?: (event: CdnEvent) => void
+    loadingScreen?: LoadingScreenView
+}) {
+    // Add aliases
+    Object.entries(aliases).forEach(([alias, original]) => {
+        executingWindow[alias] =
+            typeof original == 'string'
+                ? executingWindow[original]
+                : original(executingWindow)
+    })
+    // Add dom's classes
+    onEvent && onEvent(new InstallDoneEvent())
+    loadingScreen && loadingScreen.done()
 }
 
 /** Install a set of resources.
@@ -493,29 +492,62 @@ export async function fetchJavascriptAddOn(
         ...parseResourceId(elem.resource),
     }))
 
-    const futures = scripts.map(({ name, assetId, url }) =>
-        client.fetchSource({ name, assetId, url, onEvent }),
+    const futures = scripts.map(({ name, version, assetId, url }) =>
+        client.fetchSource({ name, version, assetId, url, onEvent }),
     )
 
     const sourcesOrErrors = await Promise.all(futures)
     const sources = sourcesOrErrors.filter(
         (d) => !(d instanceof ErrorEvent),
-    ) as { name; assetId; url; content }[]
+    ) as { name; assetId; version; url; content }[]
 
-    const head = document.getElementsByTagName('head')[0]
-
-    sources.forEach(({ name, assetId, url, content }) => {
-        const script = document.createElement('script')
-        script.innerHTML = content
-        head.appendChild(script)
-        onEvent && onEvent(new SourceParsedEvent(name, assetId, url))
-    })
+    addScriptElements(sources, executingWindow, onEvent)
 
     return sources.map(({ assetId, url, name, content }) => {
         return { assetId, url, assetName: name, src: content }
     })
 }
 
+function addScriptElements(
+    sources: {
+        assetId: string
+        version: string
+        url: string
+        name: string
+        content: string
+        sideEffect?: (window: Window) => void
+    }[],
+    executingWindow: Window,
+    onEvent: (event: CdnEvent) => void,
+) {
+    const head = document.getElementsByTagName('head')[0]
+
+    sources.forEach(({ name, assetId, version, url, content, sideEffect }) => {
+        if (executingWindow.document.getElementById(url)) {
+            return
+        }
+        const script = document.createElement('script')
+        script.id = url
+        const classes = [assetId, name, version].map((key) =>
+            sanitizeCssId(key),
+        )
+        script.classList.add(...classes)
+        script.innerHTML = content
+        let error = false
+        const onErrorParsing = () => {
+            error = true
+        }
+        executingWindow.addEventListener('error', onErrorParsing)
+        head.appendChild(script)
+        onEvent && onEvent(new SourceParsedEvent(name, assetId, url))
+        executingWindow.removeEventListener('error', onErrorParsing)
+        if (error) {
+            onEvent && onEvent(new ParseErrorEvent(name, assetId, url))
+            throw new SourceParsingFailed({ assetId, name, url })
+        }
+        sideEffect && sideEffect(executingWindow)
+    })
+}
 /**
  * Returns the assetId in the assets store of a CDN asset from its name.
  * It does not imply that the asset exist.
