@@ -300,10 +300,7 @@ export function install(
     let loadingScreen = undefined
 
     if (display) {
-        loadingScreen = new LoadingScreenView({
-            container: document.body,
-            mode: 'svg',
-        })
+        loadingScreen = new LoadingScreenView()
         loadingScreen.render()
     }
     const onEvent = (ev) => {
@@ -436,12 +433,12 @@ export async function fetchBundles(
 
     const body = {
         libraries: Object.entries(sanitizedInput).reduce(
-            (acc, [k, v]) => ({ ...acc, ...{ [k]: v.version } }),
+            (acc, [k, v]) => ({ ...acc, [k]: v.version }),
             {},
         ),
     }
     const sideEffects = Object.entries(sanitizedInput).reduce(
-        (acc, [k, v]) => ({ ...acc, ...{ [k]: v.sideEffects } }),
+        (acc, [k, v]) => ({ ...acc, [k]: v.sideEffects }),
         {},
     )
     try {
