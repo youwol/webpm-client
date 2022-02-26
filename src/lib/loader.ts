@@ -277,7 +277,9 @@ function applyFinalSideEffects({
  *       - a function => `executingWindow[alias] = value(executingWindow)`
  *
  * @param options extra options
- * @param options.displayLoadingScreen if true, display the loading screen
+ * @param options.displayLoadingScreen if not provided or *false* => no loading screen displayed.
+ * If *true*, display the loading screen by filling the 'body' of the current document.
+ * If an *HTMLElement*, display the loading screen inside this element
  * @param options.executingWindow the 'window' object where the 'install' is done.
  * If not provided, use 'window'
  * @param options.onEvent callback called at every CDN event
@@ -297,16 +299,12 @@ export function install(
     } = {},
 ): Promise<Window> {
     const modules = sanitizeModules(resources.modules || [])
-    const aliases = resources.aliases || {}
+    const css = sanitizeCss(resources.css || [])
+    const scripts = sanitizeScripts(resources.scripts || [])
     const executingWindow = options.executingWindow || window
-    const cssPromise = fetchStyleSheets(resources.css || [], executingWindow)
+    const aliases = resources.aliases || {}
     const display = options.displayLoadingScreen || false
     let loadingScreen = undefined
-    let onEvent =
-        options.onEvent ||
-        (() => {
-            /*no-op*/
-        })
 
     if (display) {
         loadingScreen = new LoadingScreenView({
@@ -314,35 +312,31 @@ export function install(
             mode: 'svg',
         })
         loadingScreen.render()
-        onEvent = options.onEvent
-            ? (ev) => {
-                  loadingScreen.next(ev)
-                  options.onEvent(ev)
-              }
-            : (ev) => loadingScreen.next(ev)
+    }
+    const onEvent = (ev) => {
+        loadingScreen && loadingScreen.next(ev)
+        options.onEvent && options.onEvent(ev)
     }
 
-    const jsPromise = fetchBundles(modules, executingWindow, onEvent).then(
-        (loadingGraph) => {
-            return fetchJavascriptAddOn(
-                resources.scripts || [],
-                executingWindow,
-            ).then((jsAddOns) => ({
-                loadingGraph,
-                jsAddOns,
-            }))
-        },
+    const key = JSON.stringify(
+        Object.values(modules).map((m) => `${m.name}@${m.version}`),
     )
 
+    const bundlePromise = Client.importedLoadingGraphs[key]
+        ? Client.importedLoadingGraphs[key]
+        : fetchBundles(modules, executingWindow, onEvent)
+    const cssPromise = fetchStyleSheets(css || [], executingWindow)
+    const jsPromise = bundlePromise.then(() => {
+        return fetchJavascriptAddOn(scripts || [], executingWindow)
+    })
+
     return Promise.all([jsPromise, cssPromise]).then(() => {
-        Object.entries(aliases).forEach(([alias, original]) => {
-            executingWindow[alias] =
-                typeof original == 'string'
-                    ? executingWindow[original]
-                    : original(executingWindow)
+        applyFinalSideEffects({
+            aliases,
+            executingWindow,
+            onEvent,
+            loadingScreen,
         })
-        onEvent && onEvent(new InstallDoneEvent())
-        loadingScreen && loadingScreen.done()
         return executingWindow
     })
 }
