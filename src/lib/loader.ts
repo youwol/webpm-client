@@ -9,8 +9,9 @@ import {
     SourceParsedEvent,
     SourceParsingFailed,
 } from './models'
-import { Client } from './client'
+import { Client, Origin } from './client'
 import { LoadingScreenView } from './loader.view'
+import { sanitizeCssId } from './utils.view'
 
 /**
  * Return the loading graph from a mapping *library-name*=>*version*.
@@ -62,8 +63,6 @@ function isToDownload(
  * @param sideEffects if sideEffects[*libName*] exist => execute the associated function after
  * the library has been installed in executingWindow
  * @param onEvent if provided, callback called at each HTTP request event
- * @param domAttributes if domAttributes[*libName*] exist => the associated id & class are
- * attributed to the script dom element
  */
 export async function fetchLoadingGraph(
     loadingGraph: LoadingGraph,
@@ -131,7 +130,6 @@ export type ModulesInput = (
     | {
           name: string
           version: string
-          domClasses?: string[]
       }
     | string
 )[]
@@ -145,7 +143,6 @@ export type CssInput =
     | (
           | {
                 resource: string
-                domClasses?: string[]
             }
           | string
       )[]
@@ -160,14 +157,13 @@ export type ScriptsInput =
     | (
           | {
                 resource: string
-                domClasses?: string[]
             }
           | string
       )[]
     | string
 
 function sanitizeModules(modules: ModulesInput): {
-    [key: string]: { name: string; version: string; domClasses?: string[] }
+    [key: string]: { name: string; version: string }
 } {
     return modules.reduce((acc, e) => {
         const elem =
@@ -189,7 +185,6 @@ function sanitizeBase(input: ScriptsInput | CssInput):
     | {
           resource: string
           domId?: string
-          domClasses?: string[]
       }[]
     | undefined {
     if (typeof input == 'string') {
@@ -209,7 +204,6 @@ function sanitizeBase(input: ScriptsInput | CssInput):
 function sanitizeScripts(input: ScriptsInput): {
     resource: string
     domId?: string
-    domClasses?: string[]
 }[] {
     const sanitized = sanitizeBase(input)
     if (sanitized) {
@@ -222,7 +216,6 @@ function sanitizeScripts(input: ScriptsInput): {
 function sanitizeCss(input: CssInput): {
     resource: string
     domId?: string
-    domClasses?: string[]
 }[] {
     const sanitized = sanitizeBase(input)
     if (sanitized) {
@@ -359,18 +352,23 @@ export async function fetchStyleSheets(
 ): Promise<Array<HTMLLinkElement>> {
     const css = sanitizeCss(resources)
     renderingWindow = renderingWindow || window
-    const hrefs = Array.from(renderingWindow.document.links).map(
-        (link) => link.href,
-    )
 
+    const getLinkElement = (url) => {
+        return Array.from(renderingWindow.document.links).find(
+            (e) => e.id == url,
+        )
+    }
     const futures = css
         .map((elem) => ({ ...elem, ...parseResourceId(elem.resource) }))
-        .filter(({ url }) => !hrefs.includes(url))
-        .map(({ domId, domClasses, url }) => {
+        .filter(({ url }) => !getLinkElement(url))
+        .map(({ assetId, version, name, url }) => {
             return new Promise<HTMLLinkElement>((resolveCb) => {
                 const link = renderingWindow.document.createElement('link')
-                link.id = domId ? domId : ''
-                domClasses && link.classList.add(...domClasses)
+                link.id = url
+                const classes = [assetId, name, version].map((key) =>
+                    sanitizeCssId(key),
+                )
+                link.classList.add(...classes)
                 link.setAttribute('type', 'text/css')
                 link.href = Client.HostName + url
                 link.rel = 'stylesheet'
@@ -412,7 +410,6 @@ export async function fetchBundles(
             | {
                   version: string
                   sideEffects?: (Window) => void
-                  domId?: string
                   domClasses?: string[]
               }
     },
