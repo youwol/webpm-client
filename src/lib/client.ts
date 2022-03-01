@@ -19,6 +19,7 @@ export type Origin = {
     assetId: string
     url: string
     content: string
+    progressEvent: ProgressEvent
 }
 
 export class Client {
@@ -74,6 +75,11 @@ export class Client {
         onEvent?: (event: CdnFetchEvent) => void
     }): Promise<Origin> {
         if (Client.importedScripts[url]) {
+            const { progressEvent } = await Client.importedScripts[url]
+            onEvent &&
+                onEvent(
+                    new SourceLoadedEvent(name, assetId, url, progressEvent),
+                )
             return Client.importedScripts[url]
         }
         Client.importedScripts[url] = new Promise((resolve, reject) => {
