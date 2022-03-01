@@ -60,10 +60,7 @@ export class LoadingScreenView {
                 <div  style='width: 50px; '>
     
                 </div>
-                <div  id='screen-content' style='margin-top: auto;margin-bottom: auto; '>
-    
-                </div>
-                <div  id='content-error'>
+                <div  class='screen-messages-container' style='margin-top: auto;margin-bottom: auto; '>
     
                 </div>
             </div>
@@ -76,7 +73,9 @@ export class LoadingScreenView {
             insertLoadingGraphError(this.contentDiv, event)
         }
         if (event instanceof CdnMessageEvent) {
-            let divLib: HTMLDivElement = document.querySelector(`#${event.id}`)
+            let divLib: HTMLDivElement = this.wrapperDiv.querySelector(
+                `#${event.id}`,
+            )
             if (divLib) {
                 divLib.textContent = '> ' + event.text
             }
@@ -90,7 +89,9 @@ export class LoadingScreenView {
         if (event instanceof CdnFetchEvent) {
             const libraryName = event.targetName
             const cssId = sanitizeCssId(libraryName)
-            let divLib: HTMLDivElement = document.querySelector(`#${cssId}`)
+            let divLib: HTMLDivElement = this.wrapperDiv.querySelector(
+                `#${cssId}`,
+            )
             if (!divLib) {
                 divLib = document.createElement('div')
                 divLib.id = cssId
@@ -102,9 +103,9 @@ export class LoadingScreenView {
 
     render() {
         this.container.appendChild(this.wrapperDiv)
-        this.contentDiv = document.getElementById(
-            'screen-content',
-        ) as HTMLDivElement
+        this.contentDiv = this.wrapperDiv.querySelector(
+            '.screen-messages-container',
+        )
     }
 
     done() {
