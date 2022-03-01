@@ -1,4 +1,5 @@
 import {
+    CdnEvent,
     CdnFetchEvent,
     errorFactory,
     LoadingGraph,
@@ -10,6 +11,7 @@ import {
     UrlNotFound,
     UrlNotFoundEvent,
 } from './models'
+import { CssInput, install, ModulesInput, ScriptsInput } from './loader'
 
 export type Origin = {
     name: string
@@ -114,6 +116,7 @@ export class Client {
                             assetId,
                             url,
                             content, //content as any,
+                            progressEvent: event,
                         })
                     }
                     if (req.status == 401) {
@@ -143,5 +146,21 @@ export class Client {
             onEvent && onEvent(new StartEvent(name, assetId, url))
         })
         return Client.importedScripts[url]
+    }
+
+    install(
+        resources: {
+            modules?: ModulesInput
+            scripts?: ScriptsInput
+            css?: CssInput
+            aliases?: { [key: string]: string | ((Window) => unknown) }
+        },
+        options: {
+            executingWindow?: Window
+            onEvent?: (event: CdnEvent) => void
+            displayLoadingScreen?: boolean
+        } = {},
+    ): Promise<Window> {
+        return install(resources, options)
     }
 }
