@@ -79,9 +79,6 @@ export async function fetchLoadingGraph(
 
     const packagesSelected = loadingGraph.definition
         .flat()
-        .filter(([assetId]) =>
-            isToDownload(assetId, libraries, sideEffects, executingWindow),
-        )
         .map(([assetId, cdn_url]) => {
             return {
                 assetId,
@@ -109,7 +106,7 @@ export async function fetchLoadingGraph(
         .filter(({ assetId }) =>
             isToDownload(assetId, libraries, sideEffects, executingWindow),
         )
-        .map((src: { name; version; assetId; url; content }) => ({
+        .map((src: Origin) => ({
             ...src,
             sideEffect: (window) => {
                 sideEffects &&
@@ -308,13 +305,8 @@ export function install(
         options.onEvent && options.onEvent(ev)
     }
 
-    const key = JSON.stringify(
-        Object.values(modules).map((m) => `${m.name}@${m.version}`),
-    )
+    const bundlePromise = fetchBundles(modules, executingWindow, onEvent)
 
-    const bundlePromise = Client.importedLoadingGraphs[key]
-        ? Client.importedLoadingGraphs[key]
-        : fetchBundles(modules, executingWindow, onEvent)
     const cssPromise = fetchStyleSheets(css || [], executingWindow)
     const jsPromise = bundlePromise.then(() => {
         return fetchJavascriptAddOn(scripts || [], executingWindow)
@@ -485,9 +477,7 @@ export async function fetchJavascriptAddOn(
     )
 
     const sourcesOrErrors = await Promise.all(futures)
-    const sources = sourcesOrErrors.filter(
-        (d) => !(d instanceof ErrorEvent),
-    ) as { name; assetId; version; url; content }[]
+    const sources = sourcesOrErrors.filter((d) => !(d instanceof ErrorEvent))
 
     addScriptElements(sources, executingWindow, onEvent)
 
@@ -497,14 +487,7 @@ export async function fetchJavascriptAddOn(
 }
 
 function addScriptElements(
-    sources: {
-        assetId: string
-        version: string
-        url: string
-        name: string
-        content: string
-        sideEffect?: (window: Window) => void
-    }[],
+    sources: (Origin & { sideEffect?: (window: Window) => void })[],
     executingWindow: Window,
     onEvent: (event: CdnEvent) => void,
 ) {
