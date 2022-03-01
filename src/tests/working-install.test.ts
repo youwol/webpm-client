@@ -190,7 +190,12 @@ test('double install a with add-on', async () => {
         },
     )
     expect(events1).toHaveLength(9)
-    expect(events2).toHaveLength(1)
+    // events2 should contain the source loaded events for every scrip downloaded + InstallDoneEvent
+    // even if the download was actually triggered from the first install
+    expect(events2).toHaveLength(3)
+    events2
+        .splice(0, -1)
+        .forEach((event) => expect(event).toBeInstanceOf(SourceLoadedEvent))
     const scripts = Array.from(document.scripts).map((s) => s.id)
     expect(scripts).toHaveLength(3)
     expect(window['a']).toEqual({
@@ -198,7 +203,7 @@ test('double install a with add-on', async () => {
         rootName: 'root',
         addOn: ['add-on'],
     })
-    expect(events2[0]).toBeInstanceOf(InstallDoneEvent)
+    expect(events2[2]).toBeInstanceOf(InstallDoneEvent)
 })
 
 // eslint-disable-next-line jest/no-commented-out-tests -- want to keep it
