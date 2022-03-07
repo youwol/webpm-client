@@ -1,16 +1,14 @@
-/** @format */
-
 import {
     AssetsGateway,
     PyYouwol,
     raiseHTTPErrors,
     RootRouter,
 } from '@youwol/http-clients'
-import { Client, LoadingScreenView } from '../lib'
-import { mergeMap, reduce, take } from 'rxjs/operators'
-import { from } from 'rxjs'
 import { readFileSync, writeFileSync } from 'fs'
 import path from 'path'
+import { from } from 'rxjs'
+import { mergeMap, reduce, take } from 'rxjs/operators'
+import { Client, LoadingScreenView } from '../lib'
 
 RootRouter.HostName = getPyYouwolBasePath()
 RootRouter.Headers = { 'py-youwol-local-only': 'true' }

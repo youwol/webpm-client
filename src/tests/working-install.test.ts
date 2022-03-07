@@ -1,11 +1,7 @@
-/** @format */
-
 // eslint-disable-next-line eslint-comments/disable-enable-pair -- to not have problem
 /* eslint-disable jest/no-done-callback -- eslint-comment Find a good way to work with rxjs in jest */
 
-import './mock-requests'
-
-import { cleanDocument, installPackages$ } from './common'
+import { writeFileSync } from 'fs'
 import {
     CdnEvent,
     Client,
@@ -19,7 +15,9 @@ import {
     SourceParsedEvent,
     StartEvent,
 } from '../lib'
-import { writeFileSync } from 'fs'
+
+import { cleanDocument, installPackages$ } from './common'
+import './mock-requests'
 
 beforeAll((done) => {
     installPackages$().subscribe(() => {
