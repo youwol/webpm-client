@@ -115,7 +115,7 @@ test('loading graph a', async () => {
 //# sourceURL=/api/assets-gateway/raw/package/YQ==/1.0.0/`)
 })
 
-test('install a', async (done) => {
+test('install a', async () => {
     const events = []
     await install(
         {
@@ -149,7 +149,6 @@ test('install a', async (done) => {
     expect(events.filter((e) => e instanceof InstallDoneEvent)).toHaveLength(1)
     setTimeout(() => {
         expect(document.getElementById('loading-screen')).toBeFalsy()
-        done()
     }, 0)
 })
 
