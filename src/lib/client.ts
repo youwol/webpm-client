@@ -105,50 +105,14 @@ export class Client {
             req.addEventListener(
                 'load',
                 function (event: ProgressEvent<XMLHttpRequestEventTarget>) {
-                    if (req.status == 200) {
-                        const content =
-                            req.responseText +
-                            `\n//# sourceURL=${url
-                                .split('/')
-                                .slice(0, -1)
-                                .join('/')}/`
-
-                        onEvent &&
-                            onEvent(
-                                new SourceLoadedEvent(
-                                    name,
-                                    assetId,
-                                    url,
-                                    event,
-                                ),
-                            )
-                        resolve({
-                            name,
-                            version,
-                            assetId,
-                            url,
-                            content, //content as any,
-                            progressEvent: event,
-                        })
-                    }
-                    if (req.status == 401) {
-                        const unauthorized = new UnauthorizedEvent(
-                            name,
-                            assetId,
-                            url,
-                        )
-                        onEvent && onEvent(unauthorized)
-                        reject(new Unauthorized({ assetId, name, url }))
-                    }
-                    if (req.status == 404) {
-                        const urlNotFound = new UrlNotFoundEvent(
-                            name,
-                            assetId,
-                            url,
-                        )
-                        onEvent && onEvent(urlNotFound)
-                        reject(new UrlNotFound({ assetId, name, url }))
-                    }
+                    onHttpRequestLoad(
+                        req,
+                        event,
+                        resolve,
+                        reject,
+                        { url, name, assetId, version },
+                        onEvent,
+                    )
                 },
                 false,
             )
@@ -174,5 +138,40 @@ export class Client {
         } = {},
     ): Promise<Window> {
         return install(resources, options)
+    }
+}
+
+function onHttpRequestLoad(
+    req: XMLHttpRequest,
+    event: ProgressEvent<XMLHttpRequestEventTarget>,
+    resolve,
+    reject,
+    { url, name, assetId, version },
+    onEvent?,
+) {
+    if (req.status == 200) {
+        const content =
+            req.responseText +
+            `\n//# sourceURL=${url.split('/').slice(0, -1).join('/')}/`
+
+        onEvent && onEvent(new SourceLoadedEvent(name, assetId, url, event))
+        resolve({
+            name,
+            version,
+            assetId,
+            url,
+            content, //content as any,
+            progressEvent: event,
+        })
+    }
+    if (req.status == 401) {
+        const unauthorized = new UnauthorizedEvent(name, assetId, url)
+        onEvent && onEvent(unauthorized)
+        reject(new Unauthorized({ assetId, name, url }))
+    }
+    if (req.status == 404) {
+        const urlNotFound = new UrlNotFoundEvent(name, assetId, url)
+        onEvent && onEvent(urlNotFound)
+        reject(new UrlNotFound({ assetId, name, url }))
     }
 }
