@@ -27,11 +27,14 @@ export class LoadingScreenView {
     public readonly logo: string = youwolSvgLogo()
     public readonly fadingTimeout = LoadingScreenView.DefaultFadingTimeout
     public readonly container: HTMLElement = document.body
-    public readonly wrapperStyle: { [_k: string]: string } = {
+    public readonly defaultStyle: { [_k: string]: string } = {
         position: 'absolute',
         top: '0',
+        left: '0',
         width: '100vw',
         height: '100vh',
+        padding: 'inherit',
+        'font-weight': 'bolder',
     }
     public readonly wrapperDiv: HTMLDivElement
     public readonly loadingDiv: HTMLDivElement
@@ -39,9 +42,12 @@ export class LoadingScreenView {
 
     constructor(options: LoadingScreenOptions = {}) {
         Object.assign(this, options)
-
+        let wrapperStyle = {
+            ...this.defaultStyle,
+            ...(options.wrapperStyle || {}),
+        }
         this.wrapperDiv = document.createElement('div')
-        Object.entries(this.wrapperStyle).forEach(([k, v]) => {
+        Object.entries(wrapperStyle).forEach(([k, v]) => {
             this.wrapperDiv.style.setProperty(k, v)
         })
         this.wrapperDiv.innerHTML = `
