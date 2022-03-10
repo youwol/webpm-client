@@ -341,9 +341,9 @@ export async function fetchStyleSheets(
     renderingWindow = renderingWindow || window
 
     const getLinkElement = (url) => {
-        return Array.from(renderingWindow.document.links).find(
-            (e) => e.id == url,
-        )
+        return Array.from(
+            renderingWindow.document.head.querySelectorAll('link'),
+        ).find((e) => e.id == url)
     }
     const futures = css
         .map((elem) => ({ ...elem, ...parseResourceId(elem.resource) }))
