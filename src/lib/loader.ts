@@ -89,12 +89,10 @@ export async function fetchLoadingGraph(
         })
 
     const errors = []
-    const futures = packagesSelected.map(({ assetId, name, version, url }) => {
-        return client
-            .fetchSource({ name, version, assetId, url, onEvent })
-            .catch((error) => {
-                errors.push(error)
-            })
+    const futures = packagesSelected.map(({ name, url }) => {
+        return client.fetchSource({ name, url, onEvent }).catch((error) => {
+            errors.push(error)
+        })
     })
     const sourcesOrErrors = await Promise.all(futures)
     if (errors.length > 0) {
@@ -472,8 +470,8 @@ export async function fetchJavascriptAddOn(
         ...parseResourceId(elem.resource),
     }))
 
-    const futures = scripts.map(({ name, version, assetId, url }) =>
-        client.fetchSource({ name, version, assetId, url, onEvent }),
+    const futures = scripts.map(({ name, url }) =>
+        client.fetchSource({ name, url, onEvent }),
     )
 
     const sourcesOrErrors = await Promise.all(futures)
@@ -567,21 +565,18 @@ export function parseResourceId(resourceId: string): {
 }
 
 /**
- *
- * @param name
- * @param assetId
  * @param url
- * @param onEvent
+ * @param name name used for display purpose the resource, if not provided this is the last part of the url
+ * @param onEvent if provided, callback called at each HTTP request event
  */
-export function fetchSource(
-    name: string,
-    assetId: string,
-    url: string,
-    onEvent?: (event: CdnEvent) => void,
-): Promise<{ name; assetId; url; content }> {
-    if (!url.startsWith('/api/assets-gateway/raw/package')) {
-        url = url.startsWith('/') ? url : `/${url}`
-        url = `/api/assets-gateway/raw/package${url}`
-    }
-    return new Client().fetchSource({ name, assetId, url, onEvent })
+export function fetchSource({
+    url,
+    name,
+    onEvent,
+}: {
+    url: string
+    name?: string
+    onEvent?: (event: CdnEvent) => void
+}): Promise<{ name: string; assetId: string; url: string; content: string }> {
+    return new Client().fetchSource({ name, url, onEvent })
 }

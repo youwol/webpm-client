@@ -63,17 +63,23 @@ export class Client {
 
     async fetchSource({
         name,
-        assetId,
         url,
-        version,
         onEvent,
     }: {
-        name: string
-        assetId: string
         url: string
-        version?: string
+        name?: string
         onEvent?: (event: CdnFetchEvent) => void
     }): Promise<Origin> {
+        if (!url.startsWith('/api/assets-gateway/raw/package')) {
+            url = url.startsWith('/') ? url : `/${url}`
+            url = `/api/assets-gateway/raw/package${url}`
+        }
+
+        const parts = url.split('/')
+        const assetId = parts[5]
+        const version = parts[6]
+        name = name || parts[parts.length - 1]
+
         if (Client.importedScripts[url]) {
             const { progressEvent } = await Client.importedScripts[url]
             onEvent &&

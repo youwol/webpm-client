@@ -107,7 +107,7 @@ test('loading graph a', async () => {
             [['YQ==', 'YQ==/1.0.0/a.js']],
         ],
     })
-    const src = await fetchSource('a', 'YQ==', 'YQ==/1.0.0/a.js')
+    const src = await fetchSource({ name: 'a', url: 'YQ==/1.0.0/a.js' })
     expect(src.content).toBe(`window.a = {
     rootName: window['root'].name,
     name: 'a',
