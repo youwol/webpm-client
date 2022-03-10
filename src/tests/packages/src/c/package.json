@@ -1,15 +1,15 @@
 {
-  "name": "c",
-  "version": "1.0.0",
-  "main": "c.js",
-  "dependencies": {
-    "unknown": "^1.0.0",
-    "a": "^1.0.0"
-  },
-  "youwol": {
-    "cdnDependencies": {
-      "unknown": "^1.0.0",
-      "a": "^1.0.0"
+    "name": "c",
+    "version": "1.0.0",
+    "main": "c.js",
+    "dependencies": {
+        "unknown": "^1.0.0",
+        "a": "^1.0.0"
+    },
+    "youwol": {
+        "cdnDependencies": {
+            "unknown": "^1.0.0",
+            "a": "^1.0.0"
+        }
     }
-  }
 }

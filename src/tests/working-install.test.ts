@@ -1,11 +1,7 @@
-/** @format */
-
 // eslint-disable-next-line eslint-comments/disable-enable-pair -- to not have problem
 /* eslint-disable jest/no-done-callback -- eslint-comment Find a good way to work with rxjs in jest */
 
-import './mock-requests'
-
-import { cleanDocument, installPackages$ } from './common'
+import { writeFileSync } from 'fs'
 import {
     CdnEvent,
     Client,
@@ -19,7 +15,9 @@ import {
     SourceParsedEvent,
     StartEvent,
 } from '../lib'
-import { writeFileSync } from 'fs'
+
+import { cleanDocument, installPackages$ } from './common'
+import './mock-requests'
 
 beforeAll((done) => {
     installPackages$().subscribe(() => {
@@ -117,7 +115,7 @@ test('loading graph a', async () => {
 //# sourceURL=/api/assets-gateway/raw/package/YQ==/1.0.0/`)
 })
 
-test('install a', async (done) => {
+test('install a', async () => {
     const events = []
     await install(
         {
@@ -151,7 +149,6 @@ test('install a', async (done) => {
     expect(events.filter((e) => e instanceof InstallDoneEvent)).toHaveLength(1)
     setTimeout(() => {
         expect(document.getElementById('loading-screen')).toBeFalsy()
-        done()
     }, 0)
 })
 

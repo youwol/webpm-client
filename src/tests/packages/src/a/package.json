@@ -1,13 +1,13 @@
 {
-  "name": "a",
-  "version": "1.0.0",
-  "main": "a.js",
-  "dependencies": {
-    "root": "^1.0.0"
-  },
-  "youwol": {
-    "cdnDependencies": {
-      "root": "^1.0.0"
+    "name": "a",
+    "version": "1.0.0",
+    "main": "a.js",
+    "dependencies": {
+        "root": "^1.0.0"
+    },
+    "youwol": {
+        "cdnDependencies": {
+            "root": "^1.0.0"
+        }
     }
-  }
 }
