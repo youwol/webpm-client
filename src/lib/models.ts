@@ -116,6 +116,9 @@ export function errorFactory(error) {
     if (Unauthorized.isInstance(error)) {
         return new Unauthorized(error.detail)
     }
+    if (error.exceptionType === 'UpstreamResponseException') {
+        return errorFactory(error.detail)
+    }
 }
 
 export class CdnEvent {}
