@@ -1,4 +1,3 @@
-/** @format */
 import 'isomorphic-fetch'
 
 if (!globalThis.fetch) {

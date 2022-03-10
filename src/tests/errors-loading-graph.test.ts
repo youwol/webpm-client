@@ -1,12 +1,10 @@
-/** @format */
-
 // eslint-disable jest/no-conditional-expect
 // eslint-disable-next-line eslint-comments/disable-enable-pair -- to not have problem
 /* eslint-disable jest/no-done-callback -- eslint-comment Find a good way to work with rxjs in jest */
 
-import './mock-requests'
-import { cleanDocument, installPackages$, saveScreen } from './common'
 import { CdnLoadingGraphErrorEvent, install, LoadingGraphError } from '../lib'
+import { cleanDocument, installPackages$, saveScreen } from './common'
+import './mock-requests'
 
 beforeAll((done) => {
     installPackages$().subscribe(() => {

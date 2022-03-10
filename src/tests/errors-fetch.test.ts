@@ -1,11 +1,11 @@
-/** @format */
-
 // eslint-disable jest/no-conditional-expect
 // eslint-disable-next-line eslint-comments/disable-enable-pair -- to not have problem
 /* eslint-disable jest/no-done-callback -- eslint-comment Find a good way to work with rxjs in jest */
 
-import './mock-requests'
-import { cleanDocument, installPackages$, saveScreen } from './common'
+import { AssetsGateway, PyYouwol, raiseHTTPErrors } from '@youwol/http-clients'
+import { readFileSync } from 'fs'
+import path from 'path'
+import { mergeMap, take } from 'rxjs/operators'
 import {
     FetchErrors,
     install,
@@ -13,10 +13,8 @@ import {
     SourceParsingFailed,
     UnauthorizedEvent,
 } from '../lib'
-import { mergeMap, take } from 'rxjs/operators'
-import { AssetsGateway, PyYouwol, raiseHTTPErrors } from '@youwol/http-clients'
-import { readFileSync } from 'fs'
-import path from 'path'
+import { cleanDocument, installPackages$, saveScreen } from './common'
+import './mock-requests'
 
 beforeAll((done) => {
     const assetsGtw = new AssetsGateway.AssetsGatewayClient()

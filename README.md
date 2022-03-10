@@ -11,12 +11,12 @@
 
 Javascript library for dynamic dependencies fetching from YouWol's CDN
 
-
-## Installation, Build & Test 
+## Installation, Build & Test
 
 To install the required dependencies:
+
 ```shell
-yarn 
+yarn
 ```
 
 To build for development:
@@ -48,17 +48,15 @@ yarn doc
 This library is used to dynamically fetch dependencies from YouWol's CDN in a front-end application, e.g.:
 
 ```typescript
-await cdn.install(
-    {
-        modules: ['d3', '@youwol/fv-tree'],
-        css: [
-            'bootstrap#4.4.1~bootstrap.min.css'
-        ]
-    })
+await cdn.install({
+    modules: ['d3', '@youwol/fv-tree'],
+    css: ['bootstrap#4.4.1~bootstrap.min.css'],
+})
 ```
+
 Missing dependencies from the provided mapping will be fetched using their latest version.
 
-> This client is only dealing with packages stored in the YouWol's CDN: the dependencies 
+> This client is only dealing with packages stored in the YouWol's CDN: the dependencies
 > requested, as well as their direct and indirect dependencies, must exist in there.
 
 The library can also be used to install stylesheets or javascript addons, see the developer documentation.

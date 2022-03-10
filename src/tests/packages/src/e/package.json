@@ -2,10 +2,8 @@
   "name": "e",
   "version": "1.0.0",
   "main": "e.js",
-  "dependencies": {
-  },
+  "dependencies": {},
   "youwol": {
-    "cdnDependencies": {
-    }
+    "cdnDependencies": {}
   }
 }
