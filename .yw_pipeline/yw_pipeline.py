@@ -26,7 +26,7 @@ class PipelineFactory(IPipelineFactory):
 
     async def get(self, env: YouwolEnvironment, context: Context):
         config = PipelineConfig(
-            target=JsBundle(),
+            target=JsBundle(links=[Link(name="coverage", url="/dist/coverage/l-cov")]),
             testConfig=TestStepConfig(
                 artifacts=[test_result, test_coverage, test_html_outputs]
             )

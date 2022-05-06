@@ -23,17 +23,19 @@ beforeAll((done) => {
             mergeMap(() => {
                 const client = new PyYouwol.PyYouwolClient()
                 return client.admin.environment.login$({
-                    email: 'int_tests_yw-users_bis@test-user',
+                    body: {
+                        email: 'int_tests_yw-users_bis@test-user',
+                    },
                 })
             }),
-            mergeMap(() => assetsGtw.explorer.getDefaultUserDrive$()),
+            mergeMap(() => assetsGtw.explorerDeprecated.getDefaultUserDrive$()),
             raiseHTTPErrors(),
             mergeMap(({ homeFolderId }) => {
                 const zip = './packages/e.zip'
                 const buffer = readFileSync(path.resolve(__dirname, zip))
                 const arraybuffer = Uint8Array.from(buffer).buffer
 
-                return assetsGtw.assets.package
+                return assetsGtw.assetsDeprecated.package
                     .upload$(homeFolderId, zip, new Blob([arraybuffer]))
                     .pipe(take(1))
             }),

@@ -21,10 +21,12 @@ export function installPackages$() {
     return resetPyYouwolDbs$().pipe(
         mergeMap(() => {
             return pyYouwol.admin.environment.login$({
-                email: 'int_tests_yw-users@test-user',
+                body: {
+                    email: 'int_tests_yw-users@test-user',
+                },
             })
         }),
-        mergeMap(() => assetsGtw.explorer.getDefaultUserDrive$()),
+        mergeMap(() => assetsGtw.explorerDeprecated.getDefaultUserDrive$()),
         raiseHTTPErrors(),
         mergeMap((resp: AssetsGateway.DefaultDriveResponse) => {
             return from([
@@ -51,7 +53,7 @@ export function installPackages$() {
             const buffer = readFileSync(path.resolve(__dirname, zip))
             const arraybuffer = Uint8Array.from(buffer).buffer
 
-            return assetsGtw.assets.package
+            return assetsGtw.assetsDeprecated.package
                 .upload$(folderId, zip, new Blob([arraybuffer]))
                 .pipe(take(1))
         }),
@@ -64,7 +66,9 @@ export function getPyYouwolBasePath() {
 }
 
 export function resetPyYouwolDbs$() {
-    return new PyYouwol.PyYouwolClient().admin.customCommands.doGet$('reset')
+    return new PyYouwol.PyYouwolClient().admin.customCommands.doGet$({
+        name: 'reset',
+    })
 }
 
 export function cleanDocument() {
