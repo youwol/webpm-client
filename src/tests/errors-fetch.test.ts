@@ -28,15 +28,18 @@ beforeAll((done) => {
                     },
                 })
             }),
-            mergeMap(() => assetsGtw.explorerDeprecated.getDefaultUserDrive$()),
+            mergeMap(() => assetsGtw.explorer.getDefaultUserDrive$()),
             raiseHTTPErrors(),
             mergeMap(({ homeFolderId }) => {
                 const zip = './packages/e.zip'
                 const buffer = readFileSync(path.resolve(__dirname, zip))
                 const arraybuffer = Uint8Array.from(buffer).buffer
 
-                return assetsGtw.assetsDeprecated.package
-                    .upload$(homeFolderId, zip, new Blob([arraybuffer]))
+                return assetsGtw.cdn
+                    .upload$({
+                        queryParameters: { folderId: homeFolderId },
+                        body: { fileName: zip, blob: new Blob([arraybuffer]) },
+                    })
                     .pipe(take(1))
             }),
         )

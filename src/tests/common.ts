@@ -1,6 +1,7 @@
 import {
     AssetsGateway,
     PyYouwol,
+    ExplorerBackend,
     raiseHTTPErrors,
     RootRouter,
 } from '@youwol/http-clients'
@@ -26,9 +27,9 @@ export function installPackages$() {
                 },
             })
         }),
-        mergeMap(() => assetsGtw.explorerDeprecated.getDefaultUserDrive$()),
+        mergeMap(() => assetsGtw.explorer.getDefaultUserDrive$()),
         raiseHTTPErrors(),
-        mergeMap((resp: AssetsGateway.DefaultDriveResponse) => {
+        mergeMap((resp: ExplorerBackend.GetDefaultDriveResponse) => {
             return from([
                 { folderId: resp.homeFolderId, zip: './packages/root.zip' },
                 {
@@ -53,8 +54,11 @@ export function installPackages$() {
             const buffer = readFileSync(path.resolve(__dirname, zip))
             const arraybuffer = Uint8Array.from(buffer).buffer
 
-            return assetsGtw.assetsDeprecated.package
-                .upload$(folderId, zip, new Blob([arraybuffer]))
+            return assetsGtw.cdn
+                .upload$({
+                    queryParameters: { folderId },
+                    body: { fileName: zip, blob: new Blob([arraybuffer]) },
+                })
                 .pipe(take(1))
         }),
         reduce((acc, e) => [...acc, e], []),
