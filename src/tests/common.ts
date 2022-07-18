@@ -9,14 +9,26 @@ import { readFileSync, writeFileSync } from 'fs'
 import path from 'path'
 import { from } from 'rxjs'
 import { mergeMap, reduce, take } from 'rxjs/operators'
-import { Client, LoadingScreenView } from '../lib'
+import {
+    CdnEvent,
+    Client,
+    LoadingScreenView,
+    SourceLoadedEvent,
+    SourceLoadingEvent,
+    SourceParsedEvent,
+    StartEvent,
+} from '../lib'
 
 RootRouter.HostName = getPyYouwolBasePath()
 RootRouter.Headers = { 'py-youwol-local-only': 'true' }
 Client.HostName = RootRouter.HostName
 Client.Headers = RootRouter.Headers
 
-export function installPackages$() {
+/**
+ *
+ * @param packages path (string) from 'tests' directory (e.g. './packages/root.zip')
+ */
+export function installPackages$(packages: string[]) {
     const assetsGtw = new AssetsGateway.AssetsGatewayClient()
     const pyYouwol = new PyYouwol.PyYouwolClient()
     return resetPyYouwolDbs$().pipe(
@@ -30,25 +42,12 @@ export function installPackages$() {
         mergeMap(() => assetsGtw.explorer.getDefaultUserDrive$()),
         raiseHTTPErrors(),
         mergeMap((resp: ExplorerBackend.GetDefaultDriveResponse) => {
-            return from([
-                { folderId: resp.homeFolderId, zip: './packages/root.zip' },
-                {
+            return from(
+                packages.map((zipPath) => ({
                     folderId: resp.homeFolderId,
-                    zip: './packages/a.zip',
-                },
-                {
-                    folderId: resp.homeFolderId,
-                    zip: './packages/b.zip',
-                },
-                {
-                    folderId: resp.homeFolderId,
-                    zip: './packages/c.zip',
-                },
-                {
-                    folderId: resp.homeFolderId,
-                    zip: './packages/d.zip',
-                },
-            ])
+                    zip: zipPath,
+                })),
+            )
         }),
         mergeMap(({ folderId, zip }) => {
             const buffer = readFileSync(path.resolve(__dirname, zip))
@@ -88,4 +87,33 @@ export function saveScreen(filename: string) {
         `${__dirname}/.html-outputs/${filename}`,
         document.documentElement.innerHTML,
     )
+}
+
+export function expectEvents(events: CdnEvent[], names: string[]) {
+    expect(
+        events
+            .filter((e) => e instanceof StartEvent)
+            .map((e: StartEvent) => e.targetName)
+            .sort(),
+    ).toEqual(names)
+    expect(
+        new Set(
+            events
+                .filter((e) => e instanceof SourceLoadingEvent)
+                .map((e: SourceLoadingEvent) => e.targetName)
+                .sort(),
+        ),
+    ).toEqual(new Set(names))
+    expect(
+        events
+            .filter((e) => e instanceof SourceLoadedEvent)
+            .map((e: SourceLoadedEvent) => e.targetName)
+            .sort(),
+    ).toEqual(names)
+    expect(
+        events
+            .filter((e) => e instanceof SourceParsedEvent)
+            .map((e: SourceParsedEvent) => e.targetName)
+            .sort(),
+    ).toEqual(names)
 }
