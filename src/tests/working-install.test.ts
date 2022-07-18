@@ -93,6 +93,7 @@ test('loading graph a', async () => {
         lock: [
             {
                 name: 'a',
+                fingerprint: '76270bd891a4fedd6fe6d68e83e0c025',
                 version: '1.0.0',
                 id: 'YQ==',
                 namespace: '',
@@ -100,6 +101,7 @@ test('loading graph a', async () => {
             },
             {
                 name: 'root',
+                fingerprint: '5cbfeecc7a6cf2e470d049043d57f3cb',
                 version: '1.0.0',
                 id: 'cm9vdA==',
                 namespace: '',
@@ -146,6 +148,7 @@ test('install a', async () => {
     )
     expect(document.scripts).toHaveLength(2)
     expect(window['a']).toEqual({
+        __yw_set_from_version__: '1.0.0',
         name: 'a',
         rootName: 'root',
         addOn: [],
@@ -165,6 +168,7 @@ test('install a with add-on', async () => {
     })
     expect(document.scripts).toHaveLength(3)
     expect(window['a']).toEqual({
+        __yw_set_from_version__: '1.0.0',
         name: 'a',
         rootName: 'root',
         addOn: ['add-on'],
@@ -202,6 +206,7 @@ test('double install a with add-on', async () => {
     const scripts = Array.from(document.scripts).map((s) => s.id)
     expect(scripts).toHaveLength(3)
     expect(window['a']).toEqual({
+        __yw_set_from_version__: '1.0.0',
         name: 'a',
         rootName: 'root',
         addOn: ['add-on'],
