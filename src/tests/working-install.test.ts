@@ -20,7 +20,13 @@ import { cleanDocument, installPackages$ } from './common'
 import './mock-requests'
 
 beforeAll((done) => {
-    installPackages$().subscribe(() => {
+    installPackages$([
+        './.packages/root.zip',
+        './.packages/a.zip',
+        './.packages/b.zip',
+        './.packages/c.zip',
+        './.packages/d.zip',
+    ]).subscribe(() => {
         done()
     })
 })
@@ -131,7 +137,7 @@ test('install a', async () => {
                         document.getElementById('loading-screen'),
                     ).toBeTruthy()
                     writeFileSync(
-                        `${__dirname}/html-outputs/loading-view.html`,
+                        `${__dirname}/.html-outputs/loading-view.html`,
                         document.documentElement.innerHTML,
                     )
                 }

@@ -85,7 +85,7 @@ export function cleanDocument() {
 export function saveScreen(filename: string) {
     expect(document.getElementById('loading-screen')).toBeTruthy()
     writeFileSync(
-        `${__dirname}/html-outputs/${filename}`,
+        `${__dirname}/.html-outputs/${filename}`,
         document.documentElement.innerHTML,
     )
 }

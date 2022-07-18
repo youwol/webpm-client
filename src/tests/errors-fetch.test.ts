@@ -18,7 +18,13 @@ import './mock-requests'
 
 beforeAll((done) => {
     const assetsGtw = new AssetsGateway.AssetsGatewayClient()
-    installPackages$()
+    installPackages$([
+        './.packages/root.zip',
+        './.packages/a.zip',
+        './.packages/b.zip',
+        './.packages/c.zip',
+        './.packages/d.zip',
+    ])
         .pipe(
             mergeMap(() => {
                 const client = new PyYouwol.PyYouwolClient()
@@ -31,7 +37,7 @@ beforeAll((done) => {
             mergeMap(() => assetsGtw.explorer.getDefaultUserDrive$()),
             raiseHTTPErrors(),
             mergeMap(({ homeFolderId }) => {
-                const zip = './packages/e.zip'
+                const zip = './.packages/e.zip'
                 const buffer = readFileSync(path.resolve(__dirname, zip))
                 const arraybuffer = Uint8Array.from(buffer).buffer
 

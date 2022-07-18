@@ -6,7 +6,13 @@ import { cleanDocument, installPackages$ } from './common'
 import './mock-requests'
 
 beforeAll((done) => {
-    installPackages$().subscribe(() => {
+    installPackages$([
+        './.packages/root.zip',
+        './.packages/a.zip',
+        './.packages/b.zip',
+        './.packages/c.zip',
+        './.packages/d.zip',
+    ]).subscribe(() => {
         done()
     })
 })
