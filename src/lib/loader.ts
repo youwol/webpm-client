@@ -502,9 +502,9 @@ function addScriptElements(
         )
         script.classList.add(...classes)
         script.innerHTML = content
-        let error = false
-        const onErrorParsing = () => {
-            error = true
+        let error: string
+        const onErrorParsing = (d: ErrorEvent) => {
+            error = d.message
         }
         executingWindow.addEventListener('error', onErrorParsing)
         head.appendChild(script)
@@ -512,7 +512,12 @@ function addScriptElements(
         executingWindow.removeEventListener('error', onErrorParsing)
         if (error) {
             onEvent && onEvent(new ParseErrorEvent(name, assetId, url))
-            throw new SourceParsingFailed({ assetId, name, url })
+            throw new SourceParsingFailed({
+                assetId,
+                name,
+                url,
+                message: error,
+            })
         }
         sideEffect && sideEffect(executingWindow)
     })

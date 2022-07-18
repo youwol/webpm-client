@@ -46,7 +46,7 @@ export class FetchErrors extends CdnError {
 export class SourceParsingFailed extends CdnError {
     static exceptionType = 'SourceParsingFailed'
 
-    constructor(public readonly detail: { assetId; name; url }) {
+    constructor(public readonly detail: { assetId; name; url; message }) {
         super()
     }
 
