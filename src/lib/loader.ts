@@ -108,8 +108,8 @@ export async function fetchLoadingGraph(
             ...src,
             sideEffect: (window) => {
                 sideEffects &&
-                    sideEffects[src.name] &&
-                    sideEffects[src.name](window)
+                    sideEffects[`${src.name}#${src.version}`] &&
+                    sideEffects[`${src.name}#${src.version}`](window)
                 Client.importedBundles[src.name] =
                     libraries[src.assetId].version
             },
@@ -125,6 +125,7 @@ export type ModulesInput = (
     | {
           name: string
           version: string
+          sideEffects?: (Window) => void
       }
     | string
 )[]
@@ -157,9 +158,9 @@ export type ScriptsInput =
       )[]
     | string
 
-function sanitizeModules(modules: ModulesInput): {
-    [key: string]: { name: string; version: string }
-} {
+function sanitizeModules(
+    modules: ModulesInput,
+): { name: string; version: string }[] {
     return modules.reduce((acc, e) => {
         const elem =
             typeof e == 'string'
@@ -169,11 +170,8 @@ function sanitizeModules(modules: ModulesInput): {
                   }
                 : e
 
-        return {
-            ...acc,
-            [elem.name]: elem,
-        }
-    }, {})
+        return [...acc, elem]
+    }, [])
 }
 
 function sanitizeBase(input: ScriptsInput | CssInput):
@@ -276,6 +274,7 @@ function applyFinalSideEffects({
 export function install(
     resources: {
         modules?: ModulesInput
+        usingDependencies?: string[]
         scripts?: ScriptsInput
         css?: CssInput
         aliases?: { [key: string]: string | ((Window) => unknown) }
@@ -303,10 +302,16 @@ export function install(
         options.onEvent && options.onEvent(ev)
     }
 
-    const bundlePromise = fetchBundles(modules, executingWindow, onEvent)
+    const bundlePromise = fetchBundles({
+        modules,
+        usingDependencies: resources.usingDependencies,
+        executingWindow,
+        onEvent,
+    })
 
     const cssPromise = fetchStyleSheets(css || [], executingWindow)
-    const jsPromise = bundlePromise.then(() => {
+    const jsPromise = bundlePromise.then((resp) => {
+        Client.updateLatestBundleVersion(resp, executingWindow)
         return fetchJavascriptAddOn(scripts || [], executingWindow)
     })
 
@@ -370,65 +375,50 @@ export async function fetchStyleSheets(
     return Promise.all(futures)
 }
 
-function mapObjectValues<T0, T1>(
-    obj: { [k: string]: T0 },
-    mapFct: (v: T0) => T1,
-): { [k: string]: T1 } {
-    return Object.entries(obj)
-        .map(([k, v]) => {
-            return [k, mapFct(v)]
-        })
-        .reduce((acc, [k, v]: [k: string, v: T1]) => ({ ...acc, [k]: v }), {})
-}
-
 /**
  *
- * @param dependencies mapping *libraryName*=>*version* or *libraryName*=>*{version, sideEffects}*
+ * @param modules specify the modules to load.
  * If sideEffects is provided, it will be called using the executingWindow as argument when the library
  * has been installed.
+ * @param usingDependencies if provided & whenever the requested library is needed, the version provided is used.
+ * Each element is in the form of '{libraryName}#{version}'
  * @param executingWindow the window used to install the dependencies, default to the global window
  * @param onEvent if provided, callback called at each HTTP request event
  * @returns Promise resolving to the loading graph installed
  */
-export async function fetchBundles(
-    dependencies: {
-        [key: string]:
-            | string
-            | {
-                  version: string
-                  sideEffects?: (Window) => void
-                  domClasses?: string[]
-              }
-    },
-    executingWindow?: Window,
-    onEvent?: (event: CdnEvent) => void,
-): Promise<LoadingGraph> {
-    executingWindow = executingWindow || window
-    type TTargetValue = {
+export async function fetchBundles({
+    modules,
+    usingDependencies,
+    executingWindow,
+    onEvent,
+}: {
+    modules: {
+        name: string
         version: string
         sideEffects?: (Window) => void
-        domId?: string
         domClasses?: string[]
-    }
-
-    const sanitizedInput = mapObjectValues(
-        dependencies,
-        (v: string | TTargetValue): TTargetValue =>
-            typeof v == 'string'
-                ? {
-                      version: v,
-                  }
-                : v,
-    )
-
+    }[]
+    usingDependencies?: string[]
+    executingWindow?: Window
+    onEvent?: (event: CdnEvent) => void
+}): Promise<LoadingGraph> {
+    executingWindow = executingWindow || window
+    usingDependencies = usingDependencies || []
     const body = {
-        libraries: Object.entries(sanitizedInput).reduce(
-            (acc, [k, v]) => ({ ...acc, [k]: v.version }),
-            {},
-        ),
+        libraries: modules,
+        using: usingDependencies.reduce((acc, dependency) => {
+            return {
+                ...acc,
+                [dependency.split('#')[0]]: dependency.split('#')[1],
+            }
+        }, {}),
     }
-    const sideEffects = Object.entries(sanitizedInput).reduce(
-        (acc, [k, v]) => ({ ...acc, [k]: v.sideEffects }),
+    const sideEffects = modules.reduce(
+        (acc, dependency) => ({
+            ...acc,
+            [`${dependency.name}#${dependency.version}`]:
+                dependency.sideEffects,
+        }),
         {},
     )
     try {

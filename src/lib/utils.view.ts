@@ -2,8 +2,7 @@ import {
     CdnFetchEvent,
     CdnLoadingGraphErrorEvent,
     CircularDependencies,
-    IndirectPackagesNotFound,
-    PackagesNotFound,
+    DependenciesError,
     ParseErrorEvent,
     SourceLoadedEvent,
     SourceLoadingEvent,
@@ -25,31 +24,27 @@ export function insertLoadingGraphError(
     event: CdnLoadingGraphErrorEvent,
 ) {
     setErrorCssProperties(contentDiv)
-    if (event.error instanceof PackagesNotFound) {
-        contentDiv.appendChild(packagesNotFoundView(event.error))
-    }
-    if (event.error instanceof IndirectPackagesNotFound) {
-        contentDiv.appendChild(indirectPackagesNotFoundView(event.error))
+
+    if (event.error instanceof DependenciesError) {
+        contentDiv.appendChild(dependenciesErrorView(event.error))
     }
     if (event.error instanceof CircularDependencies) {
         contentDiv.appendChild(circularDependenciesView(event.error))
     }
 }
 
-export function indirectPackagesNotFoundView(error: IndirectPackagesNotFound) {
+export function dependenciesErrorView(error: DependenciesError) {
     const errorDiv = document.createElement('div')
-    const innerHTML = Object.entries(error.detail.paths).map(
-        ([name, paths]) => {
-            return `
-        <li> <b>${name}</b>: requested by 
+    const innerHTML = error.detail.errors.map(({ key, paths }) => {
+        return `
+        <li> <b>${key}</b>: requested by 
         <ul>
         ${listView(paths)}
         </ul>
         </li>
         `
-        },
-    )
-    errorDiv.innerHTML = `Some indirect dependencies do not exist in the CDN
+    })
+    errorDiv.innerHTML = `Some dependencies do not exist in the CDN
     ${innerHTML}
     `
     return errorDiv
@@ -62,24 +57,13 @@ export function circularDependenciesView(error: CircularDependencies) {
             return `
         <li> <b>${name}</b>: problem with following dependencies 
         <ul>
-        ${listView(paths)}
+        ${listView(paths.map((path) => `${path.name}#${path.version}`))}
         </ul>
         </li>
         `
         },
     )
     errorDiv.innerHTML = `Circular dependencies found
-    ${innerHTML}
-    `
-    return errorDiv
-}
-
-export function packagesNotFoundView(error: PackagesNotFound) {
-    const errorDiv = document.createElement('div')
-    const innerHTML = error.detail.packages.map(
-        (name) => `<li> <b>${name}</b></li>`,
-    )
-    errorDiv.innerHTML = `Some dependencies do not exist in the CDN
     ${innerHTML}
     `
     return errorDiv

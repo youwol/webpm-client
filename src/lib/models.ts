@@ -55,34 +55,20 @@ export class SourceParsingFailed extends CdnError {
     }
 }
 
-export class PackagesNotFound extends LoadingGraphError {
-    static exceptionType = 'PackagesNotFound'
-
-    constructor(
-        public readonly detail: { context: string; packages: string[] },
-    ) {
-        super()
-    }
-
-    static isInstance(resp): resp is PackagesNotFound {
-        return resp.exceptionType == PackagesNotFound.exceptionType
-    }
-}
-
-export class IndirectPackagesNotFound extends LoadingGraphError {
-    static exceptionType = 'IndirectPackagesNotFound'
+export class DependenciesError extends LoadingGraphError {
+    static exceptionType = 'DependenciesError'
 
     constructor(
         public readonly detail: {
             context: string
-            paths: { [_key: string]: string[] }
+            errors: { key: string; paths: string[]; detail: string }[]
         },
     ) {
         super()
     }
 
-    static isInstance(resp): resp is IndirectPackagesNotFound {
-        return resp.exceptionType == IndirectPackagesNotFound.exceptionType
+    static isInstance(resp): resp is DependenciesError {
+        return resp.exceptionType == DependenciesError.exceptionType
     }
 }
 
@@ -92,7 +78,7 @@ export class CircularDependencies extends LoadingGraphError {
     constructor(
         public readonly detail: {
             context: string
-            packages: { [key: string]: string[] }
+            packages: { [key: string]: { name: string; version: string }[] }
         },
     ) {
         super()
@@ -104,14 +90,11 @@ export class CircularDependencies extends LoadingGraphError {
 }
 
 export function errorFactory(error) {
-    if (PackagesNotFound.isInstance(error)) {
-        return new PackagesNotFound(error.detail)
-    }
     if (CircularDependencies.isInstance(error)) {
         return new CircularDependencies(error.detail)
     }
-    if (IndirectPackagesNotFound.isInstance(error)) {
-        return new IndirectPackagesNotFound(error.detail)
+    if (DependenciesError.isInstance(error)) {
+        return new DependenciesError(error.detail)
     }
     if (Unauthorized.isInstance(error)) {
         return new Unauthorized(error.detail)
@@ -284,4 +267,14 @@ export interface LoadingGraph {
      * Type of the graph (versioning to be able to change the fetching mecanism)
      */
     graphType: string
+}
+
+export interface LibraryQuery {
+    name: string
+    version: string
+}
+
+export interface QueryLoadingGraphBody {
+    libraries: LibraryQuery
+    using: { [k: string]: string }
 }
