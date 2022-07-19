@@ -1,17 +1,23 @@
 import {
-    CdnEvent,
-    CdnFetchEvent,
     CdnLoadingGraphErrorEvent,
-    CssInput,
     errorFactory,
     FetchErrors,
+    InstallModulesInput,
+    InstallModulesOptions,
     LoadingGraph,
-    ModuleSideEffectCallback,
-    ModulesInput,
-    ScriptsInput,
+    InstallScriptsInput,
     SourceLoadedEvent,
     SourceLoadingEvent,
     StartEvent,
+    InstallScriptOptions,
+    InstallStyleSheetInput,
+    InstallStyleSheetOptions,
+    InstallLoadingGraphInput,
+    InstallLoadingGraphOptions,
+    FetchScriptInput,
+    QueryLoadingGraphBody,
+    InstallInput,
+    InstallOptions,
 } from './models'
 import { State } from './state'
 import { LoadingScreenView } from './loader.view'
@@ -37,115 +43,45 @@ export type Origin = {
     progressEvent: ProgressEvent
 }
 
-/** Install a set of resources.
- *
- * Modules stand for javascript's module.
- * If some required dependencies of the module are missing they are also loaded.
- *
- * Scripts stand for standalone javascript file; they are fetched after all modules
- * have been loaded.
- *
- * CSS stands for stylesheets.
- *
- * Aliases allow to use a different name to refer to the loaded resources.
- * @param resources what needs to be installed
- * @param resources.modules the bundles
- * @param resources.sideEffects Whenever a library is installed, if the side-effects object contains a matching element
- * the corresponding callback is executed. The keys are in the form '{libraryName}#{query-version}' where query-version
- * obeys to semantic versioning, the values are of type [[ModuleSideEffectCallback]]
- * @param resources.scripts the scripts
- * @param resources.css the css
- * @param resources.aliases a set of aliases that are applied after all the resources
- * have been loaded. A dictionary {key: value} where key is the alias in
- * executingWindow and value is either:
- *       - a string => `executingWindow[alias] = executingWindow[value]`
- *       - a function => `executingWindow[alias] = value(executingWindow)`
- *
- * @param options extra options
- * @param options.displayLoadingScreen if not provided or *false* => no loading screen displayed.
- * If *true*, display the loading screen by filling the 'body' of the current document.
- * If an *HTMLElement*, display the loading screen inside this element
- * @param options.executingWindow the 'window' object where the 'install' is done.
- * If not provided, use 'window'
- * @param options.onEvent callback called at every CDN event
- * @returns a promise over the executingWindow
- */
 export function install(
-    resources: {
-        modules?: ModulesInput
-        usingDependencies?: string[]
-        modulesSideEffects?: {
-            [key: string]: ModuleSideEffectCallback
-        }
-        scripts?: ScriptsInput
-        css?: CssInput
-        aliases?: { [key: string]: string | ((Window) => unknown) }
-    },
-    options: {
-        executingWindow?: Window
-        onEvent?: (event: CdnEvent) => void
-        displayLoadingScreen?: boolean
-    } = {},
+    resources: InstallInput,
+    options?: InstallOptions,
 ): Promise<Window> {
     return new Client().install(resources, options)
 }
 
-export function queryLoadingGraph(body) {
+export function queryLoadingGraph(body: QueryLoadingGraphBody) {
     return new Client().queryLoadingGraph(body)
 }
 
-export function fetchScript(resource: {
-    url: string
-    name?: string
-    onEvent?: (event: CdnFetchEvent) => void
-}): Promise<Origin> {
+export function fetchScript(resource: FetchScriptInput): Promise<Origin> {
     return new Client().fetchScript(resource)
 }
 
 export function installLoadingGraph(
-    resources: {
-        loadingGraph: LoadingGraph
-        sideEffects?: { [key: string]: ModuleSideEffectCallback }
-    },
-    options?: {
-        executingWindow?: Window
-        onEvent?: (event: CdnFetchEvent) => void
-    },
+    resources: InstallLoadingGraphInput,
+    options?: InstallLoadingGraphOptions,
 ) {
     return new Client().installLoadingGraph(resources, options)
 }
 
 export function installModules(
-    resources: {
-        modules: {
-            name: string
-            version: string
-            sideEffects?: (Window) => void
-        }[]
-        modulesSideEffects: { [_key: string]: ModuleSideEffectCallback }
-        usingDependencies: string[]
-    },
-    options?: {
-        executingWindow: Window
-        onEvent: (event: CdnEvent) => void
-    },
+    resources: InstallModulesInput,
+    options?: InstallModulesOptions,
 ) {
     return new Client().installModules(resources, options)
 }
 
 export function installScripts(
-    resources: ScriptsInput,
-    options?: {
-        executingWindow?: Window
-        onEvent?: (CdnEvent) => void
-    },
+    resources: InstallScriptsInput,
+    options?: InstallScriptOptions,
 ) {
     return new Client().installScripts(resources, options)
 }
 
 export function installStyleSheets(
-    resources: CssInput,
-    options?: { renderingWindow?: Window },
+    resources: InstallStyleSheetInput,
+    options?: InstallStyleSheetOptions,
 ) {
     return new Client().installStyleSheets(resources, options)
 }
@@ -166,7 +102,9 @@ export class Client {
         return Object.keys(variants).includes(name) ? variants[name] : name
     }
 
-    async queryLoadingGraph(body): Promise<LoadingGraph> {
+    async queryLoadingGraph(
+        body: QueryLoadingGraphBody,
+    ): Promise<LoadingGraph> {
         const key = JSON.stringify(body)
         const finalize = async () => {
             const content = await State.fetchedLoadingGraph[key]
@@ -194,11 +132,7 @@ export class Client {
         name,
         url,
         onEvent,
-    }: {
-        url: string
-        name?: string
-        onEvent?: (event: CdnFetchEvent) => void
-    }): Promise<Origin> {
+    }: FetchScriptInput): Promise<Origin> {
         if (!url.startsWith('/api/assets-gateway/raw/package')) {
             url = url.startsWith('/') ? url : `/${url}`
             url = `/api/assets-gateway/raw/package${url}`
@@ -254,22 +188,10 @@ export class Client {
     }
 
     install(
-        resources: {
-            modules?: ModulesInput
-            usingDependencies?: string[]
-            modulesSideEffects?: {
-                [key: string]: ModuleSideEffectCallback
-            }
-            scripts?: ScriptsInput
-            css?: CssInput
-            aliases?: { [key: string]: string | ((Window) => unknown) }
-        },
-        options: {
-            executingWindow?: Window
-            onEvent?: (event: CdnEvent) => void
-            displayLoadingScreen?: boolean
-        } = {},
+        resources: InstallInput,
+        options?: InstallOptions,
     ): Promise<Window> {
+        options = options || {}
         const modules = sanitizeModules(resources.modules || [])
         const css = sanitizeCss(resources.css || [])
         const scripts = sanitizeScripts(resources.scripts || [])
@@ -318,14 +240,8 @@ export class Client {
         })
     }
     async installLoadingGraph(
-        resources: {
-            loadingGraph: LoadingGraph
-            sideEffects?: { [key: string]: ModuleSideEffectCallback }
-        },
-        options?: {
-            executingWindow?: Window
-            onEvent?: (event: CdnFetchEvent) => void
-        },
+        resources: InstallLoadingGraphInput,
+        options?: InstallLoadingGraphOptions,
     ) {
         const executingWindow = options?.executingWindow || window
 
@@ -393,19 +309,8 @@ export class Client {
     }
 
     async installModules(
-        resources: {
-            modules: {
-                name: string
-                version: string
-                sideEffects?: (Window) => void
-            }[]
-            modulesSideEffects: { [_key: string]: ModuleSideEffectCallback }
-            usingDependencies: string[]
-        },
-        options?: {
-            executingWindow: Window
-            onEvent: (event: CdnEvent) => void
-        },
+        resources: InstallModulesInput,
+        options?: InstallModulesOptions,
     ): Promise<LoadingGraph> {
         const usingDependencies = resources?.usingDependencies || []
         const body = {
@@ -440,11 +345,8 @@ export class Client {
     }
 
     async installScripts(
-        resources: ScriptsInput,
-        options?: {
-            executingWindow?: Window
-            onEvent?: (CdnEvent) => void
-        },
+        resources: InstallScriptsInput,
+        options?: InstallScriptOptions,
     ): Promise<{ assetName; assetId; url; src }[]> {
         const client = new Client()
         const inputs = sanitizeScripts(resources)
@@ -471,8 +373,8 @@ export class Client {
     }
 
     installStyleSheets(
-        resources: CssInput,
-        options?: { renderingWindow?: Window },
+        resources: InstallStyleSheetInput,
+        options?: InstallStyleSheetOptions,
     ): Promise<Array<HTMLLinkElement>> {
         const css = sanitizeCss(resources)
         const renderingWindow = options?.renderingWindow || window

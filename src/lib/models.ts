@@ -19,7 +19,7 @@ export type ModulesInput = (
  *
  * Resource are like: {libraryName}#{version}~{rest-of-path}
  */
-export type CssInput =
+export type InstallStyleSheetInput =
     | (
           | {
                 resource: string
@@ -28,12 +28,62 @@ export type CssInput =
       )[]
     | string
 
+export type InstallStyleSheetOptions = { renderingWindow?: Window }
+
+export type InstallLoadingGraphInput = {
+    loadingGraph: LoadingGraph
+    sideEffects?: { [key: string]: ModuleSideEffectCallback }
+}
+
+export type InstallLoadingGraphOptions = {
+    executingWindow?: Window
+    onEvent?: (event: CdnFetchEvent) => void
+}
+
+export type InstallInput = {
+    modules?: ModulesInput
+    usingDependencies?: string[]
+    modulesSideEffects?: {
+        [key: string]: ModuleSideEffectCallback
+    }
+    scripts?: InstallScriptsInput
+    css?: InstallStyleSheetInput
+    aliases?: { [key: string]: string | ((Window) => unknown) }
+}
+
+export type InstallOptions = {
+    executingWindow?: Window
+    onEvent?: (event: CdnEvent) => void
+    displayLoadingScreen?: boolean
+}
+
+export type FetchScriptInput = {
+    url: string
+    name?: string
+    onEvent?: (event: CdnFetchEvent) => void
+}
+
+export type InstallModulesInput = {
+    modules: {
+        name: string
+        version: string
+        sideEffects?: (Window) => void
+    }[]
+    modulesSideEffects: { [_key: string]: ModuleSideEffectCallback }
+    usingDependencies: string[]
+}
+
+export type InstallModulesOptions = {
+    executingWindow: Window
+    onEvent: (event: CdnEvent) => void
+}
+
 /**
  * Describe one or multiple scripts resource(s).
  *
  * Resource are like: {libraryName}#{version}~{rest-of-path}
  */
-export type ScriptsInput =
+export type InstallScriptsInput =
     | (
           | {
                 resource: string
@@ -41,6 +91,11 @@ export type ScriptsInput =
           | string
       )[]
     | string
+
+export type InstallScriptOptions = {
+    executingWindow?: Window
+    onEvent?: (CdnEvent) => void
+}
 
 /**
  * Type definition of a module installation side effects.
@@ -333,6 +388,6 @@ export interface LibraryQuery {
 }
 
 export interface QueryLoadingGraphBody {
-    libraries: LibraryQuery
-    using: { [k: string]: string }
+    libraries: LibraryQuery[] | { [k: string]: string }
+    using?: { [k: string]: string }
 }

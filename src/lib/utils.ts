@@ -9,10 +9,10 @@ import {
     UnauthorizedEvent,
     UrlNotFound,
     UrlNotFoundEvent,
-    CssInput,
+    InstallStyleSheetInput,
     ModuleSideEffectCallback,
     ModulesInput,
-    ScriptsInput,
+    InstallScriptsInput,
 } from './models'
 import { State } from './state'
 import { LoadingScreenView } from './loader.view'
@@ -72,7 +72,9 @@ export function sanitizeModules(
     }, [])
 }
 
-export function sanitizeBase(input: ScriptsInput | CssInput):
+export function sanitizeBase(
+    input: InstallScriptsInput | InstallStyleSheetInput,
+):
     | {
           resource: string
           domId?: string
@@ -92,7 +94,7 @@ export function sanitizeBase(input: ScriptsInput | CssInput):
     return undefined
 }
 
-export function sanitizeScripts(input: ScriptsInput): {
+export function sanitizeScripts(input: InstallScriptsInput): {
     resource: string
     domId?: string
 }[] {
@@ -104,7 +106,7 @@ export function sanitizeScripts(input: ScriptsInput): {
     return []
 }
 
-export function sanitizeCss(input: CssInput): {
+export function sanitizeCss(input: InstallStyleSheetInput): {
     resource: string
     domId?: string
 }[] {
