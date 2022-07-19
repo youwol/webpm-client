@@ -9,10 +9,8 @@ import {
     UnauthorizedEvent,
     UrlNotFound,
     UrlNotFoundEvent,
-    InstallStyleSheetInput,
     ModuleSideEffectCallback,
     ModulesInput,
-    InstallScriptsInput,
 } from './models'
 import { State } from './state'
 import { LoadingScreenView } from './loader.view'
@@ -70,52 +68,6 @@ export function sanitizeModules(
 
         return [...acc, elem]
     }, [])
-}
-
-export function sanitizeBase(
-    input: InstallScriptsInput | InstallStyleSheetInput,
-):
-    | {
-          resource: string
-          domId?: string
-      }[]
-    | undefined {
-    if (typeof input == 'string') {
-        return [{ resource: input }]
-    }
-    if (Array.isArray(input)) {
-        return input.map((elem) => {
-            if (typeof elem == 'string') {
-                return { resource: elem }
-            }
-            return elem
-        })
-    }
-    return undefined
-}
-
-export function sanitizeScripts(input: InstallScriptsInput): {
-    resource: string
-    domId?: string
-}[] {
-    const sanitized = sanitizeBase(input)
-    if (sanitized) {
-        return sanitized
-    }
-    console.error('@youwol/cdn-client: Can not parse scripts input', input)
-    return []
-}
-
-export function sanitizeCss(input: InstallStyleSheetInput): {
-    resource: string
-    domId?: string
-}[] {
-    const sanitized = sanitizeBase(input)
-    if (sanitized) {
-        return sanitized
-    }
-    console.error('@youwol/cdn-client: Can not parse css input', input)
-    return []
 }
 
 /**

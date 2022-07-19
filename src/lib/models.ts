@@ -19,63 +19,48 @@ export type ModulesInput = (
  *
  * Resource are like: {libraryName}#{version}~{rest-of-path}
  */
-export type InstallStyleSheetInput =
-    | (
-          | {
-                resource: string
-            }
-          | string
-      )[]
-    | string
-
-export type InstallStyleSheetOptions = { renderingWindow?: Window }
-
-export type InstallLoadingGraphInput = {
-    loadingGraph: LoadingGraph
-    sideEffects?: { [key: string]: ModuleSideEffectCallback }
+export type InstallStyleSheetInputs = {
+    css: string[]
+    renderingWindow?: Window
 }
 
-export type InstallLoadingGraphOptions = {
+export type InstallLoadingGraphInputs = {
+    loadingGraph: LoadingGraph
+    sideEffects?: { [key: string]: ModuleSideEffectCallback }
     executingWindow?: Window
     onEvent?: (event: CdnFetchEvent) => void
 }
 
-export type InstallInput = {
+export type InstallInputs = {
     modules?: ModulesInput
     usingDependencies?: string[]
     modulesSideEffects?: {
         [key: string]: ModuleSideEffectCallback
     }
-    scripts?: InstallScriptsInput
-    css?: InstallStyleSheetInput
+    scripts?: string[]
+    css?: string[]
     aliases?: { [key: string]: string | ((Window) => unknown) }
-}
-
-export type InstallOptions = {
     executingWindow?: Window
     onEvent?: (event: CdnEvent) => void
     displayLoadingScreen?: boolean
 }
 
-export type FetchScriptInput = {
+export type FetchScriptInputs = {
     url: string
     name?: string
     onEvent?: (event: CdnFetchEvent) => void
 }
 
-export type InstallModulesInput = {
+export type InstallModulesInputs = {
     modules: {
         name: string
         version: string
         sideEffects?: (Window) => void
     }[]
-    modulesSideEffects: { [_key: string]: ModuleSideEffectCallback }
-    usingDependencies: string[]
-}
-
-export type InstallModulesOptions = {
-    executingWindow: Window
-    onEvent: (event: CdnEvent) => void
+    modulesSideEffects?: { [_key: string]: ModuleSideEffectCallback }
+    usingDependencies?: string[]
+    executingWindow?: Window
+    onEvent?: (event: CdnEvent) => void
 }
 
 /**
@@ -83,16 +68,8 @@ export type InstallModulesOptions = {
  *
  * Resource are like: {libraryName}#{version}~{rest-of-path}
  */
-export type InstallScriptsInput =
-    | (
-          | {
-                resource: string
-            }
-          | string
-      )[]
-    | string
-
-export type InstallScriptOptions = {
+export type InstallScriptsInputs = {
+    scripts: string[]
     executingWindow?: Window
     onEvent?: (CdnEvent) => void
 }
@@ -387,7 +364,7 @@ export interface LibraryQuery {
     version: string
 }
 
-export interface QueryLoadingGraphBody {
+export interface QueryLoadingGraphInputs {
     libraries: LibraryQuery[] | { [k: string]: string }
     using?: { [k: string]: string }
 }

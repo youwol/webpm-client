@@ -2,22 +2,18 @@ import {
     CdnLoadingGraphErrorEvent,
     errorFactory,
     FetchErrors,
-    InstallModulesInput,
-    InstallModulesOptions,
+    InstallModulesInputs,
     LoadingGraph,
-    InstallScriptsInput,
+    InstallScriptsInputs,
     SourceLoadedEvent,
     SourceLoadingEvent,
     StartEvent,
-    InstallScriptOptions,
-    InstallStyleSheetInput,
-    InstallStyleSheetOptions,
-    InstallLoadingGraphInput,
-    InstallLoadingGraphOptions,
-    FetchScriptInput,
-    QueryLoadingGraphBody,
-    InstallInput,
-    InstallOptions,
+    InstallStyleSheetInputs,
+    InstallLoadingGraphInputs,
+    FetchScriptInputs,
+    QueryLoadingGraphInputs,
+    InstallInputs,
+    CdnEvent,
 } from './models'
 import { State } from './state'
 import { LoadingScreenView } from './loader.view'
@@ -28,9 +24,7 @@ import {
     applyFinalSideEffects,
     applyModuleSideEffects,
     onHttpRequestLoad,
-    sanitizeCss,
     sanitizeModules,
-    sanitizeScripts,
     parseResourceId,
 } from './utils'
 
@@ -44,46 +38,40 @@ export type Origin = {
 }
 
 export function install(
-    resources: InstallInput,
-    options?: InstallOptions,
+    inputs: InstallInputs,
+    options?: {
+        executingWindow?: Window
+        onEvent?: (event: CdnEvent) => void
+        displayLoadingScreen?: boolean
+    },
 ): Promise<Window> {
-    return new Client().install(resources, options)
+    return options
+        ? new Client().install({ ...inputs, ...options })
+        : new Client().install(inputs)
 }
 
-export function queryLoadingGraph(body: QueryLoadingGraphBody) {
-    return new Client().queryLoadingGraph(body)
+export function queryLoadingGraph(inputs: QueryLoadingGraphInputs) {
+    return new Client().queryLoadingGraph(inputs)
 }
 
-export function fetchScript(resource: FetchScriptInput): Promise<Origin> {
-    return new Client().fetchScript(resource)
+export function fetchScript(inputs: FetchScriptInputs): Promise<Origin> {
+    return new Client().fetchScript(inputs)
 }
 
-export function installLoadingGraph(
-    resources: InstallLoadingGraphInput,
-    options?: InstallLoadingGraphOptions,
-) {
-    return new Client().installLoadingGraph(resources, options)
+export function installLoadingGraph(inputs: InstallLoadingGraphInputs) {
+    return new Client().installLoadingGraph(inputs)
 }
 
-export function installModules(
-    resources: InstallModulesInput,
-    options?: InstallModulesOptions,
-) {
-    return new Client().installModules(resources, options)
+export function installModules(inputs: InstallModulesInputs) {
+    return new Client().installModules(inputs)
 }
 
-export function installScripts(
-    resources: InstallScriptsInput,
-    options?: InstallScriptOptions,
-) {
-    return new Client().installScripts(resources, options)
+export function installScripts(inputs: InstallScriptsInputs) {
+    return new Client().installScripts(inputs)
 }
 
-export function installStyleSheets(
-    resources: InstallStyleSheetInput,
-    options?: InstallStyleSheetOptions,
-) {
-    return new Client().installStyleSheets(resources, options)
+export function installStyleSheets(inputs: InstallStyleSheetInputs) {
+    return new Client().installStyleSheets(inputs)
 }
 
 export class Client {
@@ -103,7 +91,7 @@ export class Client {
     }
 
     async queryLoadingGraph(
-        body: QueryLoadingGraphBody,
+        body: QueryLoadingGraphInputs,
     ): Promise<LoadingGraph> {
         const key = JSON.stringify(body)
         const finalize = async () => {
@@ -132,7 +120,7 @@ export class Client {
         name,
         url,
         onEvent,
-    }: FetchScriptInput): Promise<Origin> {
+    }: FetchScriptInputs): Promise<Origin> {
         if (!url.startsWith('/api/assets-gateway/raw/package')) {
             url = url.startsWith('/') ? url : `/${url}`
             url = `/api/assets-gateway/raw/package${url}`
@@ -187,17 +175,12 @@ export class Client {
         return State.importedScripts[url]
     }
 
-    install(
-        resources: InstallInput,
-        options?: InstallOptions,
-    ): Promise<Window> {
-        options = options || {}
-        const modules = sanitizeModules(resources.modules || [])
-        const css = sanitizeCss(resources.css || [])
-        const scripts = sanitizeScripts(resources.scripts || [])
-        const executingWindow = options.executingWindow || window
-        const aliases = resources.aliases || {}
-        const display = options.displayLoadingScreen || false
+    install(inputs: InstallInputs): Promise<Window> {
+        const modules = sanitizeModules(inputs.modules || [])
+        const css = inputs.css || []
+        const executingWindow = inputs.executingWindow || window
+        const aliases = inputs.aliases || {}
+        const display = inputs.displayLoadingScreen || false
         let loadingScreen = undefined
 
         if (display) {
@@ -206,27 +189,27 @@ export class Client {
         }
         const onEvent = (ev) => {
             loadingScreen && loadingScreen.next(ev)
-            options.onEvent && options.onEvent(ev)
+            inputs.onEvent && inputs.onEvent(ev)
         }
 
-        const bundlePromise = this.installModules(
-            {
-                modules,
-                modulesSideEffects: resources.modulesSideEffects,
-                usingDependencies: resources.usingDependencies,
-            },
-            {
-                executingWindow,
-                onEvent,
-            },
-        )
+        const bundlePromise = this.installModules({
+            modules,
+            modulesSideEffects: inputs.modulesSideEffects,
+            usingDependencies: inputs.usingDependencies,
+            executingWindow,
+            onEvent,
+        })
 
-        const cssPromise = this.installStyleSheets(css || [], {
-            renderingWindow: options?.executingWindow,
+        const cssPromise = this.installStyleSheets({
+            css,
+            renderingWindow: inputs.executingWindow,
         })
         const jsPromise = bundlePromise.then((resp) => {
             State.updateLatestBundleVersion(resp, executingWindow)
-            return this.installScripts(scripts || [], { executingWindow })
+            return this.installScripts({
+                scripts: inputs.scripts || [],
+                executingWindow,
+            })
         })
 
         return Promise.all([jsPromise, cssPromise]).then(() => {
@@ -239,18 +222,16 @@ export class Client {
             return executingWindow
         })
     }
-    async installLoadingGraph(
-        resources: InstallLoadingGraphInput,
-        options?: InstallLoadingGraphOptions,
-    ) {
-        const executingWindow = options?.executingWindow || window
 
-        const libraries = resources.loadingGraph.lock.reduce(
+    async installLoadingGraph(inputs: InstallLoadingGraphInputs) {
+        const executingWindow = inputs.executingWindow || window
+
+        const libraries = inputs.loadingGraph.lock.reduce(
             (acc, e) => ({ ...acc, ...{ [e.id]: e } }),
             {},
         )
 
-        const packagesSelected = resources.loadingGraph.definition
+        const packagesSelected = inputs.loadingGraph.definition
             .flat()
             .map(([assetId, cdn_url]) => {
                 return {
@@ -266,7 +247,7 @@ export class Client {
             return this.fetchScript({
                 name,
                 url,
-                onEvent: options?.onEvent,
+                onEvent: inputs.onEvent,
             }).catch((error) => {
                 errors.push(error)
             })
@@ -280,9 +261,7 @@ export class Client {
             .map((d) => d as Origin)
             .filter(({ name, version }) => !State.isInstalled(name, version))
             .map((origin: Origin) => {
-                const userSideEffects = Object.entries(
-                    resources?.sideEffects || {},
-                )
+                const userSideEffects = Object.entries(inputs.sideEffects || {})
                     .filter(([_, val]) => {
                         return val != undefined
                     })
@@ -305,16 +284,13 @@ export class Client {
                 }
             })
 
-        addScriptElements(sources, executingWindow, options?.onEvent)
+        addScriptElements(sources, executingWindow, inputs.onEvent)
     }
 
-    async installModules(
-        resources: InstallModulesInput,
-        options?: InstallModulesOptions,
-    ): Promise<LoadingGraph> {
-        const usingDependencies = resources?.usingDependencies || []
+    async installModules(inputs: InstallModulesInputs): Promise<LoadingGraph> {
+        const usingDependencies = inputs.usingDependencies || []
         const body = {
-            libraries: resources.modules,
+            libraries: inputs.modules,
             using: usingDependencies.reduce((acc, dependency) => {
                 return {
                     ...acc,
@@ -322,42 +298,39 @@ export class Client {
                 }
             }, {}),
         }
-        const sideEffects = resources.modules.reduce(
+        const sideEffects = inputs.modules.reduce(
             (acc, dependency) => ({
                 ...acc,
                 [`${dependency.name}#${dependency.version}`]:
                     dependency.sideEffects,
             }),
-            resources.modulesSideEffects,
+            inputs.modulesSideEffects || {},
         )
         try {
             const loadingGraph = await this.queryLoadingGraph(body)
-            await this.installLoadingGraph(
-                { loadingGraph, sideEffects },
-                options,
-            )
+            await this.installLoadingGraph({
+                loadingGraph,
+                sideEffects,
+                executingWindow: inputs.executingWindow,
+                onEvent: inputs.onEvent,
+            })
             return loadingGraph
         } catch (error) {
-            options?.onEvent &&
-                options.onEvent(new CdnLoadingGraphErrorEvent(error))
+            inputs.onEvent &&
+                inputs.onEvent(new CdnLoadingGraphErrorEvent(error))
             throw error
         }
     }
 
     async installScripts(
-        resources: InstallScriptsInput,
-        options?: InstallScriptOptions,
+        inputs: InstallScriptsInputs,
     ): Promise<{ assetName; assetId; url; src }[]> {
         const client = new Client()
-        const inputs = sanitizeScripts(resources)
 
-        const scripts = inputs.map((elem) => ({
-            ...elem,
-            ...parseResourceId(elem.resource),
-        }))
+        const scripts = inputs.scripts.map((elem) => parseResourceId(elem))
 
         const futures = scripts.map(({ name, url }) =>
-            client.fetchScript({ name, url, onEvent: options?.onEvent }),
+            client.fetchScript({ name, url, onEvent: inputs.onEvent }),
         )
 
         const sourcesOrErrors = await Promise.all(futures)
@@ -365,7 +338,7 @@ export class Client {
             (d) => !(d instanceof ErrorEvent),
         )
 
-        addScriptElements(sources, options?.executingWindow, options?.onEvent)
+        addScriptElements(sources, inputs.executingWindow, inputs.onEvent)
 
         return sources.map(({ assetId, url, name, content }) => {
             return { assetId, url, assetName: name, src: content }
@@ -373,11 +346,10 @@ export class Client {
     }
 
     installStyleSheets(
-        resources: InstallStyleSheetInput,
-        options?: InstallStyleSheetOptions,
+        inputs: InstallStyleSheetInputs,
     ): Promise<Array<HTMLLinkElement>> {
-        const css = sanitizeCss(resources)
-        const renderingWindow = options?.renderingWindow || window
+        const css = inputs.css
+        const renderingWindow = inputs.renderingWindow || window
 
         const getLinkElement = (url) => {
             return Array.from(
@@ -385,7 +357,7 @@ export class Client {
             ).find((e) => e.id == url)
         }
         const futures = css
-            .map((elem) => ({ ...elem, ...parseResourceId(elem.resource) }))
+            .map((elem) => parseResourceId(elem))
             .filter(({ url }) => !getLinkElement(url))
             .map(({ assetId, version, name, url }) => {
                 return new Promise<HTMLLinkElement>((resolveCb) => {
