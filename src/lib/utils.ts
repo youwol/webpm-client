@@ -190,11 +190,11 @@ export function applyFinalSideEffects({
 
 export function addScriptElements(
     sources: (Origin & { sideEffect?: (HTMLScriptElement) => void })[],
-    executingWindow: Window,
-    onEvent: (event: CdnEvent) => void,
+    executingWindow?: Window,
+    onEvent?: (event: CdnEvent) => void,
 ) {
     const head = document.getElementsByTagName('head')[0]
-
+    executingWindow = executingWindow || window
     sources.forEach(({ name, assetId, version, url, content, sideEffect }) => {
         if (executingWindow.document.getElementById(url)) {
             return
