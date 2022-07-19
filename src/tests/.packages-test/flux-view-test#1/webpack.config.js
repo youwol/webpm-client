@@ -20,7 +20,7 @@ module.exports = {
         path: DESTINATION,
         libraryTarget: 'umd',
         umdNamedDefine: true,
-        library: pkg.name + '#1',
+        library: `${pkg.name}#${pkg.version.split(".")[0]}`,
         filename: pkg.name + '.js',
         globalObject: `(typeof self !== 'undefined' ? self : this)`,
     },
