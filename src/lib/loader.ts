@@ -1,19 +1,5 @@
-import {
-    CdnEvent,
-    CdnFetchEvent,
-    CdnLoadingGraphErrorEvent,
-    FetchErrors,
-    InstallDoneEvent,
-    LoadingGraph,
-    ParseErrorEvent,
-    SourceParsedEvent,
-    SourceParsingFailed,
-} from './models'
+import { CdnEvent, CdnFetchEvent, LoadingGraph } from './models'
 import { Client, Origin } from './client'
-import { State } from './state'
-import { LoadingScreenView } from './loader.view'
-import { sanitizeCssId } from './utils.view'
-import { satisfies, major as getMajor } from 'semver'
 
 /**
  * Return the loading graph from a mapping *library-name*=>*version*.
@@ -29,34 +15,6 @@ export async function getLoadingGraph(body: {
     return new Client().getLoadingGraph(body)
 }
 
-async function applyModuleSideEffects(
-    origin: Origin,
-    htmlScriptElement: HTMLScriptElement,
-    executingWindow: Window,
-    userSideEffects: ModuleSideEffectCallback[],
-) {
-    const versionsAvailable = State.importedBundles.get(origin.name) || []
-    State.importedBundles.set(origin.name, [
-        ...versionsAvailable,
-        origin.version,
-    ])
-    const exportedName = `${Client.getExportedSymbolName(
-        origin.name,
-    )}#${getMajor(origin.version)}`
-
-    for (const sideEffectFct of userSideEffects) {
-        const r = sideEffectFct({
-            module: window[exportedName],
-            origin,
-            htmlScriptElement,
-            executingWindow,
-        })
-        if (r && r instanceof Promise) {
-            await r
-        }
-    }
-}
-
 /**
  * Fetch the dependencies as described by a [[LoadingGraph]]
  *
@@ -66,69 +24,16 @@ async function applyModuleSideEffects(
  * the library has been installed in executingWindow
  * @param onEvent if provided, callback called at each HTTP request event
  */
-export async function fetchLoadingGraph(
+export function fetchLoadingGraph(
     loadingGraph: LoadingGraph,
     executingWindow?: Window,
     sideEffects?: { [key: string]: ModuleSideEffectCallback },
     onEvent?: (event: CdnFetchEvent) => void,
 ) {
-    executingWindow = executingWindow || window
-    const client = new Client()
-    const libraries = loadingGraph.lock.reduce(
-        (acc, e) => ({ ...acc, ...{ [e.id]: e } }),
-        {},
+    return new Client().installLoadingGraph(
+        { loadingGraph, sideEffects },
+        { executingWindow, onEvent },
     )
-
-    const packagesSelected = loadingGraph.definition
-        .flat()
-        .map(([assetId, cdn_url]) => {
-            return {
-                assetId,
-                url: `/api/assets-gateway/raw/package/${cdn_url}`,
-                name: libraries[assetId].name,
-                version: libraries[assetId].version,
-            }
-        })
-
-    const errors = []
-    const futures = packagesSelected.map(({ name, url }) => {
-        return client.fetchSource({ name, url, onEvent }).catch((error) => {
-            errors.push(error)
-        })
-    })
-    const sourcesOrErrors = await Promise.all(futures)
-    if (errors.length > 0) {
-        throw new FetchErrors({ errors })
-    }
-    const sources = sourcesOrErrors
-        .filter((d) => d != undefined)
-        .map((d) => d as Origin)
-        .filter(({ name, version }) => !State.isInstalled(name, version))
-        .map((origin: Origin) => {
-            const userSideEffects = Object.entries(sideEffects)
-                .filter(([_, val]) => {
-                    return val != undefined
-                })
-                .filter(([key, _]) => {
-                    const query = key.includes('#') ? key : `${key}#*`
-                    if (query.split('#')[0] != origin.name) return false
-                    return satisfies(origin.version, query.split('#')[1])
-                })
-                .map(([_, value]) => value)
-            return {
-                ...origin,
-                sideEffect: (scriptNode: HTMLScriptElement) => {
-                    applyModuleSideEffects(
-                        origin,
-                        scriptNode,
-                        executingWindow,
-                        userSideEffects,
-                    )
-                },
-            }
-        })
-
-    addScriptElements(sources, executingWindow, onEvent)
 }
 
 /**
@@ -170,87 +75,6 @@ export type ScriptsInput =
           | string
       )[]
     | string
-
-function sanitizeModules(
-    modules: ModulesInput,
-): { name: string; version: string }[] {
-    return modules.reduce((acc, e) => {
-        const elem =
-            typeof e == 'string'
-                ? {
-                      name: e.includes('#') ? e.split('#')[0] : e,
-                      version: e.includes('#') ? e.split('#')[1] : 'latest',
-                  }
-                : e
-
-        return [...acc, elem]
-    }, [])
-}
-
-function sanitizeBase(input: ScriptsInput | CssInput):
-    | {
-          resource: string
-          domId?: string
-      }[]
-    | undefined {
-    if (typeof input == 'string') {
-        return [{ resource: input }]
-    }
-    if (Array.isArray(input)) {
-        return input.map((elem) => {
-            if (typeof elem == 'string') {
-                return { resource: elem }
-            }
-            return elem
-        })
-    }
-    return undefined
-}
-
-function sanitizeScripts(input: ScriptsInput): {
-    resource: string
-    domId?: string
-}[] {
-    const sanitized = sanitizeBase(input)
-    if (sanitized) {
-        return sanitized
-    }
-    console.error('@youwol/cdn-client: Can not parse scripts input', input)
-    return []
-}
-
-function sanitizeCss(input: CssInput): {
-    resource: string
-    domId?: string
-}[] {
-    const sanitized = sanitizeBase(input)
-    if (sanitized) {
-        return sanitized
-    }
-    console.error('@youwol/cdn-client: Can not parse css input', input)
-    return []
-}
-
-function applyFinalSideEffects({
-    aliases,
-    executingWindow,
-    onEvent,
-    loadingScreen,
-}: {
-    aliases: Record<string, string | ((window: Window) => unknown)>
-    executingWindow: Window
-    onEvent?: (event: CdnEvent) => void
-    loadingScreen?: LoadingScreenView
-}) {
-    Object.entries(aliases).forEach(([alias, original]) => {
-        executingWindow[alias] =
-            typeof original == 'string'
-                ? executingWindow[original]
-                : original(executingWindow)
-    })
-    onEvent && onEvent(new InstallDoneEvent())
-    loadingScreen && loadingScreen.done()
-}
 
 /**
  * Type definition of a module installation side effects.
@@ -318,46 +142,7 @@ export function install(
         displayLoadingScreen?: boolean
     } = {},
 ): Promise<Window> {
-    const modules = sanitizeModules(resources.modules || [])
-    const css = sanitizeCss(resources.css || [])
-    const scripts = sanitizeScripts(resources.scripts || [])
-    const executingWindow = options.executingWindow || window
-    const aliases = resources.aliases || {}
-    const display = options.displayLoadingScreen || false
-    let loadingScreen = undefined
-
-    if (display) {
-        loadingScreen = new LoadingScreenView()
-        loadingScreen.render()
-    }
-    const onEvent = (ev) => {
-        loadingScreen && loadingScreen.next(ev)
-        options.onEvent && options.onEvent(ev)
-    }
-
-    const bundlePromise = fetchBundles({
-        modules,
-        modulesSideEffects: resources.modulesSideEffects,
-        usingDependencies: resources.usingDependencies,
-        executingWindow,
-        onEvent,
-    })
-
-    const cssPromise = fetchStyleSheets(css || [], executingWindow)
-    const jsPromise = bundlePromise.then((resp) => {
-        State.updateLatestBundleVersion(resp, executingWindow)
-        return fetchJavascriptAddOn(scripts || [], executingWindow)
-    })
-
-    return Promise.all([jsPromise, cssPromise]).then(() => {
-        applyFinalSideEffects({
-            aliases,
-            executingWindow,
-            onEvent,
-            loadingScreen,
-        })
-        return executingWindow
-    })
+    return new Client().install(resources, options)
 }
 
 /**
@@ -372,41 +157,11 @@ export function install(
  * @param renderingWindow the window used to install the stylesheets, default to global window
  * @returns a Promise on created HTMLLinkElement(s)
  */
-export async function fetchStyleSheets(
+export function fetchStyleSheets(
     resources: CssInput,
     renderingWindow?: Window,
 ): Promise<Array<HTMLLinkElement>> {
-    const css = sanitizeCss(resources)
-    renderingWindow = renderingWindow || window
-
-    const getLinkElement = (url) => {
-        return Array.from(
-            renderingWindow.document.head.querySelectorAll('link'),
-        ).find((e) => e.id == url)
-    }
-    const futures = css
-        .map((elem) => ({ ...elem, ...parseResourceId(elem.resource) }))
-        .filter(({ url }) => !getLinkElement(url))
-        .map(({ assetId, version, name, url }) => {
-            return new Promise<HTMLLinkElement>((resolveCb) => {
-                const link = renderingWindow.document.createElement('link')
-                link.id = url
-                const classes = [assetId, name, version].map((key) =>
-                    sanitizeCssId(key),
-                )
-                link.classList.add(...classes)
-                link.setAttribute('type', 'text/css')
-                link.href = Client.HostName + url
-                link.rel = 'stylesheet'
-                renderingWindow.document
-                    .getElementsByTagName('head')[0]
-                    .appendChild(link)
-                link.onload = () => {
-                    resolveCb(link)
-                }
-            })
-        })
-    return Promise.all(futures)
+    return new Client().installStyleSheets(resources, { renderingWindow })
 }
 
 /**
@@ -423,7 +178,7 @@ export async function fetchStyleSheets(
  * @param onEvent if provided, callback called at each HTTP request event
  * @returns Promise resolving to the loading graph installed
  */
-export async function fetchBundles({
+async function fetchBundles({
     modules,
     modulesSideEffects,
     usingDependencies,
@@ -441,38 +196,10 @@ export async function fetchBundles({
     executingWindow?: Window
     onEvent?: (event: CdnEvent) => void
 }): Promise<LoadingGraph> {
-    executingWindow = executingWindow || window
-    usingDependencies = usingDependencies || []
-    const body = {
-        libraries: modules,
-        using: usingDependencies.reduce((acc, dependency) => {
-            return {
-                ...acc,
-                [dependency.split('#')[0]]: dependency.split('#')[1],
-            }
-        }, {}),
-    }
-    const sideEffects = modules.reduce(
-        (acc, dependency) => ({
-            ...acc,
-            [`${dependency.name}#${dependency.version}`]:
-                dependency.sideEffects,
-        }),
-        modulesSideEffects,
+    return new Client().installModules(
+        { modules, modulesSideEffects, usingDependencies },
+        { executingWindow, onEvent },
     )
-    try {
-        const loadingGraph = await new Client().getLoadingGraph(body)
-        await fetchLoadingGraph(
-            loadingGraph,
-            executingWindow,
-            sideEffects,
-            onEvent,
-        )
-        return loadingGraph
-    } catch (error) {
-        onEvent && onEvent(new CdnLoadingGraphErrorEvent(error))
-        throw error
-    }
 }
 
 /**
@@ -486,71 +213,14 @@ export async function fetchBundles({
  * @param executingWindow
  * @param onEvent if provided, callback called at each HTTP request event
  */
-export async function fetchJavascriptAddOn(
+export function fetchJavascriptAddOn(
     resources: ScriptsInput,
     executingWindow?: Window,
     onEvent?: (CdnEvent) => void,
 ): Promise<{ assetName; assetId; url; src }[]> {
-    const client = new Client()
-    const inputs = sanitizeScripts(resources)
-
-    const scripts = inputs.map((elem) => ({
-        ...elem,
-        ...parseResourceId(elem.resource),
-    }))
-
-    const futures = scripts.map(({ name, url }) =>
-        client.fetchSource({ name, url, onEvent }),
-    )
-
-    const sourcesOrErrors = await Promise.all(futures)
-    const sources = sourcesOrErrors.filter((d) => !(d instanceof ErrorEvent))
-
-    addScriptElements(sources, executingWindow, onEvent)
-
-    return sources.map(({ assetId, url, name, content }) => {
-        return { assetId, url, assetName: name, src: content }
-    })
+    return new Client().installScripts(resources, { executingWindow, onEvent })
 }
 
-function addScriptElements(
-    sources: (Origin & { sideEffect?: (HTMLScriptElement) => void })[],
-    executingWindow: Window,
-    onEvent: (event: CdnEvent) => void,
-) {
-    const head = document.getElementsByTagName('head')[0]
-
-    sources.forEach(({ name, assetId, version, url, content, sideEffect }) => {
-        if (executingWindow.document.getElementById(url)) {
-            return
-        }
-        const script = document.createElement('script')
-        script.id = url
-        const classes = [assetId, name, version].map((key) =>
-            sanitizeCssId(key),
-        )
-        script.classList.add(...classes)
-        script.innerHTML = content
-        let error: string
-        const onErrorParsing = (d: ErrorEvent) => {
-            error = d.message
-        }
-        executingWindow.addEventListener('error', onErrorParsing)
-        head.appendChild(script)
-        onEvent && onEvent(new SourceParsedEvent(name, assetId, url))
-        executingWindow.removeEventListener('error', onErrorParsing)
-        if (error) {
-            onEvent && onEvent(new ParseErrorEvent(name, assetId, url))
-            throw new SourceParsingFailed({
-                assetId,
-                name,
-                url,
-                message: error,
-            })
-        }
-        sideEffect && sideEffect(script)
-    })
-}
 /**
  * Returns the assetId in the assets store of a CDN asset from its name.
  * It does not imply that the asset exist.
@@ -612,5 +282,5 @@ export function fetchSource({
     name?: string
     onEvent?: (event: CdnEvent) => void
 }): Promise<{ name: string; assetId: string; url: string; content: string }> {
-    return new Client().fetchSource({ name, url, onEvent })
+    return new Client().fetchScript({ name, url, onEvent })
 }
