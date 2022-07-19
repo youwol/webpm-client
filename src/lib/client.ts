@@ -90,28 +90,64 @@ export function install(
     return new Client().install(resources, options)
 }
 
-export function queryLoadingGraph(...params) {
-    return new Client().queryLoadingGraph(params[0])
+export function queryLoadingGraph(body) {
+    return new Client().queryLoadingGraph(body)
 }
 
-export function fetchScript(...params): Promise<Origin> {
-    return new Client().fetchScript(params[0])
+export function fetchScript(resource: {
+    url: string
+    name?: string
+    onEvent?: (event: CdnFetchEvent) => void
+}): Promise<Origin> {
+    return new Client().fetchScript(resource)
 }
 
-export function installLoadingGraph(...params) {
-    return new Client().installLoadingGraph(params[0])
+export function installLoadingGraph(
+    resources: {
+        loadingGraph: LoadingGraph
+        sideEffects?: { [key: string]: ModuleSideEffectCallback }
+    },
+    options?: {
+        executingWindow?: Window
+        onEvent?: (event: CdnFetchEvent) => void
+    },
+) {
+    return new Client().installLoadingGraph(resources, options)
 }
 
-export function installModules(...params) {
-    return new Client().installModules(params[0], params[1])
+export function installModules(
+    resources: {
+        modules: {
+            name: string
+            version: string
+            sideEffects?: (Window) => void
+        }[]
+        modulesSideEffects: { [_key: string]: ModuleSideEffectCallback }
+        usingDependencies: string[]
+    },
+    options?: {
+        executingWindow: Window
+        onEvent: (event: CdnEvent) => void
+    },
+) {
+    return new Client().installModules(resources, options)
 }
 
-export function installScripts(...params) {
-    return new Client().installScripts(params[0], params[1])
+export function installScripts(
+    resources: ScriptsInput,
+    options?: {
+        executingWindow?: Window
+        onEvent?: (CdnEvent) => void
+    },
+) {
+    return new Client().installScripts(resources, options)
 }
 
-export function installStyleSheets(...params) {
-    return new Client().installStyleSheets(params[0], params[1])
+export function installStyleSheets(
+    resources: CssInput,
+    options?: { renderingWindow?: Window },
+) {
+    return new Client().installStyleSheets(resources, options)
 }
 
 export class Client {
