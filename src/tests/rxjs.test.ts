@@ -1,4 +1,4 @@
-import { getUrlBase, install, Client } from '../lib'
+import { getUrlBase, install, State } from '../lib'
 import { cleanDocument, expectEvents, installPackages$ } from './common'
 
 import './mock-requests'
@@ -13,7 +13,7 @@ beforeAll((done) => {
 })
 beforeEach(() => {
     cleanDocument()
-    Client.resetCache()
+    State.resetCache()
 })
 test('install rxjs-test#latest', async () => {
     const events = []
@@ -83,7 +83,6 @@ test('install rxjs-test#6.5.5 + side-effects', async () => {
 
 test('install rxjs-test#6 & rxjs-test#7', async () => {
     const events = []
-    const packageName = 'rxjs-test'
     let sideEffects: string[] = []
     const { rxjs, rxjs6, rxjs7 } = (await install(
         {

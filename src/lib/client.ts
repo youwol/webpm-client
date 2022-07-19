@@ -12,7 +12,7 @@ import {
     UrlNotFoundEvent,
 } from './models'
 import { CssInput, install, ModulesInput, ScriptsInput } from './loader'
-import { lt, major as getMajor } from 'semver'
+import { State } from './state'
 
 export type Origin = {
     name: string
@@ -22,9 +22,6 @@ export type Origin = {
     content: string
     progressEvent: ProgressEvent
 }
-
-type LibraryName = string
-type Version = string
 
 export class Client {
     static Headers: { [key: string]: string } = {}
@@ -41,68 +38,17 @@ export class Client {
         }
         return Object.keys(variants).includes(name) ? variants[name] : name
     }
-    static importedBundles = new Map<LibraryName, Version[]>()
-    static fetchedLoadingGraph = new Map<string, Promise<LoadingGraph>>()
-    static importedLoadingGraphs = new Map<string, Promise<Window>>()
-    static importedScripts = new Map<string, Promise<Origin>>()
-    static latestVersion = new Map<string, string>()
-
-    static resetCache() {
-        Client.importedBundles = new Map<LibraryName, Version[]>()
-        Client.importedLoadingGraphs = new Map<string, Promise<Window>>()
-        Client.importedScripts = new Map<string, Promise<Origin>>()
-        Client.latestVersion = new Map<string, string>()
-    }
-
-    static updateLatestBundleVersion(
-        loadingGraph: LoadingGraph,
-        executingWindow: Window,
-    ) {
-        const toConsiderForUpdate = loadingGraph.lock.filter(
-            ({ name, version }) => {
-                return !(
-                    Client.latestVersion.has(name) &&
-                    Client.latestVersion.get(name) == version
-                )
-            },
-        )
-        toConsiderForUpdate.forEach(({ name, version }) => {
-            if (
-                Client.latestVersion.has(name) &&
-                lt(version, Client.latestVersion.get(name))
-            ) {
-                return
-            }
-            const symbol = Client.getExportedSymbolName(name)
-            const major = getMajor(version)
-            if (window[symbol] && !window[symbol]['__yw_set_from_version__']) {
-                console.warn(
-                    `Package "${name}" export symbol "${symbol}" with no major attached (should be ${major})`,
-                )
-                executingWindow[`${symbol}#${major}`] = executingWindow[symbol]
-            }
-
-            executingWindow[symbol] = executingWindow[`${symbol}#${major}`]
-            if (!executingWindow[symbol]) {
-                console.error(
-                    `Problem with package "${name}" & export symbol "${symbol}"`,
-                )
-            }
-            executingWindow[symbol]['__yw_set_from_version__'] = version
-            Client.latestVersion.set(name, version)
-        })
-    }
 
     async getLoadingGraph(body): Promise<LoadingGraph> {
         const key = JSON.stringify(body)
         const finalize = async () => {
-            const content = await Client.fetchedLoadingGraph[key]
+            const content = await State.fetchedLoadingGraph[key]
             if (content.lock) {
                 return content
             }
             throw errorFactory(content)
         }
-        if (Client.fetchedLoadingGraph[key]) {
+        if (State.fetchedLoadingGraph[key]) {
             return finalize()
         }
         const url = `${Client.HostName}/api/assets-gateway/cdn-backend/queries/loading-graph`
@@ -111,7 +57,7 @@ export class Client {
             body: JSON.stringify(body),
             headers: { ...Client.Headers, 'content-type': 'application/json' },
         })
-        Client.fetchedLoadingGraph[key] = fetch(request).then((resp) =>
+        State.fetchedLoadingGraph[key] = fetch(request).then((resp) =>
             resp.json(),
         )
         return finalize()
@@ -136,15 +82,15 @@ export class Client {
         const version = parts[6]
         name = name || parts[parts.length - 1]
 
-        if (Client.importedScripts[url]) {
-            const { progressEvent } = await Client.importedScripts[url]
+        if (State.importedScripts[url]) {
+            const { progressEvent } = await State.importedScripts[url]
             onEvent &&
                 onEvent(
                     new SourceLoadedEvent(name, assetId, url, progressEvent),
                 )
-            return Client.importedScripts[url]
+            return State.importedScripts[url]
         }
-        Client.importedScripts[url] = new Promise((resolve, reject) => {
+        State.importedScripts[url] = new Promise((resolve, reject) => {
             const req = new XMLHttpRequest()
             // report progress events
             req.addEventListener(
@@ -177,7 +123,7 @@ export class Client {
             req.send()
             onEvent && onEvent(new StartEvent(name, assetId, url))
         })
-        return Client.importedScripts[url]
+        return State.importedScripts[url]
     }
 
     install(
@@ -194,16 +140,6 @@ export class Client {
         } = {},
     ): Promise<Window> {
         return install(resources, options)
-    }
-
-    static isInstalled(libName: string, version: string) {
-        if (libName == '@youwol/cdn-client') {
-            return false
-        }
-        return (
-            Client.importedBundles.has(libName) &&
-            Client.importedBundles.get(libName).includes(version)
-        )
     }
 }
 

@@ -10,6 +10,7 @@ import {
     SourceParsingFailed,
 } from './models'
 import { Client, Origin } from './client'
+import { State } from './state'
 import { LoadingScreenView } from './loader.view'
 import { sanitizeCssId } from './utils.view'
 import { satisfies, major as getMajor } from 'semver'
@@ -34,8 +35,8 @@ async function applyModuleSideEffects(
     executingWindow: Window,
     userSideEffects: ModuleSideEffectCallback[],
 ) {
-    const versionsAvailable = Client.importedBundles.get(origin.name) || []
-    Client.importedBundles.set(origin.name, [
+    const versionsAvailable = State.importedBundles.get(origin.name) || []
+    State.importedBundles.set(origin.name, [
         ...versionsAvailable,
         origin.version,
     ])
@@ -102,7 +103,7 @@ export async function fetchLoadingGraph(
     const sources = sourcesOrErrors
         .filter((d) => d != undefined)
         .map((d) => d as Origin)
-        .filter(({ name, version }) => !Client.isInstalled(name, version))
+        .filter(({ name, version }) => !State.isInstalled(name, version))
         .map((origin: Origin) => {
             const userSideEffects = Object.entries(sideEffects)
                 .filter(([_, val]) => {
@@ -344,7 +345,7 @@ export function install(
 
     const cssPromise = fetchStyleSheets(css || [], executingWindow)
     const jsPromise = bundlePromise.then((resp) => {
-        Client.updateLatestBundleVersion(resp, executingWindow)
+        State.updateLatestBundleVersion(resp, executingWindow)
         return fetchJavascriptAddOn(scripts || [], executingWindow)
     })
 

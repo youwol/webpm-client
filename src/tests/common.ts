@@ -12,6 +12,7 @@ import { mergeMap, reduce, take } from 'rxjs/operators'
 import {
     CdnEvent,
     Client,
+    State,
     LoadingScreenView,
     SourceLoadedEvent,
     SourceLoadingEvent,
@@ -77,7 +78,7 @@ export function resetPyYouwolDbs$() {
 export function cleanDocument() {
     document.body.innerHTML = ''
     document.head.innerHTML = ''
-    Client.importedBundles = new Map<string, string[]>()
+    State.importedBundles = new Map<string, string[]>()
     LoadingScreenView.DefaultFadingTimeout = 0
 }
 

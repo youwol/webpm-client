@@ -1,4 +1,5 @@
 export * from './loader'
 export * from './client'
+export * from './state'
 export * from './loader.view'
 export * from './models'

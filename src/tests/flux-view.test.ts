@@ -1,4 +1,4 @@
-import { getUrlBase, install, Client } from '../lib'
+import { getUrlBase, install, State } from '../lib'
 import { cleanDocument, expectEvents, installPackages$ } from './common'
 import './mock-requests'
 import { of, from, tap, ReplaySubject, combineLatest } from 'rxjs'
@@ -19,7 +19,7 @@ beforeAll((done) => {
 
 beforeEach(() => {
     cleanDocument()
-    Client.resetCache()
+    State.resetCache()
     window['rxjs-test'] && delete window['rxjs-test']
     window['rxjs-test#6'] && delete window['rxjs-test#6']
     window['rxjs-test#7'] && delete window['rxjs-test#7']

@@ -4,7 +4,7 @@
 import { writeFileSync } from 'fs'
 import {
     CdnEvent,
-    Client,
+    State,
     fetchSource,
     getLoadingGraph,
     getUrlBase,
@@ -33,7 +33,7 @@ beforeAll((done) => {
 
 beforeEach(() => {
     cleanDocument()
-    Client.resetCache()
+    State.resetCache()
 })
 
 function expectEvents(events: CdnEvent[], names: string[]) {
