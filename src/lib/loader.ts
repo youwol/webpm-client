@@ -12,6 +12,7 @@ import {
 import { Client, Origin } from './client'
 import { LoadingScreenView } from './loader.view'
 import { sanitizeCssId } from './utils.view'
+import { satisfies, major as getMajor } from 'semver'
 
 /**
  * Return the loading graph from a mapping *library-name*=>*version*.
@@ -27,32 +28,32 @@ export async function getLoadingGraph(body: {
     return new Client().getLoadingGraph(body)
 }
 
-function isToDownload(
-    assetId: string,
-    libraries,
-    sideEffects,
-    executingWindow,
+async function applyModuleSideEffects(
+    origin: Origin,
+    htmlScriptElement: HTMLScriptElement,
+    executingWindow: Window,
+    userSideEffects: ModuleSideEffectCallback[],
 ) {
-    const libName = libraries[assetId].name
-    const version = libraries[assetId].version
-    // This one essentially prevent clearing the cache
-    // ...we need extra care on backward compatibility
-    if (libName == '@youwol/cdn-client') {
-        return false
-    }
+    const versionsAvailable = Client.importedBundles.get(origin.name) || []
+    Client.importedBundles.set(origin.name, [
+        ...versionsAvailable,
+        origin.version,
+    ])
+    const exportedName = `${Client.getExportedSymbolName(
+        origin.name,
+    )}#${getMajor(origin.version)}`
 
-    if (!Client.importedBundles[libName]) {
-        return true
+    for (const sideEffectFct of userSideEffects) {
+        const r = sideEffectFct({
+            module: window[exportedName],
+            origin,
+            htmlScriptElement,
+            executingWindow,
+        })
+        if (r && r instanceof Promise) {
+            await r
+        }
     }
-
-    if (Client.importedBundles[libName] != version) {
-        console.warn(
-            `Loading ${libName}#${version}: A different version of the package has been already fetched (${Client.importedBundles[libName]}), the initial version is not updated`,
-        )
-        return false
-    }
-    sideEffects && sideEffects[libName] && sideEffects[libName](executingWindow)
-    return false
 }
 
 /**
@@ -67,7 +68,7 @@ function isToDownload(
 export async function fetchLoadingGraph(
     loadingGraph: LoadingGraph,
     executingWindow?: Window,
-    sideEffects?: { [key: string]: (Window) => void },
+    sideEffects?: { [key: string]: ModuleSideEffectCallback },
     onEvent?: (event: CdnFetchEvent) => void,
 ) {
     executingWindow = executingWindow || window
@@ -101,19 +102,30 @@ export async function fetchLoadingGraph(
     const sources = sourcesOrErrors
         .filter((d) => d != undefined)
         .map((d) => d as Origin)
-        .filter(({ assetId }) =>
-            isToDownload(assetId, libraries, sideEffects, executingWindow),
-        )
-        .map((src: Origin) => ({
-            ...src,
-            sideEffect: (window) => {
-                sideEffects &&
-                    sideEffects[`${src.name}#${src.version}`] &&
-                    sideEffects[`${src.name}#${src.version}`](window)
-                Client.importedBundles[src.name] =
-                    libraries[src.assetId].version
-            },
-        }))
+        .filter(({ name, version }) => !Client.isInstalled(name, version))
+        .map((origin: Origin) => {
+            const userSideEffects = Object.entries(sideEffects)
+                .filter(([_, val]) => {
+                    return val != undefined
+                })
+                .filter(([key, _]) => {
+                    const query = key.includes('#') ? key : `${key}#*`
+                    if (query.split('#')[0] != origin.name) return false
+                    return satisfies(origin.version, query.split('#')[1])
+                })
+                .map(([_, value]) => value)
+            return {
+                ...origin,
+                sideEffect: (scriptNode: HTMLScriptElement) => {
+                    applyModuleSideEffects(
+                        origin,
+                        scriptNode,
+                        executingWindow,
+                        userSideEffects,
+                    )
+                },
+            }
+        })
 
     addScriptElements(sources, executingWindow, onEvent)
 }
@@ -241,6 +253,22 @@ function applyFinalSideEffects({
     loadingScreen && loadingScreen.done()
 }
 
+/**
+ * Type definition of a module installation side effects.
+ * The callback takes an object as argument of structure:
+ * ```{
+ *  module: any, // the installed module
+ *  scriptHtmlNode: HTMLScriptElement, // the html script element added
+ *  executingWindow: Window, // the executing window
+ * }```
+ */
+export type ModuleSideEffectCallback = (params: {
+    module: any
+    origin: Origin
+    htmlScriptElement: HTMLScriptElement
+    executingWindow: Window
+}) => void | Promise<void>
+
 /** Install a set of resources.
  *
  * Modules stand for javascript's module.
@@ -254,6 +282,9 @@ function applyFinalSideEffects({
  * Aliases allow to use a different name to refer to the loaded resources.
  * @param resources what needs to be installed
  * @param resources.modules the bundles
+ * @param resources.sideEffects Whenever a library is installed, if the side-effects object contains a matching element
+ * the corresponding callback is executed. The keys are in the form '{libraryName}#{query-version}' where query-version
+ * obeys to semantic versioning, the values are of type [[ModuleSideEffectCallback]]
  * @param resources.scripts the scripts
  * @param resources.css the css
  * @param resources.aliases a set of aliases that are applied after all the resources
@@ -275,6 +306,9 @@ export function install(
     resources: {
         modules?: ModulesInput
         usingDependencies?: string[]
+        modulesSideEffects?: {
+            [key: string]: ModuleSideEffectCallback
+        }
         scripts?: ScriptsInput
         css?: CssInput
         aliases?: { [key: string]: string | ((Window) => unknown) }
@@ -304,6 +338,7 @@ export function install(
 
     const bundlePromise = fetchBundles({
         modules,
+        modulesSideEffects: resources.modulesSideEffects,
         usingDependencies: resources.usingDependencies,
         executingWindow,
         onEvent,
@@ -380,6 +415,9 @@ export async function fetchStyleSheets(
  * @param modules specify the modules to load.
  * If sideEffects is provided, it will be called using the executingWindow as argument when the library
  * has been installed.
+ * @param modulesSideEffects Whenever a library is installed, if the side-effects object contains a matching element
+ * the corresponding callback is executed. The keys are in the form '{libraryName}#{query-version}' where query-version
+ * obeys to semantic versioning, the values are of type [[ModuleSideEffectCallback]]
  * @param usingDependencies if provided & whenever the requested library is needed, the version provided is used.
  * Each element is in the form of '{libraryName}#{version}'
  * @param executingWindow the window used to install the dependencies, default to the global window
@@ -388,6 +426,7 @@ export async function fetchStyleSheets(
  */
 export async function fetchBundles({
     modules,
+    modulesSideEffects,
     usingDependencies,
     executingWindow,
     onEvent,
@@ -398,6 +437,7 @@ export async function fetchBundles({
         sideEffects?: (Window) => void
         domClasses?: string[]
     }[]
+    modulesSideEffects?: { [_key: string]: ModuleSideEffectCallback }
     usingDependencies?: string[]
     executingWindow?: Window
     onEvent?: (event: CdnEvent) => void
@@ -419,7 +459,7 @@ export async function fetchBundles({
             [`${dependency.name}#${dependency.version}`]:
                 dependency.sideEffects,
         }),
-        {},
+        modulesSideEffects,
     )
     try {
         const loadingGraph = await new Client().getLoadingGraph(body)
@@ -475,7 +515,7 @@ export async function fetchJavascriptAddOn(
 }
 
 function addScriptElements(
-    sources: (Origin & { sideEffect?: (window: Window) => void })[],
+    sources: (Origin & { sideEffect?: (HTMLScriptElement) => void })[],
     executingWindow: Window,
     onEvent: (event: CdnEvent) => void,
 ) {
@@ -509,7 +549,7 @@ function addScriptElements(
                 message: error,
             })
         }
-        sideEffect && sideEffect(executingWindow)
+        sideEffect && sideEffect(script)
     })
 }
 /**

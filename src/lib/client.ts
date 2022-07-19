@@ -23,6 +23,9 @@ export type Origin = {
     progressEvent: ProgressEvent
 }
 
+type LibraryName = string
+type Version = string
+
 export class Client {
     static Headers: { [key: string]: string } = {}
     static HostName = '' // By default, relative resolution is used. Otherwise, protocol + hostname
@@ -38,14 +41,14 @@ export class Client {
         }
         return Object.keys(variants).includes(name) ? variants[name] : name
     }
-    static importedBundles = {}
+    static importedBundles = new Map<LibraryName, Version[]>()
     static fetchedLoadingGraph = new Map<string, Promise<LoadingGraph>>()
     static importedLoadingGraphs = new Map<string, Promise<Window>>()
     static importedScripts = new Map<string, Promise<Origin>>()
     static latestVersion = new Map<string, string>()
 
     static resetCache() {
-        Client.importedBundles = {}
+        Client.importedBundles = new Map<LibraryName, Version[]>()
         Client.importedLoadingGraphs = new Map<string, Promise<Window>>()
         Client.importedScripts = new Map<string, Promise<Origin>>()
         Client.latestVersion = new Map<string, string>()
@@ -191,6 +194,16 @@ export class Client {
         } = {},
     ): Promise<Window> {
         return install(resources, options)
+    }
+
+    static isInstalled(libName: string, version: string) {
+        if (libName == '@youwol/cdn-client') {
+            return false
+        }
+        return (
+            Client.importedBundles.has(libName) &&
+            Client.importedBundles.get(libName).includes(version)
+        )
     }
 }
 
