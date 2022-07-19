@@ -241,14 +241,12 @@ function applyFinalSideEffects({
     onEvent?: (event: CdnEvent) => void
     loadingScreen?: LoadingScreenView
 }) {
-    // Add aliases
     Object.entries(aliases).forEach(([alias, original]) => {
         executingWindow[alias] =
             typeof original == 'string'
                 ? executingWindow[original]
                 : original(executingWindow)
     })
-    // Add dom's classes
     onEvent && onEvent(new InstallDoneEvent())
     loadingScreen && loadingScreen.done()
 }
