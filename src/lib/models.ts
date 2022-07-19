@@ -1,4 +1,62 @@
+import { Origin } from './client'
+
 export class CdnError extends Error {}
+
+/**
+ * Describe multiple bundle resource(s).
+ */
+export type ModulesInput = (
+    | {
+          name: string
+          version: string
+          sideEffects?: (Window) => void
+      }
+    | string
+)[]
+
+/**
+ * Describe one or multiple CSS resource(s).
+ *
+ * Resource are like: {libraryName}#{version}~{rest-of-path}
+ */
+export type CssInput =
+    | (
+          | {
+                resource: string
+            }
+          | string
+      )[]
+    | string
+
+/**
+ * Describe one or multiple scripts resource(s).
+ *
+ * Resource are like: {libraryName}#{version}~{rest-of-path}
+ */
+export type ScriptsInput =
+    | (
+          | {
+                resource: string
+            }
+          | string
+      )[]
+    | string
+
+/**
+ * Type definition of a module installation side effects.
+ * The callback takes an object as argument of structure:
+ * ```{
+ *  module: any, // the installed module
+ *  scriptHtmlNode: HTMLScriptElement, // the html script element added
+ *  executingWindow: Window, // the executing window
+ * }```
+ */
+export type ModuleSideEffectCallback = (params: {
+    module: any
+    origin: Origin
+    htmlScriptElement: HTMLScriptElement
+    executingWindow: Window
+}) => void | Promise<void>
 
 export class LoadingGraphError extends CdnError {
     constructor() {

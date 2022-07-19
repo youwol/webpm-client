@@ -2,23 +2,17 @@ import {
     CdnEvent,
     CdnFetchEvent,
     CdnLoadingGraphErrorEvent,
+    CssInput,
     errorFactory,
     FetchErrors,
     LoadingGraph,
+    ModuleSideEffectCallback,
+    ModulesInput,
+    ScriptsInput,
     SourceLoadedEvent,
     SourceLoadingEvent,
     StartEvent,
 } from './models'
-import {
-    CssInput,
-    fetchJavascriptAddOn,
-    fetchLoadingGraph,
-    fetchStyleSheets,
-    ModuleSideEffectCallback,
-    ModulesInput,
-    parseResourceId,
-    ScriptsInput,
-} from './loader'
 import { State } from './state'
 import { LoadingScreenView } from './loader.view'
 import { sanitizeCssId } from './utils.view'
@@ -31,6 +25,7 @@ import {
     sanitizeCss,
     sanitizeModules,
     sanitizeScripts,
+    parseResourceId,
 } from './utils'
 
 export type Origin = {
@@ -58,7 +53,7 @@ export class Client {
         return Object.keys(variants).includes(name) ? variants[name] : name
     }
 
-    async getLoadingGraph(body): Promise<LoadingGraph> {
+    async queryLoadingGraph(body): Promise<LoadingGraph> {
         const key = JSON.stringify(body)
         const finalize = async () => {
             const content = await State.fetchedLoadingGraph[key]
@@ -191,10 +186,12 @@ export class Client {
             },
         )
 
-        const cssPromise = fetchStyleSheets(css || [], executingWindow)
+        const cssPromise = this.installStyleSheets(css || [], {
+            renderingWindow: options?.executingWindow,
+        })
         const jsPromise = bundlePromise.then((resp) => {
             State.updateLatestBundleVersion(resp, executingWindow)
-            return fetchJavascriptAddOn(scripts || [], executingWindow)
+            return this.installScripts(scripts || [], { executingWindow })
         })
 
         return Promise.all([jsPromise, cssPromise]).then(() => {
@@ -295,7 +292,6 @@ export class Client {
             onEvent: (event: CdnEvent) => void
         },
     ): Promise<LoadingGraph> {
-        const executingWindow = options?.executingWindow || window
         const usingDependencies = resources?.usingDependencies || []
         const body = {
             libraries: resources.modules,
@@ -315,12 +311,10 @@ export class Client {
             resources.modulesSideEffects,
         )
         try {
-            const loadingGraph = await this.getLoadingGraph(body)
-            await fetchLoadingGraph(
-                loadingGraph,
-                executingWindow,
-                sideEffects,
-                options?.onEvent,
+            const loadingGraph = await this.queryLoadingGraph(body)
+            await this.installLoadingGraph(
+                { loadingGraph, sideEffects },
+                options,
             )
             return loadingGraph
         } catch (error) {

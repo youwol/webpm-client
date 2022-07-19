@@ -1,5 +1,13 @@
-import { CdnEvent, CdnFetchEvent, LoadingGraph } from './models'
-import { Client, Origin } from './client'
+import {
+    CdnEvent,
+    CdnFetchEvent,
+    CssInput,
+    LoadingGraph,
+    ModuleSideEffectCallback,
+    ModulesInput,
+    ScriptsInput,
+} from './models'
+import { Client } from './client'
 
 /**
  * Return the loading graph from a mapping *library-name*=>*version*.
@@ -12,7 +20,7 @@ import { Client, Origin } from './client'
 export async function getLoadingGraph(body: {
     libraries: { [key: string]: string }
 }): Promise<LoadingGraph> {
-    return new Client().getLoadingGraph(body)
+    return new Client().queryLoadingGraph(body)
 }
 
 /**
@@ -35,62 +43,6 @@ export function fetchLoadingGraph(
         { executingWindow, onEvent },
     )
 }
-
-/**
- * Describe multiple bundle resource(s).
- */
-export type ModulesInput = (
-    | {
-          name: string
-          version: string
-          sideEffects?: (Window) => void
-      }
-    | string
-)[]
-
-/**
- * Describe one or multiple CSS resource(s).
- *
- * Resource are like: {libraryName}#{version}~{rest-of-path}
- */
-export type CssInput =
-    | (
-          | {
-                resource: string
-            }
-          | string
-      )[]
-    | string
-
-/**
- * Describe one or multiple scripts resource(s).
- *
- * Resource are like: {libraryName}#{version}~{rest-of-path}
- */
-export type ScriptsInput =
-    | (
-          | {
-                resource: string
-            }
-          | string
-      )[]
-    | string
-
-/**
- * Type definition of a module installation side effects.
- * The callback takes an object as argument of structure:
- * ```{
- *  module: any, // the installed module
- *  scriptHtmlNode: HTMLScriptElement, // the html script element added
- *  executingWindow: Window, // the executing window
- * }```
- */
-export type ModuleSideEffectCallback = (params: {
-    module: any
-    origin: Origin
-    htmlScriptElement: HTMLScriptElement
-    executingWindow: Window
-}) => void | Promise<void>
 
 /** Install a set of resources.
  *
@@ -219,53 +171,6 @@ export function fetchJavascriptAddOn(
     onEvent?: (CdnEvent) => void,
 ): Promise<{ assetName; assetId; url; src }[]> {
     return new Client().installScripts(resources, { executingWindow, onEvent })
-}
-
-/**
- * Returns the assetId in the assets store of a CDN asset from its name.
- * It does not imply that the asset exist.
- *
- * @param name name of the package (as defined in package.json)
- * @returns assetId used in the assets store
- */
-export function getAssetId(name: string) {
-    return btoa(name)
-}
-
-/**
- * Returns the base url to access a CDN asset from its name & version.
- * It does not imply that the asset exist.
- *
- * @param name name of the package (as defined in package.json)
- * @param version version of the package (as defined in package.json)
- * @returns base url to access the CDN resource (valid only if the asset is actually stored in the asset store)
- */
-export function getUrlBase(name: string, version: string) {
-    const assetId = getAssetId(name)
-    return `/api/assets-gateway/raw/package/${assetId}/${version}`
-}
-
-/**
- * Parse a resource id in the form *{libraryName}#{version}~{rest-of-path}* where:
- * -    libraryName is the name of the library
- * -    version is the target version
- * -    rest-of-path is the partial url from the package's directory to the target CSS
- *
- * @param resourceId resource id in the form *{libraryName}#{version}~{rest-of-path}*
- */
-export function parseResourceId(resourceId: string): {
-    name: string
-    version: string
-    path: string
-    assetId: string
-    url: string
-} {
-    const name = resourceId.split('#')[0]
-    const version = resourceId.split('#')[1].split('~')[0]
-    const path = resourceId.split('#')[1].split('~')[1]
-    const assetId = getAssetId(name)
-    const url = `${getUrlBase(name, version)}/${path}`
-    return { name, version, path, assetId, url }
 }
 
 /**

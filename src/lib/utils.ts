@@ -9,13 +9,11 @@ import {
     UnauthorizedEvent,
     UrlNotFound,
     UrlNotFoundEvent,
-} from './models'
-import {
     CssInput,
     ModuleSideEffectCallback,
     ModulesInput,
     ScriptsInput,
-} from './loader'
+} from './models'
 import { State } from './state'
 import { LoadingScreenView } from './loader.view'
 import { sanitizeCssId } from './utils.view'
@@ -118,6 +116,29 @@ export function sanitizeCss(input: CssInput): {
     return []
 }
 
+/**
+ * Parse a resource id in the form *{libraryName}#{version}~{rest-of-path}* where:
+ * -    libraryName is the name of the library
+ * -    version is the target version
+ * -    rest-of-path is the partial url from the package's directory to the target CSS
+ *
+ * @param resourceId resource id in the form *{libraryName}#{version}~{rest-of-path}*
+ */
+export function parseResourceId(resourceId: string): {
+    name: string
+    version: string
+    path: string
+    assetId: string
+    url: string
+} {
+    const name = resourceId.split('#')[0]
+    const version = resourceId.split('#')[1].split('~')[0]
+    const path = resourceId.split('#')[1].split('~')[1]
+    const assetId = getAssetId(name)
+    const url = `${getUrlBase(name, version)}/${path}`
+    return { name, version, path, assetId, url }
+}
+
 export async function applyModuleSideEffects(
     origin: Origin,
     htmlScriptElement: HTMLScriptElement,
@@ -204,4 +225,28 @@ export function addScriptElements(
         }
         sideEffect && sideEffect(script)
     })
+}
+
+/**
+ * Returns the assetId in the assets store of a CDN asset from its name.
+ * It does not imply that the asset exist.
+ *
+ * @param name name of the package (as defined in package.json)
+ * @returns assetId used in the assets store
+ */
+export function getAssetId(name: string) {
+    return btoa(name)
+}
+
+/**
+ * Returns the base url to access a CDN asset from its name & version.
+ * It does not imply that the asset exist.
+ *
+ * @param name name of the package (as defined in package.json)
+ * @param version version of the package (as defined in package.json)
+ * @returns base url to access the CDN resource (valid only if the asset is actually stored in the asset store)
+ */
+export function getUrlBase(name: string, version: string) {
+    const assetId = getAssetId(name)
+    return `/api/assets-gateway/raw/package/${assetId}/${version}`
 }
