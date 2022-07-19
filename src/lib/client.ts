@@ -37,6 +37,59 @@ export type Origin = {
     progressEvent: ProgressEvent
 }
 
+/** Install a set of resources.
+ *
+ * Modules stand for javascript's module.
+ * If some required dependencies of the module are missing they are also loaded.
+ *
+ * Scripts stand for standalone javascript file; they are fetched after all modules
+ * have been loaded.
+ *
+ * CSS stands for stylesheets.
+ *
+ * Aliases allow to use a different name to refer to the loaded resources.
+ * @param resources what needs to be installed
+ * @param resources.modules the bundles
+ * @param resources.sideEffects Whenever a library is installed, if the side-effects object contains a matching element
+ * the corresponding callback is executed. The keys are in the form '{libraryName}#{query-version}' where query-version
+ * obeys to semantic versioning, the values are of type [[ModuleSideEffectCallback]]
+ * @param resources.scripts the scripts
+ * @param resources.css the css
+ * @param resources.aliases a set of aliases that are applied after all the resources
+ * have been loaded. A dictionary {key: value} where key is the alias in
+ * executingWindow and value is either:
+ *       - a string => `executingWindow[alias] = executingWindow[value]`
+ *       - a function => `executingWindow[alias] = value(executingWindow)`
+ *
+ * @param options extra options
+ * @param options.displayLoadingScreen if not provided or *false* => no loading screen displayed.
+ * If *true*, display the loading screen by filling the 'body' of the current document.
+ * If an *HTMLElement*, display the loading screen inside this element
+ * @param options.executingWindow the 'window' object where the 'install' is done.
+ * If not provided, use 'window'
+ * @param options.onEvent callback called at every CDN event
+ * @returns a promise over the executingWindow
+ */
+export function install(
+    resources: {
+        modules?: ModulesInput
+        usingDependencies?: string[]
+        modulesSideEffects?: {
+            [key: string]: ModuleSideEffectCallback
+        }
+        scripts?: ScriptsInput
+        css?: CssInput
+        aliases?: { [key: string]: string | ((Window) => unknown) }
+    },
+    options: {
+        executingWindow?: Window
+        onEvent?: (event: CdnEvent) => void
+        displayLoadingScreen?: boolean
+    } = {},
+): Promise<Window> {
+    return new Client().install(resources, options)
+}
+
 export class Client {
     static Headers: { [key: string]: string } = {}
     static HostName = '' // By default, relative resolution is used. Otherwise, protocol + hostname
