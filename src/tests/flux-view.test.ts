@@ -1,7 +1,8 @@
 import { getUrlBase, install, State } from '../lib'
 import { cleanDocument, expectEvents, installPackages$ } from './common'
 import './mock-requests'
-import { of, from, tap, ReplaySubject, combineLatest } from 'rxjs'
+import { of, from, ReplaySubject, combineLatest } from 'rxjs'
+import { tap } from 'rxjs/operators'
 import { map, mergeMap } from 'rxjs/operators'
 
 /* eslint-disable jest/no-done-callback -- eslint-comment It is required because */
