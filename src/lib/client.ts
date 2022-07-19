@@ -12,6 +12,7 @@ import {
     UrlNotFoundEvent,
 } from './models'
 import { CssInput, install, ModulesInput, ScriptsInput } from './loader'
+import { lt, major as getMajor } from 'semver'
 
 export type Origin = {
     name: string
@@ -65,8 +66,7 @@ export class Client {
         toConsiderForUpdate.forEach(({ name, version }) => {
             if (
                 Client.latestVersion.has(name) &&
-                getVersionNumber(version) <
-                    getVersionNumber(Client.latestVersion.get(name))
+                lt(version, Client.latestVersion.get(name))
             ) {
                 return
             }
@@ -227,23 +227,4 @@ function onHttpRequestLoad(
         onEvent && onEvent(urlNotFound)
         reject(new UrlNotFound({ assetId, name, url }))
     }
-}
-
-function getMajor(version: string) {
-    return version.split('.')[0]
-}
-function getVersionNumber(version: string) {
-    const parts = version.split('.')
-    const number =
-        Number(parts[0]) * 1e7 +
-        (parts.length > 1 ? Number(parts[1]) * 1e4 : 0) +
-        (parts.length > 2 ? Number(parts[2]) * 10 : 0)
-    if (version.includes('-')) {
-        const prerelease = version.split('-')[1]
-        const index = ['wip', 'alpha', 'alpha-wip', 'beta', 'beta-wip'].indexOf(
-            prerelease,
-        )
-        return number - index
-    }
-    return number
 }
