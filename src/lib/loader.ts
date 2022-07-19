@@ -177,8 +177,8 @@ function sanitizeModules(
         const elem =
             typeof e == 'string'
                 ? {
-                      name: e,
-                      version: 'latest',
+                      name: e.includes('#') ? e.split('#')[0] : e,
+                      version: e.includes('#') ? e.split('#')[1] : 'latest',
                   }
                 : e
 
