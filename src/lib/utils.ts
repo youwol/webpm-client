@@ -10,12 +10,13 @@ import {
     UrlNotFound,
     UrlNotFoundEvent,
     ModuleSideEffectCallback,
-    ModulesInput,
+    ModuleInput,
+    Origin,
 } from './models'
 import { State } from './state'
 import { LoadingScreenView } from './loader.view'
 import { sanitizeCssId } from './utils.view'
-import { Client, Origin } from './client'
+import { Client } from './client'
 
 import { major as getMajor } from 'semver'
 
@@ -55,7 +56,7 @@ export function onHttpRequestLoad(
 }
 
 export function sanitizeModules(
-    modules: ModulesInput,
+    modules: ModuleInput[],
 ): { name: string; version: string }[] {
     return modules.reduce((acc, e) => {
         const elem =

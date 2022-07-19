@@ -11,8 +11,6 @@ import {
     youwolSvgLogo,
 } from './utils.view'
 
-export type Mode = 'svg' | 'matrix'
-
 export interface LoadingScreenOptions {
     container?: HTMLElement
     id?: string

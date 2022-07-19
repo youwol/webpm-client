@@ -1,38 +1,35 @@
-import { Origin } from './client'
-
 export class CdnError extends Error {}
 
 /**
- * Describe multiple bundle resource(s).
+ * Specification of a module.
  */
-export type ModulesInput = (
+export type ModuleInput =
     | {
           name: string
           version: string
           sideEffects?: (Window) => void
       }
     | string
-)[]
 
 /**
  * Describe one or multiple CSS resource(s).
  *
  * Resource are like: {libraryName}#{version}~{rest-of-path}
  */
-export type InstallStyleSheetInputs = {
+export interface InstallStyleSheetInputs {
     css: string[]
     renderingWindow?: Window
 }
 
-export type InstallLoadingGraphInputs = {
+export interface InstallLoadingGraphInputs {
     loadingGraph: LoadingGraph
     sideEffects?: { [key: string]: ModuleSideEffectCallback }
     executingWindow?: Window
     onEvent?: (event: CdnFetchEvent) => void
 }
 
-export type InstallInputs = {
-    modules?: ModulesInput
+export interface InstallInputs {
+    modules?: ModuleInput[]
     usingDependencies?: string[]
     modulesSideEffects?: {
         [key: string]: ModuleSideEffectCallback
@@ -45,13 +42,13 @@ export type InstallInputs = {
     displayLoadingScreen?: boolean
 }
 
-export type FetchScriptInputs = {
+export interface FetchScriptInputs {
     url: string
     name?: string
     onEvent?: (event: CdnFetchEvent) => void
 }
 
-export type InstallModulesInputs = {
+export interface InstallModulesInputs {
     modules: {
         name: string
         version: string
@@ -68,7 +65,7 @@ export type InstallModulesInputs = {
  *
  * Resource are like: {libraryName}#{version}~{rest-of-path}
  */
-export type InstallScriptsInputs = {
+export interface InstallScriptsInputs {
     scripts: string[]
     executingWindow?: Window
     onEvent?: (CdnEvent) => void
@@ -367,4 +364,13 @@ export interface LibraryQuery {
 export interface QueryLoadingGraphInputs {
     libraries: LibraryQuery[] | { [k: string]: string }
     using?: { [k: string]: string }
+}
+
+export interface Origin {
+    name: string
+    version?: string
+    assetId: string
+    url: string
+    content: string
+    progressEvent: ProgressEvent
 }

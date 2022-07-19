@@ -1,5 +1,5 @@
-import { LoadingGraph } from './models'
-import { Client, Origin } from './client'
+import { LoadingGraph, Origin } from './models'
+import { Client } from './client'
 import { lt, major as getMajor } from 'semver'
 
 export type LibraryName = string

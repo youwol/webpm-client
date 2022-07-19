@@ -14,6 +14,7 @@ import {
     QueryLoadingGraphInputs,
     InstallInputs,
     CdnEvent,
+    Origin,
 } from './models'
 import { State } from './state'
 import { LoadingScreenView } from './loader.view'
@@ -28,15 +29,14 @@ import {
     parseResourceId,
 } from './utils'
 
-export type Origin = {
-    name: string
-    version?: string
-    assetId: string
-    url: string
-    content: string
-    progressEvent: ProgressEvent
-}
-
+/**
+ *
+ * Use default client to install a set of resources, see [[Client.install]]
+ *
+ * @category Getting Started
+ * @param inputs
+ * @param options
+ */
 export function install(
     inputs: InstallInputs,
     options?: {
@@ -50,30 +50,65 @@ export function install(
         : new Client().install(inputs)
 }
 
+/**
+ * @category Getting Started
+ *
+ * @param inputs
+ */
 export function queryLoadingGraph(inputs: QueryLoadingGraphInputs) {
     return new Client().queryLoadingGraph(inputs)
 }
 
+/**
+ * @category Getting Started
+ *
+ * @param inputs
+ */
 export function fetchScript(inputs: FetchScriptInputs): Promise<Origin> {
     return new Client().fetchScript(inputs)
 }
 
+/**
+ * @category Getting Started
+ *
+ * @param inputs
+ */
 export function installLoadingGraph(inputs: InstallLoadingGraphInputs) {
     return new Client().installLoadingGraph(inputs)
 }
 
+/**
+ * @category Getting Started
+ *
+ * @param inputs
+ */
 export function installModules(inputs: InstallModulesInputs) {
     return new Client().installModules(inputs)
 }
 
+/**
+ * @category Getting Started
+ *
+ * @param inputs
+ */
 export function installScripts(inputs: InstallScriptsInputs) {
     return new Client().installScripts(inputs)
 }
 
+/**
+ * @category Getting Started
+ *
+ * @param inputs
+ */
 export function installStyleSheets(inputs: InstallStyleSheetInputs) {
     return new Client().installStyleSheets(inputs)
 }
 
+/**
+ * @category Getting Started
+ *
+ * @param inputs
+ */
 export class Client {
     static Headers: { [key: string]: string } = {}
     static HostName = '' // By default, relative resolution is used. Otherwise, protocol + hostname
