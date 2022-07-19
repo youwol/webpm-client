@@ -44,7 +44,7 @@ test('install flux-view-test#0', (done) => {
     from(
         install(
             {
-                modules: [{ name: packageName, version: '0.x' }],
+                modules: [{ name: packageName, version: '0.x' }], // ['@youwol/flux-view-test#0'],
                 aliases: {
                     rxjs6: 'rxjs-test#6',
                     rxjs: 'rxjs-test',
@@ -156,10 +156,7 @@ test('install flux-view-test#0 & flux-view-test#1', (done) => {
     from(
         install(
             {
-                modules: [
-                    { name: packageName, version: '1.x' },
-                    { name: packageName, version: '0.x' },
-                ],
+                modules: [`${packageName}#1.x`, `${packageName}#0.x`],
                 aliases: {
                     rxjs6: 'rxjs-test#6',
                     rxjs7: 'rxjs-test#7',
@@ -167,6 +164,24 @@ test('install flux-view-test#0 & flux-view-test#1', (done) => {
                     fv0: '@youwol/flux-view-test#0',
                     fv1: '@youwol/flux-view-test#1',
                     fv: '@youwol/flux-view-test',
+                },
+                modulesSideEffects: {
+                    'rxjs-test#*': ({ module, origin, htmlScriptElement }) => {
+                        module['sideEffects-rxjs-test#*'] = true
+                        htmlScriptElement.classList.add(
+                            `sideEffects-rxjs-test#*:${origin.name}`,
+                        )
+                    },
+                    'rxjs-test#6.x': async ({
+                        module,
+                        origin,
+                        htmlScriptElement,
+                    }) => {
+                        module['sideEffects-rxjs-test#6.x'] = true
+                        htmlScriptElement.classList.add(
+                            `sideEffects-rxjs-test#6.x:${origin.name}`,
+                        )
+                    },
                 },
             },
             {
@@ -179,12 +194,36 @@ test('install flux-view-test#0 & flux-view-test#1', (done) => {
         .pipe(
             tap(({ rxjs, rxjs6, rxjs7, fv0, fv1, fv }) => {
                 expect(document.scripts).toHaveLength(4)
-                expect(document.scripts.item(0).id).toBe(
+                const scriptRxjs7 = document.scripts.item(0)
+                expect(scriptRxjs7.id).toBe(
                     getUrlBase('rxjs-test', '7.5.5') + `/dist/rxjs-test.js`,
                 )
-                expect(document.scripts.item(1).id).toBe(
+                expect(
+                    scriptRxjs7.classList.contains(
+                        `sideEffects-rxjs-test#*:rxjs-test`,
+                    ),
+                ).toBeTruthy()
+                expect(
+                    scriptRxjs7.classList.contains(
+                        `sideEffects-rxjs-test#6.x:rxjs-test`,
+                    ),
+                ).toBeFalsy()
+
+                const scriptRxjs6 = document.scripts.item(1)
+                expect(scriptRxjs6.id).toBe(
                     getUrlBase('rxjs-test', '6.5.5') + `/dist/rxjs-test.js`,
                 )
+                expect(
+                    scriptRxjs6.classList.contains(
+                        `sideEffects-rxjs-test#*:rxjs-test`,
+                    ),
+                ).toBeTruthy()
+                expect(
+                    scriptRxjs6.classList.contains(
+                        `sideEffects-rxjs-test#6.x:rxjs-test`,
+                    ),
+                ).toBeTruthy()
+
                 expect(document.scripts.item(2).id).toBe(
                     getUrlBase(packageName, '1.0.0') +
                         `/dist/${packageName}.js`,
@@ -195,8 +234,14 @@ test('install flux-view-test#0 & flux-view-test#1', (done) => {
                 )
 
                 expect(rxjs7).toBeTruthy()
+                expect(rxjs7['sideEffects-rxjs-test#*']).toBeTruthy()
+                expect(rxjs7['sideEffects-rxjs-test#6.x']).toBeFalsy()
                 expect(rxjs6).toBeTruthy()
+                expect(rxjs6['sideEffects-rxjs-test#*']).toBeTruthy()
+                expect(rxjs6['sideEffects-rxjs-test#6.x']).toBeTruthy()
                 expect(rxjs).toBeTruthy()
+                expect(rxjs['sideEffects-rxjs-test#*']).toBeTruthy()
+
                 expect(rxjs).toEqual(rxjs7)
                 expect(rxjs6 === rxjs7).toBeFalsy()
 
