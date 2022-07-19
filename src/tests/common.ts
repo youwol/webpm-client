@@ -77,7 +77,7 @@ export function resetPyYouwolDbs$() {
 export function cleanDocument() {
     document.body.innerHTML = ''
     document.head.innerHTML = ''
-    Client.importedBundles = {}
+    Client.importedBundles = new Map<string, string[]>()
     LoadingScreenView.DefaultFadingTimeout = 0
 }
 
