@@ -90,6 +90,30 @@ export function install(
     return new Client().install(resources, options)
 }
 
+export function queryLoadingGraph(...params) {
+    return new Client().queryLoadingGraph(params[0])
+}
+
+export function fetchScript(...params): Promise<Origin> {
+    return new Client().fetchScript(params[0])
+}
+
+export function installLoadingGraph(...params) {
+    return new Client().installLoadingGraph(params[0])
+}
+
+export function installModules(...params) {
+    return new Client().installModules(params[0], params[1])
+}
+
+export function installScripts(...params) {
+    return new Client().installScripts(params[0], params[1])
+}
+
+export function installStyleSheets(...params) {
+    return new Client().installStyleSheets(params[0], params[1])
+}
+
 export class Client {
     static Headers: { [key: string]: string } = {}
     static HostName = '' // By default, relative resolution is used. Otherwise, protocol + hostname
@@ -304,7 +328,9 @@ export class Client {
             .map((d) => d as Origin)
             .filter(({ name, version }) => !State.isInstalled(name, version))
             .map((origin: Origin) => {
-                const userSideEffects = Object.entries(resources?.sideEffects)
+                const userSideEffects = Object.entries(
+                    resources?.sideEffects || {},
+                )
                     .filter(([_, val]) => {
                         return val != undefined
                     })

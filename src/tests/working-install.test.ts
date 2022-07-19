@@ -5,8 +5,7 @@ import { writeFileSync } from 'fs'
 import {
     CdnEvent,
     State,
-    fetchSource,
-    getLoadingGraph,
+    queryLoadingGraph,
     getUrlBase,
     install,
     InstallDoneEvent,
@@ -14,6 +13,7 @@ import {
     SourceLoadingEvent,
     SourceParsedEvent,
     StartEvent,
+    fetchScript,
 } from '../lib'
 
 import { cleanDocument, installPackages$ } from './common'
@@ -85,10 +85,10 @@ test('install root', async () => {
 })
 
 test('loading graph a', async () => {
-    const resp = await getLoadingGraph({
+    const loadingGraph = await queryLoadingGraph({
         libraries: { a: 'latest' },
     })
-    expect(resp).toEqual({
+    expect(loadingGraph).toEqual({
         graphType: 'sequential-v1',
         lock: [
             {
@@ -113,7 +113,7 @@ test('loading graph a', async () => {
             [['YQ==', 'YQ==/1.0.0/a.js']],
         ],
     })
-    const src = await fetchSource({ name: 'a', url: 'YQ==/1.0.0/a.js' })
+    const src = await fetchScript({ name: 'a', url: 'YQ==/1.0.0/a.js' })
     expect(src.content).toBe(`window.a = {
     rootName: window['root'].name,
     name: 'a',
