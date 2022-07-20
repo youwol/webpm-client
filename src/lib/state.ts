@@ -65,7 +65,7 @@ export class State {
      */
     static isInstalled(libName: string, version: string): boolean {
         if (libName == '@youwol/cdn-client') {
-            return false
+            return true
         }
         return (
             State.importedBundles.has(libName) &&
