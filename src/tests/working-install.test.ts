@@ -86,7 +86,7 @@ test('install root', async () => {
 
 test('loading graph a', async () => {
     const loadingGraph = await queryLoadingGraph({
-        libraries: { a: 'latest' },
+        modules: ['a#latest'],
     })
     expect(loadingGraph).toEqual({
         graphType: 'sequential-v1',

@@ -1,18 +1,69 @@
-import { LoadingGraph, Origin } from './models'
-import { Client } from './client'
+import { LoadingGraph, FetchedScript } from './models'
 import { lt, major as getMajor } from 'semver'
 
 export type LibraryName = string
 export type Version = string
 
+/**
+ * Singleton object that gathers history of fetched modules, scripts & CSS.
+ * It also acts as a cache store.
+ *
+ * > At any point in time, info about resources fetched can be retrieved from here.
+ *
+ * @category State
+ */
 export class State {
-    static importedBundles = new Map<LibraryName, Version[]>()
-    static fetchedLoadingGraph = new Map<string, Promise<LoadingGraph>>()
-    static importedLoadingGraphs = new Map<string, Promise<Window>>()
-    static importedScripts = new Map<string, Promise<Origin>>()
-    static latestVersion = new Map<string, string>()
+    /**
+     * Return the exported symbol name of a library.
+     *
+     * For now implementation is based on a hard coded dictionary.
+     *
+     * @param name name of the library
+     */
+    static getExportedSymbolName(name: string): string {
+        const variants = {
+            lodash: '_',
+            three: 'THREE',
+            typescript: 'ts',
+            'three-trackballcontrols': 'TrackballControls',
+            codemirror: 'CodeMirror',
+            'highlight.js': 'hljs',
+            '@pyodide/pyodide': 'loadPyodide',
+        }
+        return Object.keys(variants).includes(name) ? variants[name] : name
+    }
 
-    static isInstalled(libName: string, version: string) {
+    /**
+     * Imported modules: mapping between [[LibraryName]] and list of installed [[Version]]
+     */
+    static importedBundles = new Map<LibraryName, Version[]>()
+
+    /**
+     * Fetched loading graph: mapping between a loading graph's body uid and corresponding computed loading graph.
+     */
+    static fetchedLoadingGraph = new Map<string, Promise<LoadingGraph>>()
+
+    /**
+     * Installed loading graph: mapping between a loading graph's body uid and window state
+     */
+    static importedLoadingGraphs = new Map<string, Promise<Window>>()
+
+    /**
+     * Installed script: mapping between a script's uid and a [[FetchedScript]]
+     */
+    static importedScripts = new Map<string, Promise<FetchedScript>>()
+
+    /**
+     * Latest version of modules installed: mapping between library name and latest version
+     */
+    static latestVersion = new Map<string, Version>()
+
+    /**
+     * Return whether a library at particular version hase been installed
+     * @param libName library name
+     * @param version version
+     */
+    static isInstalled(libName: string, version: string): boolean {
         if (libName == '@youwol/cdn-client') {
             return false
         }
@@ -22,13 +73,23 @@ export class State {
         )
     }
 
+    /**
+     * Reset the cache, but keep installed modules.
+     */
     static resetCache() {
         State.importedBundles = new Map<LibraryName, Version[]>()
         State.importedLoadingGraphs = new Map<string, Promise<Window>>()
-        State.importedScripts = new Map<string, Promise<Origin>>()
+        State.importedScripts = new Map<string, Promise<FetchedScript>>()
         State.latestVersion = new Map<string, string>()
     }
 
+    /**
+     * Update [[State.latestVersion]] given a provided installed [[LoadingGraph]].
+     * It also exposes the latest version in `executingWindow` using original symbol name if need be.
+     *
+     * @param loadingGraph installed [[LoadingGraph]]
+     * @param executingWindow where to expose the latest version if change need be
+     */
     static updateLatestBundleVersion(
         loadingGraph: LoadingGraph,
         executingWindow: Window,
@@ -48,7 +109,7 @@ export class State {
             ) {
                 return
             }
-            const symbol = Client.getExportedSymbolName(name)
+            const symbol = State.getExportedSymbolName(name)
             const major = getMajor(version)
             if (window[symbol] && !window[symbol]['__yw_set_from_version__']) {
                 console.warn(

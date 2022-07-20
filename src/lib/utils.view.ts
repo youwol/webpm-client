@@ -106,6 +106,11 @@ function listView(list: string[]) {
     })
 }
 
+/**
+ * The default svg Youwol logo.
+ *
+ * @category Loading screen
+ */
 export function youwolSvgLogo() {
     return `<svg id='logo2bis' xmlns='http://www.w3.org/2000/svg' style='transform:translate(0px,-12px);' viewBox='0 0 109.58 121.1'>
         <defs><style>.cls-1{fill:#008000;}</style></defs>

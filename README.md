@@ -9,7 +9,7 @@
     </a>
 </p>
 
-Javascript library for dynamic dependencies fetching from YouWol's CDN
+Javascript library for dynamic installation of YouWol's CDN libraries.
 
 ## Installation, Build & Test
 
@@ -31,7 +31,7 @@ To build for production:
 yarn build:prod
 ```
 
-Tests require py-youwol to run on port 2001 using the configuration defined in the test directory.
+Tests require py-youwol to run on port 2001 using the configuration defined [here](https://github.com/youwol/integration-tests-conf).
 
 ```shell
 yarn test
@@ -43,20 +43,21 @@ To generate code documentation:
 yarn doc
 ```
 
-## Usage
+## Quick start
 
-This library is used to dynamically fetch dependencies from YouWol's CDN in a front-end application, e.g.:
-
-```typescript
-await cdn.install({
-    modules: ['d3', '@youwol/fv-tree'],
-    css: ['bootstrap#4.4.1~bootstrap.min.css'],
+```
+import {install} from '@youwol/cdn-client'
+await install({
+     modules: ['d3', '@youwol/fv-tree'],
+     css: ['bootstrap#4.4.1~bootstrap.min.css'],
 })
 ```
-
-Missing dependencies from the provided mapping will be fetched using their latest version.
+This code snippet trigger the installation of the modules 'd3' and '@youwol/fv-tree' using their latest version,
+this includes the installation of the required indirect dependencies using appropriates version.
 
 > This client is only dealing with packages stored in the YouWol's CDN: the dependencies
 > requested, as well as their direct and indirect dependencies, must exist in there.
 
-The library can also be used to install stylesheets or javascript addons, see the developer documentation.
+## Documentation
+Documentation of the library can be found [here](https://platform.youwol.com/applications/@youwol/cdn-explorer/latest?package=@youwol/cdn-client&tab=doc).
+
