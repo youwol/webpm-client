@@ -8,7 +8,7 @@ from youwol_utils.context import Context
 test_html_outputs: Artifact = Artifact(
     id='test-html-outputs',
     files=FileListing(
-        include=["src/tests/.html-outputs/**/*"],
+        include=["src/tests/.html-outputs/*"],
     ),
     links=[
         Link(
