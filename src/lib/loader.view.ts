@@ -172,7 +172,7 @@ export class LoadingScreenView {
      */
     constructor(options: LoadingScreenOptions = {}) {
         this.options = Object.assign(LoadingScreenView.DefaultOptions, options)
-
+        this.options.container = this.options.container || document.body
         let wrapperStyle = {
             ...this.options.wrapperStyle,
             ...(options.wrapperStyle || {}),
