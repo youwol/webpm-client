@@ -32,12 +32,31 @@ import {
 
 /**
  *
- * Use default client to install a set of resources, see [[Client.install]]
+ * Use default [[Client]] to install a set of resources, see [[Client.install]]
  *
+ * @category Getting Started
+ * @param inputs
+ */
+export function install(inputs: InstallInputs): Promise<Window>
+
+/**
+ *
+ * Use default [[Client]] to install a set of resources, see [[Client.install]]
+ *
+ * @deprecated
  * @category Getting Started
  * @param inputs
  * @param options
  */
+export function install(
+    inputs: InstallInputs,
+    options?: {
+        executingWindow?: Window
+        onEvent?: (event: CdnEvent) => void
+        displayLoadingScreen?: boolean
+    },
+): Promise<Window>
+
 export function install(
     inputs: InstallInputs,
     options?: {
