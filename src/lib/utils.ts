@@ -170,6 +170,9 @@ export function addScriptElements(
         onEvent && onEvent(new SourceParsedEvent(name, assetId, url))
         executingWindow.removeEventListener('error', onErrorParsing)
         if (error) {
+            console.error(
+                `Failed to parse source code of ${name}#${version}: ${error}`,
+            )
             onEvent && onEvent(new ParseErrorEvent(name, assetId, url))
             throw new SourceParsingFailed({
                 assetId,
@@ -190,7 +193,7 @@ export function addScriptElements(
  * @returns assetId used in the assets store
  */
 export function getAssetId(name: string) {
-    return btoa(name)
+    return window.btoa(name)
 }
 
 /**
