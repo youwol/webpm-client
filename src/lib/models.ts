@@ -1,4 +1,56 @@
-export class CdnError extends Error {}
+/**
+ * A ScriptLocationString is a string that specifies location in the files structure of a module using the format:
+ * `{moduleName}#{version}~{rest-of-path}`
+ *
+ * Where:
+ * *  `moduleName` is the name of the module containing the script
+ * *  `version` is the version of the module
+ * *  `rest-of-path` is the path of the script from the root module directory
+ *
+ * > For the time being, `version` defines a specific fixed version (not a semver query).
+ *
+ * E.g.: `codemirror#5.52.0~mode/javascript.min.js`
+ *
+ */
+export type FileLocationString = string
+
+/**
+ * A LightLibraryQueryString is a string that defines query of a library using format:
+ * `{moduleName}#{semver}`
+ *
+ * Where:
+ * *  `moduleName` is the name of the module
+ * *  `semver` any valid [semantic versioning specifiers](https://devhints.io/semver), not all
+ * strings are however meaningful, **read below**
+ *
+ * E.g.: `codemirror#^5.52`
+ *
+ *  > When resolving the library query, there are two cases:
+ *  > *  the query defines a fixed version: this particular version will be used
+ *  > *  the query defines a range: only the major define in `semver` is relevant, the actual library
+ *  > fetched is always the latest of the provided major.
+ */
+export type LightLibraryQueryString = string
+
+/**
+ * A FullLibraryQueryString is a string that defines query of a library using format:
+ * `{moduleName}#{semver}`
+ *
+ * Where:
+ * *  `moduleName` is the name of the module
+ * *  `semver` any valid [semantic versioning specifiers](https://devhints.io/semver)
+ */
+export type FullLibraryQueryString = string
+
+/**
+ * Deprecated version, use LightModuleQueryString
+ * @deprecated
+ */
+export interface ModuleQueryDeprecated {
+    name: string
+    version: string
+    sideEffects?: (Window) => void
+}
 
 /**
  * Specification of a module.
@@ -12,86 +64,383 @@ export type ModuleInput =
     | string
 
 /**
- * Describe one or multiple CSS resource(s).
+ * Inputs for the method [[Client.installStyleSheets]]
  *
  * Resource are like: {libraryName}#{version}~{rest-of-path}
+ *
+ * @category Client's method inputs
  */
-export interface InstallStyleSheetInputs {
+export interface InstallStyleSheetsInputs {
+    /**
+     * See [[InstallInputs.css]]
+     */
     css: string[]
+
+    /**
+     * Window global in which css elements are added. If not provided, `window` is used.
+     */
     renderingWindow?: Window
 }
 
-export interface InstallStyleSheetDeprecated {
+/**
+ * Deprecated, use [[InstallStyleSheetInputs]]
+ *
+ * @category Client's method inputs
+ * @deprecated
+ */
+export interface InstallStyleSheetInputsDeprecated {
     css: { resource: string }[]
     renderingWindow?: Window
 }
 
+/**
+ * Inputs for the method [[Client.installLoadingGraph]]
+ *
+ * @category Client's method inputs
+ */
 export interface InstallLoadingGraphInputs {
+    /**
+     * Specification of the loading graph (e.g. retrieved using [[queryLoadingGraph]]).
+     */
     loadingGraph: LoadingGraph
-    sideEffects?: { [key: string]: ModuleSideEffectCallback }
+
+    /**
+     * See [[InstallInputs.modulesSideEffects]]
+     */
+    modulesSideEffects?: { [key: string]: ModuleSideEffectCallback }
+
+    /**
+     * Window global in which scripts elements are added. If not provided, `window` is used.
+     */
     executingWindow?: Window
+
+    /**
+     * If provided, any [[CdnFetchEvent]] emitted are forwarded to this callback.
+     *
+     * @param event event emitted
+     */
     onEvent?: (event: CdnFetchEvent) => void
 }
 
+/**
+ * Inputs for the method [[Client.install]]
+ *
+ * @category Client's method inputs
+ */
 export interface InstallInputs {
-    modules?: ModuleInput[]
-    usingDependencies?: string[]
+    /**
+     * List of modules to install, see [[LightLibraryQueryString]] for specification.
+     *
+     * A typical example:
+     * ```
+     * import {install} from `@youwol/cdn-client`
+     *
+     * await install({
+     *     modules: ['rxjs#6.x', 'lodash#*']
+     * })
+     * ```
+     */
+    modules?: (LightLibraryQueryString | ModuleQueryDeprecated)[]
+
+    /**
+     * Override the 'natural' version used for some libraries coming from the dependency graph when resolving
+     * the installation. Items are provided in the form [[LightLibraryQueryString]].
+     *
+     * Whenever a library is required in the dependency graph, the version(s) will be replaced by the (only) one
+     * coming from the relevant element (if any).
+     * This in turn disable multiple versions installation for the provided library
+     *
+     * Here is a fictive example of installing a module `@youwol/flux-view` with 2 versions `0.x` & `1.x`:
+     * *  the version `0.x` linked to `rxjs#6.x`
+     * *  the version `1.x` linked to `rxjs#7.x`
+     *
+     * When executed, the snippet override the actual versions resolution of rxjs and always use `rxjs#6.5.5`
+     * (which will probably break at installation of `@youwol/flux-view#1.x` as the two versions of RxJS are not
+     * compatible).
+     * ```
+     * import {install} from `@youwol/cdn-client`
+     *
+     * await install({
+     *     modules: [`@youwol/flux-view#0.x`, `@youwol/flux-view#1.x`],
+     *     usingDependencies: ['rxjs#6.5.5']
+     * })
+     * ```
+     */
+    usingDependencies?: LightLibraryQueryString[]
+
+    /**
+     * Specify side effects to execute when modules are installed.
+     *
+     * The key is in the form `{libraryName}#{semver}` (see [[FullLibraryQueryString]]):
+     * any module installed matching some keys will trigger execution
+     * of associated side effects.
+     *
+     * Here is a fictive example of installing a module `@youwol/flux-view` with 2 versions `0.x` & `1.x`,
+     * the version `0.x` linked to `rxjs#6.x`, and the version `1.x` linked to `rxjs#7.x`
+     * ```
+     * import {install} from `@youwol/cdn-client`
+     *
+     * await install({
+     *     modules: [`@youwol/flux-view#0.x`, `@youwol/flux-view#1.x`],
+     *     modulesSideEffects: {
+     *         'rxjs#6.x': () => { console.log("Rxjs 6 installed")},
+     *         'rxjs#7.x': () => { console.log("Rxjs 7 installed")},
+     *         'rxjs#*': () => { console.log("A version of Rxjs has been  installed")}
+     *     }
+     * })
+     * ```
+     */
     modulesSideEffects?: {
         [key: string]: ModuleSideEffectCallback
     }
-    scripts?: string[]
-    css?: string[]
+
+    /**
+     * Specify a list of scripts to install, by opposition to module, a script is installed as a standalone element:
+     * there are no direct or indirect dependencies' installation triggered.
+     *
+     * Installation of the script elements always happen after all provided [[InstallInputs.modules]]
+     * have been installed.
+     *
+     * See [[FileLocationString]] for format specification.
+     *
+     * E.g.:
+     * ```
+     * import {install} from `@youwol/cdn-client`
+     *
+     * await install({
+     *     modules: ['codemirror#5'],
+     *     scripts: [
+     *         'codemirror#5.52.0~mode/javascript.min.js',
+     *         'codemirror#5.52.0~addons/lint/lint.js',
+     *     ]
+     *  })
+     *  ```
+     */
+    scripts?: FileLocationString[]
+
+    /**
+     *
+     * Specify a list of stylesheets to install.
+     *
+     * Installation of the stylesheets elements always happen after both [[InstallInputs.modules]], and
+     * [[InstallInputs.scripts]] have been installed.
+     *
+     * See [[FileLocationString]] for format specification.
+     * E.g.:
+     * ```
+     * import {install} from `@youwol/cdn-client`
+     *
+     * await install({
+     *     modules: ['codemirror#5'],
+     *     css: [
+     *         'codemirror#5.52.0~codemirror.min.css',
+     *         'codemirror#5.52.0~theme/blackboard.min.css',
+     *         'codemirror#5.52.0~addons/lint/lint.css',
+     *     ]
+     *  })
+     *```
+     */
+    css?: FileLocationString[]
+
+    /**
+     * Provide aliases to exported symbols name of module.
+     *
+     * e.g.:
+     * ```
+     * import {install} from `@youwol/cdn-client`
+     *
+     * const {fluxView} = await install({
+     *     modules: ['@youwol/flux-view#0.x'],
+     *     aliases: {
+     *         fluxView:'@youwol/flux-view'// '@youwol/flux-view' is the actual symbol defined in the library
+     *     }
+     * })
+     * ```
+     *
+     * In case multiple versions of a lib are installed, it is possible to suffix by the major of the version.
+     * > In any case, when a module is installed, two symbols are exported:
+     * > *  the original symbol name suffixed by `#{major-version}`: it is immutable and corresponds to the latest
+     * > version provided `major-version`
+     * > *  the original symbol name: it is mutable and corresponds to the latest version of the module installed
+     * ```
+     * import {install} from `@youwol/cdn-client`
+     *
+     * let {fluxView0, fluxViewLatest} = await install({
+     *     modules: ['@youwol/flux-view#0.x'],
+     *     aliases: {
+     *         fluxView0:'@youwol/flux-view#0',
+     *         fluxViewLatest:'@youwol/flux-view'
+     *     }
+     * })
+     * // fluxView0 === fluxViewLatest
+     * let {fluxView1, fluxViewLatest} = await install({
+     *     modules: ['@youwol/flux-view#1.x'],
+     *     aliases: {
+     *         fluxView1:'@youwol/flux-view#1',
+     *         fluxViewLatest:'@youwol/flux-view'
+     *     }
+     * })
+     * // fluxView1 !== fluxView0
+     * // fluxView1 === fluxViewLatest (the latest version available)
+     * ```
+     *
+     */
     aliases?: { [key: string]: string | ((Window) => unknown) }
+
+    /**
+     * Window global in which installation occurs. If not provided, `window` is used.
+     */
     executingWindow?: Window
+
+    /**
+     * If provided, any [[CdnEvent]] emitted are forwarded to this callback.
+     *
+     * @param event event emitted
+     */
     onEvent?: (event: CdnEvent) => void
+
+    /**
+     * If `true`: loading screen is displayed and cover the all screen
+     *
+     * For a granular control of the loading screen display see [[LoadingScreenView]]
+     */
     displayLoadingScreen?: boolean
 }
 
+/**
+ * Inputs for the method [[Client.fetchScript]]
+ *
+ * @category Client's method inputs
+ */
 export interface FetchScriptInputs {
+    /**
+     * url of the script, see [[getUrlBase]].
+     */
     url: string
+
+    /**
+     * Preferred displayed name when referencing the script (exposed in [[CdnFetchEvent]])
+     */
     name?: string
+
+    /**
+     * If provided, any [[CdnFetchEvent]] emitted are forwarded to this callback.
+     *
+     * @param event event emitted
+     */
     onEvent?: (event: CdnFetchEvent) => void
 }
 
+/**
+ * Inputs for the method [[Client.installModules]]
+ *
+ * @category Client's method inputs
+ */
 export interface InstallModulesInputs {
-    modules: {
-        name: string
-        version: string
-        sideEffects?: (Window) => void
-    }[]
+    /**
+     * See [[InstallInputs.modules]]
+     */
+    modules: (LightLibraryQueryString | ModuleQueryDeprecated)[]
+
+    /**
+     * See [[InstallInputs.modulesSideEffects]]
+     */
     modulesSideEffects?: { [_key: string]: ModuleSideEffectCallback }
-    usingDependencies?: string[]
+
+    /**
+     * See [[InstallInputs.usingDependencies]]
+     */
+    usingDependencies?: LightLibraryQueryString[]
+
+    /**
+     * See [[InstallInputs.executingWindow]]
+     */
     executingWindow?: Window
+
+    /**
+     * See [[InstallInputs.onEvent]]
+     */
     onEvent?: (event: CdnEvent) => void
 }
 
 /**
- * Describe one or multiple scripts resource(s).
+ * Inputs for the method [[Client.installScripts]]
  *
- * Resource are like: {libraryName}#{version}~{rest-of-path}
+ * @category Client's method inputs
  */
 export interface InstallScriptsInputs {
-    scripts: string[]
+    /**
+     * See [[InstallInputs.scripts]]
+     */
+    scripts: FileLocationString[]
+    /**
+     * See [[InstallInputs.executingWindow]]
+     */
     executingWindow?: Window
+    /**
+     * See [[InstallInputs.onEvent]]
+     */
     onEvent?: (CdnEvent) => void
 }
 
 /**
- * Type definition of a module installation side effects.
- * The callback takes an object as argument of structure:
- * ```{
- *  module: any, // the installed module
- *  scriptHtmlNode: HTMLScriptElement, // the html script element added
- *  executingWindow: Window, // the executing window
- * }```
+ * Argument type for [[ModuleSideEffectCallback]]
  */
-export type ModuleSideEffectCallback = (params: {
+export interface ModuleSideEffectCallbackArgument {
+    /**
+     * The installed module
+     */
     module: any
-    origin: Origin
+    /**
+     * Origin of the module
+     */
+    origin: FetchedScript
+    /**
+     * HTML script element added
+     */
     htmlScriptElement: HTMLScriptElement
+    /**
+     * Window instance in which the HTML script element has been added
+     */
     executingWindow: Window
-}) => void | Promise<void>
+}
+/**
+ * Type definition of a module installation side effects:
+ * a callback taking an instance of [[ModuleSideEffectCallbackArgument]] as argument.
+ */
+export type ModuleSideEffectCallback = (
+    argument: ModuleSideEffectCallbackArgument,
+) => void | Promise<void>
 
+/**
+ * Inputs for the method [[Client.queryLoadingGraph]]
+ *
+ * @category Client's method inputs
+ */
+export interface QueryLoadingGraphInputs {
+    /**
+     * See [[InstallInputs.modules]]
+     */
+    modules: (LightLibraryQueryString | ModuleQueryDeprecated)[]
+
+    /**
+     * See [[InstallInputs.usingDependencies]]
+     */
+    usingDependencies?: LightLibraryQueryString[]
+}
+
+/**
+ * Base class of Errors.
+ *
+ * @category Errors
+ */
+export class CdnError extends Error {}
+
+/**
+ * Base class of errors related to loading graph resolution. See also [[CdnLoadingGraphErrorEvent]].
+ *
+ * @category Errors
+ */
 export class LoadingGraphError extends CdnError {
     constructor() {
         super('Failed to retrieve the loading graph') // (1)
@@ -99,6 +448,11 @@ export class LoadingGraphError extends CdnError {
     }
 }
 
+/**
+ * Error related to 401 response. See also [[UnauthorizedEvent]].
+ *
+ * @category Errors
+ */
 export class Unauthorized extends CdnError {
     static exceptionType = 'Unauthorized'
 
@@ -111,6 +465,11 @@ export class Unauthorized extends CdnError {
     }
 }
 
+/**
+ * Error related to 404 response. See also [[UrlNotFoundEvent]].
+ *
+ * @category Errors
+ */
 export class UrlNotFound extends CdnError {
     static exceptionType = 'UrlNotFound'
 
@@ -123,6 +482,11 @@ export class UrlNotFound extends CdnError {
     }
 }
 
+/**
+ * Error happening while fetching a source file. See also [[FetchErrorEvent]].
+ *
+ * @category Errors
+ */
 export class FetchErrors extends CdnError {
     static exceptionType = 'FetchErrors'
 
@@ -135,6 +499,11 @@ export class FetchErrors extends CdnError {
     }
 }
 
+/**
+ * Error occurring while parsing a source content of a script. See also [[ParseErrorEvent]].
+ *
+ * @category Errors
+ */
 export class SourceParsingFailed extends CdnError {
     static exceptionType = 'SourceParsingFailed'
 
@@ -147,6 +516,12 @@ export class SourceParsingFailed extends CdnError {
     }
 }
 
+/**
+ * Error occurred trying to resolve a direct or indirect dependency while resolving a loading graph.
+ * See also [[CdnLoadingGraphErrorEvent]].
+ *
+ * @category Errors
+ */
 export class DependenciesError extends LoadingGraphError {
     static exceptionType = 'DependenciesError'
 
@@ -164,6 +539,12 @@ export class DependenciesError extends LoadingGraphError {
     }
 }
 
+/**
+ * Dependencies resolution while resolving a loading graph lead to a circular dependency problem.
+ * See also [[CdnLoadingGraphErrorEvent]].
+ *
+ * @category Errors
+ */
 export class CircularDependencies extends LoadingGraphError {
     static exceptionType = 'CircularDependencies'
 
@@ -181,6 +562,11 @@ export class CircularDependencies extends LoadingGraphError {
     }
 }
 
+/**
+ * Errors factory.
+ *
+ * @category Errors
+ */
 export function errorFactory(error) {
     if (CircularDependencies.isInstance(error)) {
         return new CircularDependencies(error.detail)
@@ -196,8 +582,18 @@ export function errorFactory(error) {
     }
 }
 
+/**
+ * Base class of events.
+ *
+ * @category Events
+ */
 export class CdnEvent {}
 
+/**
+ * A message has been emitted.
+ *
+ * @category Events
+ */
 export class CdnMessageEvent extends CdnEvent {
     constructor(public readonly id: string, public readonly text: string) {
         super()
@@ -206,6 +602,8 @@ export class CdnMessageEvent extends CdnEvent {
 
 /**
  * Base class for CDN's HTTP request event
+ *
+ * @category Events
  */
 export class CdnFetchEvent extends CdnEvent {
     constructor(
@@ -217,6 +615,11 @@ export class CdnFetchEvent extends CdnEvent {
     }
 }
 
+/**
+ * Event emitted when an error while fetching a script occurred.
+ *
+ * @category Events
+ */
 export class FetchErrorEvent extends CdnFetchEvent {
     constructor(targetName: string, assetId: string, url: string) {
         super(targetName, assetId, url)
@@ -224,7 +627,9 @@ export class FetchErrorEvent extends CdnFetchEvent {
 }
 
 /**
- * Request just sent
+ * Event emitted when starting to fetch a script.
+ *
+ * @category Events
  */
 export class StartEvent extends CdnFetchEvent {
     constructor(targetName: string, assetId: string, url: string) {
@@ -233,7 +638,9 @@ export class StartEvent extends CdnFetchEvent {
 }
 
 /**
- * Request loading content
+ * Event emitted when a script's content is transferring over HTTP network.
+ *
+ * @category Events
  */
 export class SourceLoadingEvent extends CdnFetchEvent {
     constructor(
@@ -247,7 +654,9 @@ export class SourceLoadingEvent extends CdnFetchEvent {
 }
 
 /**
- * Request's content loaded
+ * Event emitted when a script's content transfer over HTTP network has completed.
+ *
+ * @category Events
  */
 export class SourceLoadedEvent extends CdnFetchEvent {
     constructor(
@@ -261,7 +670,9 @@ export class SourceLoadedEvent extends CdnFetchEvent {
 }
 
 /**
- * Request's content parsed
+ * Event emitted when a script's content has been parsed (installed).
+ *
+ * @category Events
  */
 export class SourceParsedEvent extends CdnFetchEvent {
     constructor(targetName: string, assetId: string, url: string) {
@@ -270,7 +681,9 @@ export class SourceParsedEvent extends CdnFetchEvent {
 }
 
 /**
- * Unauthorized to fetch resource
+ * Event emitted when an [[Unauthorized]] error occurred.
+ *
+ * @category Events
  */
 export class UnauthorizedEvent extends FetchErrorEvent {
     constructor(targetName: string, assetId: string, url: string) {
@@ -279,7 +692,9 @@ export class UnauthorizedEvent extends FetchErrorEvent {
 }
 
 /**
- * Unauthorized to fetch resource
+ * Event emitted when an [[UrlNotFound]] error occurred.
+ *
+ * @category Events
  */
 export class UrlNotFoundEvent extends FetchErrorEvent {
     constructor(targetName: string, assetId: string, url: string) {
@@ -288,7 +703,9 @@ export class UrlNotFoundEvent extends FetchErrorEvent {
 }
 
 /**
- * Unable to parse resource
+ * Event emitted when an [[SourceParsingFailed]] error occurred.
+ *
+ * @category Events
  */
 export class ParseErrorEvent extends FetchErrorEvent {
     constructor(targetName: string, assetId: string, url: string) {
@@ -296,12 +713,22 @@ export class ParseErrorEvent extends FetchErrorEvent {
     }
 }
 
+/**
+ * Event emitted when an [[LoadingGraphError]] error occurred.
+ *
+ * @category Events
+ */
 export class CdnLoadingGraphErrorEvent extends CdnEvent {
     constructor(public readonly error: LoadingGraphError) {
         super()
     }
 }
 
+/**
+ * Event emitted when an installation is done, see [[install]] & [[Client.install]].
+ *
+ * @category Events
+ */
 export class InstallDoneEvent extends CdnEvent {
     constructor() {
         super()
@@ -361,21 +788,35 @@ export interface LoadingGraph {
     graphType: string
 }
 
-export interface LibraryQuery {
+/**
+ * Output when a script has been fetched, see e.g. [[Client.fetchScript]] & [[fetchScript]]
+ */
+export interface FetchedScript {
+    /**
+     * name: module name if the script correspond to a module,
+     * can be defined by the user when using [[Client.fetchScript]] & [[fetchScript]]
+     */
     name: string
-    version: string
-}
 
-export interface QueryLoadingGraphInputs {
-    libraries: LibraryQuery[] | { [k: string]: string }
-    using?: { [k: string]: string }
-}
-
-export interface Origin {
-    name: string
+    /**
+     * Version of the module used
+     */
     version?: string
+
+    /**
+     * asset id
+     */
     assetId: string
+
+    /**
+     * full URL of the script element
+     */
     url: string
+
+    /**
+     * content of the script element
+     */
     content: string
-    progressEvent: ProgressEvent
+
+    //progressEvent: ProgressEvent
 }

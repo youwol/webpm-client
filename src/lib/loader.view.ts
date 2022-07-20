@@ -11,21 +11,79 @@ import {
     youwolSvgLogo,
 } from './utils.view'
 
+/**
+ * Specify loading screen options, see [[LoadingScreenView]].
+ *
+ * @category Loading screen
+ */
 export interface LoadingScreenOptions {
+    /**
+     * container in which the loading screen's HTMLDivElement is appended (when calling [[LoadingScreenView.render]]).
+     */
     container?: HTMLElement
+
+    /**
+     * id of the loading screen's HTMLDivElement wrapper
+     */
     id?: string
+
+    /**
+     * innerHTML definition of the logo
+     */
     logo?: string
+
+    /**
+     * style to apply on the loading screen's HTMLDivElement wrapper
+     */
     wrapperStyle?: { [_k: string]: string }
+
+    /**
+     * fading timeout
+     */
     fadingTimeout?: number
 }
 
-export class LoadingScreenView {
-    static DefaultFadingTimeout = 500
+/**
+ * Default values of [[LoadingScreenOptions]].
+ *
+ * @category Loading screen
+ */
+export class DefaultLoadingScreenOptions implements LoadingScreenOptions {
+    /**
+     * Default [[LoadingScreenOptions.id]]
+     */
     public readonly id: string = 'loading-screen'
+
+    /**
+     * Default [[LoadingScreenOptions.logo]], see [[youwolSvgLogo]].
+     */
     public readonly logo: string = youwolSvgLogo()
-    public readonly fadingTimeout = LoadingScreenView.DefaultFadingTimeout
+
+    /**
+     * Default [[LoadingScreenOptions.fadingTimeout]].
+     */
+    public readonly fadingTimeout: number = 500
+
+    /**
+     * Default [[LoadingScreenOptions.container]]
+     */
     public readonly container: HTMLElement = document.body
-    public readonly defaultStyle: { [_k: string]: string } = {
+
+    /**
+     * Default [[LoadingScreenOptions.wrapperStyle]]:
+     * ```
+     * {
+     *    position: 'absolute',
+     *    top: '0',
+     *    left: '0',
+     *    width: '100vw',
+     *    height: '100vh',
+     *    padding: 'inherit',
+     *    'font-weight': 'bolder'
+     * }
+     * ```
+     */
+    public readonly wrapperStyle: { [_k: string]: string } = {
         position: 'absolute',
         top: '0',
         left: '0',
@@ -34,14 +92,89 @@ export class LoadingScreenView {
         padding: 'inherit',
         'font-weight': 'bolder',
     }
+}
+
+/**
+ * Class providing granular controls on how loading screen is displayed when using [[Client.install]]
+ * or [[install]].
+ *
+ * Here is an example:
+ * ```
+ * import {LoadingScreenView, install} from '@youwol/cdn-client'
+ *
+ * const loadingScreen = new cdnClient.LoadingScreenView({
+ *     container: this,
+ *     logo: `<div style='font-size:xxx-large'>🐍</div>`,
+ *     wrapperStyle: {
+ *         position: 'absolute', top: '0', left: '0', width: '100%', height: '100%', 'font-weight': 'bolder',
+ *     },
+ * })
+ * loadingScreen.render()
+ * await cdnClient.install({
+ *     modules: ['rxjs#7'],
+ *     onEvent: (ev) => {
+ *         // event forwarding to loading screen
+ *         loadingScreen.next(ev)
+ *     },
+ * })
+ * // loadingScreen.next(...) can be used latter in the code
+ * // At some point remove the loading screen
+ * loadingScreen.done()
+ * ```
+ *
+ * Default values of the display options are defined in [[DefaultLoadingScreenOptions]], it can be controlled by e.g.:
+ * ```
+ * import {LoadingScreenView, DefaultLoadingScreenOptions} from '@youwol/cdn-client'
+ * // for all LoadingScreenView instances:
+ * LoadingScreenView.DefaultOptions = {
+ *     ...new DefaultLoadingScreenOptions(),
+ *     fadingTimeout: 0,
+ * }
+ * // for one LoadingScreenView instance (includes previously set 'fadingTimeout' to 0):
+ * new cdnClient.LoadingScreenView({
+ *     logo: `<div style='font-size:xxx-large'>🐍</div>`,
+ * })
+ * ```
+ *
+ * > For default display, setting [[InstallInputs.displayLoadingScreen]] to `true` is enough:
+ * > creation and management of [[LoadingScreenView]] will be automatic.
+ *
+ * @category Loading screen
+ */
+export class LoadingScreenView {
+    /**
+     * Can be used to control default display options for all [[LoadingScreenView]] instances
+     */
+    static DefaultOptions = new DefaultLoadingScreenOptions()
+
+    /**
+     * The actual display options used by the class.
+     */
+    public readonly options: LoadingScreenOptions
+
+    /**
+     * expose the wrapperDiv HTMLDivElement
+     */
     public readonly wrapperDiv: HTMLDivElement
+    /**
+     * expose the loadingDiv HTMLDivElement
+     */
     public readonly loadingDiv: HTMLDivElement
+    /**
+     * expose the contentDiv HTMLDivElement
+     */
     public contentDiv: HTMLDivElement
 
+    /**
+     *
+     * @param options see [[LoadingScreenOptions]], final display options object is obtained by merging
+     * `options` with [[DefaultLoadingScreenOptions]] : `Object.assign(LoadingScreenView.DefaultOptions, options)`
+     */
     constructor(options: LoadingScreenOptions = {}) {
-        Object.assign(this, options)
+        this.options = Object.assign(LoadingScreenView.DefaultOptions, options)
+
         let wrapperStyle = {
-            ...this.defaultStyle,
+            ...this.options.wrapperStyle,
             ...(options.wrapperStyle || {}),
         }
         this.wrapperDiv = document.createElement('div')
@@ -49,7 +182,7 @@ export class LoadingScreenView {
             this.wrapperDiv.style.setProperty(k, v)
         })
         this.wrapperDiv.innerHTML = `
-        <div id='${this.id}' style='display: flex;justify-content: space-around; background-color: darkgrey;
+        <div id='${this.options.id}' style='display: flex;justify-content: space-around; background-color: darkgrey;
         color: green; font-family: monospace;font-size:small; width:100%; height:100%; opacity:1;
         transition: opacity 1s;'>
             <div style='margin-top: auto;margin-bottom: auto; padding:40px;
@@ -58,7 +191,7 @@ export class LoadingScreenView {
             >
                 <div  style='display: flex;justify-content: space-around;' >
                     <div id='logo' style='white-space: pre-wrap; margin-top: auto; margin-bottom: auto; /*animation: spin 3s linear infinite*/'> 
-                        ${this.logo}
+                        ${this.options.logo}
                     </div>   
                 </div> 
                 <div  style='width: 50px; '>
@@ -72,6 +205,11 @@ export class LoadingScreenView {
         `
     }
 
+    /**
+     * Actualize the view given a new [[CdnEvent]] (provided that [[LoadingScreenView.render]] has been called before).
+     *
+     * @param event event to account for
+     */
     next(event: CdnEvent) {
         if (event instanceof CdnLoadingGraphErrorEvent) {
             insertLoadingGraphError(this.contentDiv, event)
@@ -105,19 +243,26 @@ export class LoadingScreenView {
         }
     }
 
+    /**
+     * Render the loading screen view, should be called before any call to [[LoadingScreenView.next]]
+     * to actually see the updates.
+     */
     render() {
-        this.container.appendChild(this.wrapperDiv)
+        this.options.container.appendChild(this.wrapperDiv)
         this.contentDiv = this.wrapperDiv.querySelector(
             '.screen-messages-container',
         )
     }
 
+    /**
+     * Remove the loading screen (see [[LoadingScreenOptions.fadingTimeout]])
+     */
     done() {
         this.wrapperDiv.style.setProperty(
             'transition',
-            `opacity ${this.fadingTimeout}ms`,
+            `opacity ${this.options.fadingTimeout}ms`,
         )
         this.wrapperDiv.style.setProperty('opacity', '0')
-        setTimeout(() => this.wrapperDiv.remove(), this.fadingTimeout)
+        setTimeout(() => this.wrapperDiv.remove(), this.options.fadingTimeout)
     }
 }

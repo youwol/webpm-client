@@ -11,12 +11,11 @@ import {
     UrlNotFoundEvent,
     ModuleSideEffectCallback,
     ModuleInput,
-    Origin,
+    FetchedScript,
 } from './models'
 import { State } from './state'
 import { LoadingScreenView } from './loader.view'
 import { sanitizeCssId } from './utils.view'
-import { Client } from './client'
 
 import { major as getMajor } from 'semver'
 
@@ -57,7 +56,7 @@ export function onHttpRequestLoad(
 
 export function sanitizeModules(
     modules: ModuleInput[],
-): { name: string; version: string }[] {
+): { name: string; version: string; sideEffects?: ModuleSideEffectCallback }[] {
     return modules.reduce((acc, e) => {
         const elem =
             typeof e == 'string'
@@ -95,7 +94,7 @@ export function parseResourceId(resourceId: string): {
 }
 
 export async function applyModuleSideEffects(
-    origin: Origin,
+    origin: FetchedScript,
     htmlScriptElement: HTMLScriptElement,
     executingWindow: Window,
     userSideEffects: ModuleSideEffectCallback[],
@@ -105,7 +104,7 @@ export async function applyModuleSideEffects(
         ...versionsAvailable,
         origin.version,
     ])
-    const exportedName = `${Client.getExportedSymbolName(
+    const exportedName = `${State.getExportedSymbolName(
         origin.name,
     )}#${getMajor(origin.version)}`
 
@@ -144,7 +143,7 @@ export function applyFinalSideEffects({
 }
 
 export function addScriptElements(
-    sources: (Origin & { sideEffect?: (HTMLScriptElement) => void })[],
+    sources: (FetchedScript & { sideEffect?: (HTMLScriptElement) => void })[],
     executingWindow?: Window,
     onEvent?: (event: CdnEvent) => void,
 ) {
@@ -186,11 +185,12 @@ export function addScriptElements(
 }
 
 /**
- * Returns the assetId in the assets store of a CDN asset from its name.
+ * Returns the assetId from a name.
  * It does not imply that the asset exist.
  *
  * @param name name of the package (as defined in package.json)
  * @returns assetId used in the assets store
+ * @category Helpers
  */
 export function getAssetId(name: string) {
     return window.btoa(name)
@@ -203,6 +203,7 @@ export function getAssetId(name: string) {
  * @param name name of the package (as defined in package.json)
  * @param version version of the package (as defined in package.json)
  * @returns base url to access the CDN resource (valid only if the asset is actually stored in the asset store)
+ * @category Helpers
  */
 export function getUrlBase(name: string, version: string) {
     const assetId = getAssetId(name)

@@ -18,6 +18,7 @@ import {
     SourceLoadingEvent,
     SourceParsedEvent,
     StartEvent,
+    DefaultLoadingScreenOptions,
 } from '../lib'
 
 RootRouter.HostName = getPyYouwolBasePath()
@@ -79,7 +80,10 @@ export function cleanDocument() {
     document.body.innerHTML = ''
     document.head.innerHTML = ''
     State.importedBundles = new Map<string, string[]>()
-    LoadingScreenView.DefaultFadingTimeout = 0
+    LoadingScreenView.DefaultOptions = {
+        ...new DefaultLoadingScreenOptions(),
+        fadingTimeout: 0,
+    }
 }
 
 export function saveScreen(filename: string) {

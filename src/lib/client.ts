@@ -8,14 +8,14 @@ import {
     SourceLoadedEvent,
     SourceLoadingEvent,
     StartEvent,
-    InstallStyleSheetInputs,
+    InstallStyleSheetsInputs,
     InstallLoadingGraphInputs,
     FetchScriptInputs,
     QueryLoadingGraphInputs,
     InstallInputs,
     CdnEvent,
-    Origin,
-    InstallStyleSheetDeprecated,
+    FetchedScript,
+    InstallStyleSheetInputsDeprecated,
 } from './models'
 import { State } from './state'
 import { LoadingScreenView } from './loader.view'
@@ -35,6 +35,7 @@ import {
  * Use default [[Client]] to install a set of resources, see [[Client.install]]
  *
  * @category Getting Started
+ * @category Entry points
  * @param inputs
  */
 export function install(inputs: InstallInputs): Promise<Window>
@@ -44,7 +45,7 @@ export function install(inputs: InstallInputs): Promise<Window>
  * Use default [[Client]] to install a set of resources, see [[Client.install]]
  *
  * @deprecated
- * @category Getting Started
+ * @category Deprecated
  * @param inputs
  * @param options
  */
@@ -71,36 +72,33 @@ export function install(
 }
 
 /**
- * @category Getting Started
- *
  * @param inputs
+ * @category Entry points
  */
 export function queryLoadingGraph(inputs: QueryLoadingGraphInputs) {
     return new Client().queryLoadingGraph(inputs)
 }
 
 /**
- * @category Getting Started
- *
  * @param inputs
+ * @category Entry points
  */
-export function fetchScript(inputs: FetchScriptInputs): Promise<Origin> {
+export function fetchScript(inputs: FetchScriptInputs): Promise<FetchedScript> {
     return new Client().fetchScript(inputs)
 }
 /**
  * Deprecated function, [[fetchScript]] is the replacing function
  *
  * @category Deprecated
- *
+ * @category Entry points
  * @param inputs
  */
-export function fetchSource(inputs: FetchScriptInputs): Promise<Origin> {
+export function fetchSource(inputs: FetchScriptInputs): Promise<FetchedScript> {
     return new Client().fetchScript(inputs)
 }
 
 /**
- * @category Getting Started
- *
+ * @category Entry points
  * @param inputs
  */
 export function installLoadingGraph(inputs: InstallLoadingGraphInputs) {
@@ -108,8 +106,7 @@ export function installLoadingGraph(inputs: InstallLoadingGraphInputs) {
 }
 
 /**
- * @category Getting Started
- *
+ * @category Entry points
  * @param inputs
  */
 export function installModules(inputs: InstallModulesInputs) {
@@ -117,8 +114,7 @@ export function installModules(inputs: InstallModulesInputs) {
 }
 
 /**
- * @category Getting Started
- *
+ * @category Entry points
  * @param inputs
  */
 export function installScripts(inputs: InstallScriptsInputs) {
@@ -126,39 +122,83 @@ export function installScripts(inputs: InstallScriptsInputs) {
 }
 
 /**
- * @category Getting Started
- *
+ * @category Entry points
  * @param inputs
  */
-export function installStyleSheets(inputs: InstallStyleSheetInputs) {
+export function installStyleSheets(inputs: InstallStyleSheetsInputs) {
     return new Client().installStyleSheets(inputs)
 }
 
 /**
- * @category Getting Started
+ * Class gathering methods to dynamically install various set of resources (modules, scripts, stylesheets).
  *
- * @param inputs
+ * The usual method used in this class is [[Client.install]].
+ *
+ * ## Versions management
+ *
+ * The client handle the case of installing multiple versions of a library.
+ * The resolution of the loading graph is based on information provided at build time in the package.json.
+ * See the section 'Package publication' in the
+ * [youwol's user guide](https://platform.youwol.com/applications/@youwol/stories/latest?id=fa525fef-cb28-40fb-94d0-c45c2b464571)
+ *
+ * ## Difference between modules & scripts
+ *
+ * Installing a module will trigger installation of its direct and indirect dependencies,
+ * while installing a script only install the provided target
+ *
+ * @category Getting Started
+ * @category Entry points
  */
 export class Client {
     static Headers: { [key: string]: string } = {}
     static HostName = '' // By default, relative resolution is used. Otherwise, protocol + hostname
 
-    static getExportedSymbolName(name: string) {
-        const variants = {
-            lodash: '_',
-            three: 'THREE',
-            typescript: 'ts',
-            'three-trackballcontrols': 'TrackballControls',
-            codemirror: 'CodeMirror',
-            'highlight.js': 'hljs',
-        }
-        return Object.keys(variants).includes(name) ? variants[name] : name
+    /**
+     * Headers used when doing HTTP requests, see [[Client.constructor]]
+     */
+    public readonly headers: { [key: string]: string } = {}
+
+    /**
+     * Hostname used when doing HTTP requests, see [[Client.constructor]]
+     */
+    public readonly hostName: string
+
+    /**
+     * @param params specifies how to handle HTTP requests by setting [[Client.headers]] & [[Client.HostName]]
+     * @param params.headers `this.headers =  headers ? {...Client.Headers, ...headers } : Client.Headers`
+     * @param params.hostName `this.hostName = hostName ? hostName : Client.HostName`
+     */
+    constructor(
+        params: {
+            headers?: { [_key: string]: string }
+            hostName?: string
+        } = {},
+    ) {
+        this.headers = { ...Client.Headers, ...(params.headers || {}) }
+        this.hostName = params.hostName || Client.HostName
     }
 
+    /**
+     * Query a loading graph provided a list of modules.
+     *
+     * See description in [[QueryLoadingGraphInputs]].
+     *
+     * @param inputs
+     */
     async queryLoadingGraph(
         inputs: QueryLoadingGraphInputs,
     ): Promise<LoadingGraph> {
         const key = JSON.stringify(inputs)
+        const usingDependencies = inputs.usingDependencies || []
+        const body = {
+            libraries: sanitizeModules(inputs.modules),
+            using: usingDependencies.reduce((acc, dependency) => {
+                return {
+                    ...acc,
+                    [dependency.split('#')[0]]: dependency.split('#')[1],
+                }
+            }, {}),
+        }
         const finalize = async () => {
             const content = await State.fetchedLoadingGraph[key]
             if (content.lock) {
@@ -173,7 +213,7 @@ export class Client {
         const request = new Request(url, {
             method: 'POST',
             body: JSON.stringify(body),
-            headers: { ...Client.Headers, 'content-type': 'application/json' },
+            headers: { ...this.headers, 'content-type': 'application/json' },
         })
         State.fetchedLoadingGraph[key] = fetch(request).then((resp) =>
             resp.json(),
@@ -181,7 +221,14 @@ export class Client {
         return finalize()
     }
 
-    async fetchScript(inputs: FetchScriptInputs): Promise<Origin> {
+    /**
+     * Fetch a script.
+     *
+     * See description in [[FetchScriptInputs]].
+     *
+     * @param inputs
+     */
+    async fetchScript(inputs: FetchScriptInputs): Promise<FetchedScript> {
         let { url, onEvent, name } = inputs
         if (!url.startsWith('/api/assets-gateway/raw/package')) {
             url = url.startsWith('/') ? url : `/${url}`
@@ -237,8 +284,14 @@ export class Client {
         return State.importedScripts[url]
     }
 
+    /**
+     * Install a various set of modules, scripts & stylesheets.
+     *
+     * See description in [[InstallInputs]].
+     *
+     * @param inputs
+     */
     install(inputs: InstallInputs): Promise<Window> {
-        const modules = sanitizeModules(inputs.modules || [])
         const css = inputs.css || []
         const executingWindow = inputs.executingWindow || window
         const aliases = inputs.aliases || {}
@@ -255,7 +308,7 @@ export class Client {
         }
 
         const bundlePromise = this.installModules({
-            modules,
+            modules: inputs.modules,
             modulesSideEffects: inputs.modulesSideEffects,
             usingDependencies: inputs.usingDependencies,
             executingWindow,
@@ -285,6 +338,15 @@ export class Client {
         })
     }
 
+    /**
+     * Install a loading graph.
+     *
+     * See description in [[InstallLoadingGraphInputs]].
+     *
+     * See also [[Client.queryLoadingGraph]] & [[queryLoadingGraph]]
+     *
+     * @param inputs
+     */
     async installLoadingGraph(inputs: InstallLoadingGraphInputs) {
         const executingWindow = inputs.executingWindow || window
 
@@ -320,10 +382,12 @@ export class Client {
         }
         const sources = sourcesOrErrors
             .filter((d) => d != undefined)
-            .map((d) => d as Origin)
+            .map((d) => d as FetchedScript)
             .filter(({ name, version }) => !State.isInstalled(name, version))
-            .map((origin: Origin) => {
-                const userSideEffects = Object.entries(inputs.sideEffects || {})
+            .map((origin: FetchedScript) => {
+                const userSideEffects = Object.entries(
+                    inputs.modulesSideEffects || {},
+                )
                     .filter(([_, val]) => {
                         return val != undefined
                     })
@@ -349,18 +413,21 @@ export class Client {
         addScriptElements(sources, executingWindow, inputs.onEvent)
     }
 
+    /**
+     * Install a set of modules.
+     *
+     * See description in [[InstallModulesInputs]].
+     *
+     * @param inputs
+     */
     async installModules(inputs: InstallModulesInputs): Promise<LoadingGraph> {
         const usingDependencies = inputs.usingDependencies || []
+        const modules = sanitizeModules(inputs.modules || [])
         const body = {
-            libraries: inputs.modules,
-            using: usingDependencies.reduce((acc, dependency) => {
-                return {
-                    ...acc,
-                    [dependency.split('#')[0]]: dependency.split('#')[1],
-                }
-            }, {}),
+            modules: modules,
+            usingDependencies,
         }
-        const sideEffects = inputs.modules.reduce(
+        const modulesSideEffects = modules.reduce(
             (acc, dependency) => ({
                 ...acc,
                 [`${dependency.name}#${dependency.version}`]:
@@ -372,7 +439,7 @@ export class Client {
             const loadingGraph = await this.queryLoadingGraph(body)
             await this.installLoadingGraph({
                 loadingGraph,
-                sideEffects,
+                modulesSideEffects,
                 executingWindow: inputs.executingWindow,
                 onEvent: inputs.onEvent,
             })
@@ -384,6 +451,13 @@ export class Client {
         }
     }
 
+    /**
+     * Install a set of scripts.
+     *
+     * See description in [[InstallScriptsInputs]].
+     *
+     * @param inputs
+     */
     async installScripts(
         inputs: InstallScriptsInputs,
     ): Promise<{ assetName; assetId; url; src }[]> {
@@ -407,8 +481,15 @@ export class Client {
         })
     }
 
+    /**
+     * Install a set of stylesheets.
+     *
+     * See description in [[InstallStyleSheetsInputs]].
+     *
+     * @param inputs
+     */
     installStyleSheets(
-        inputs: InstallStyleSheetInputs | InstallStyleSheetDeprecated,
+        inputs: InstallStyleSheetsInputs | InstallStyleSheetInputsDeprecated,
     ): Promise<Array<HTMLLinkElement>> {
         const css = inputs.css.map((stylesheet) =>
             stylesheet.resource ? stylesheet.resource : stylesheet,
@@ -432,7 +513,7 @@ export class Client {
                     )
                     link.classList.add(...classes)
                     link.setAttribute('type', 'text/css')
-                    link.href = Client.HostName + url
+                    link.href = this.hostName + url
                     link.rel = 'stylesheet'
                     renderingWindow.document
                         .getElementsByTagName('head')[0]
