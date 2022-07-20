@@ -156,9 +156,9 @@ export class Client {
     }
 
     async queryLoadingGraph(
-        body: QueryLoadingGraphInputs,
+        inputs: QueryLoadingGraphInputs,
     ): Promise<LoadingGraph> {
-        const key = JSON.stringify(body)
+        const key = JSON.stringify(inputs)
         const finalize = async () => {
             const content = await State.fetchedLoadingGraph[key]
             if (content.lock) {
@@ -181,11 +181,8 @@ export class Client {
         return finalize()
     }
 
-    async fetchScript({
-        name,
-        url,
-        onEvent,
-    }: FetchScriptInputs): Promise<Origin> {
+    async fetchScript(inputs: FetchScriptInputs): Promise<Origin> {
+        let { url, onEvent, name } = inputs
         if (!url.startsWith('/api/assets-gateway/raw/package')) {
             url = url.startsWith('/') ? url : `/${url}`
             url = `/api/assets-gateway/raw/package${url}`
