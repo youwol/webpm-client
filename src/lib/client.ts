@@ -15,6 +15,7 @@ import {
     InstallInputs,
     CdnEvent,
     Origin,
+    InstallStyleSheetDeprecated,
 } from './models'
 import { State } from './state'
 import { LoadingScreenView } from './loader.view'
@@ -65,6 +66,16 @@ export function queryLoadingGraph(inputs: QueryLoadingGraphInputs) {
  * @param inputs
  */
 export function fetchScript(inputs: FetchScriptInputs): Promise<Origin> {
+    return new Client().fetchScript(inputs)
+}
+/**
+ * Deprecated function, [[fetchScript]] is the replacing function
+ *
+ * @category Deprecated
+ *
+ * @param inputs
+ */
+export function fetchSource(inputs: FetchScriptInputs): Promise<Origin> {
     return new Client().fetchScript(inputs)
 }
 
@@ -381,9 +392,11 @@ export class Client {
     }
 
     installStyleSheets(
-        inputs: InstallStyleSheetInputs,
+        inputs: InstallStyleSheetInputs | InstallStyleSheetDeprecated,
     ): Promise<Array<HTMLLinkElement>> {
-        const css = inputs.css
+        const css = inputs.css.map((stylesheet) =>
+            stylesheet.resource ? stylesheet.resource : stylesheet,
+        )
         const renderingWindow = inputs.renderingWindow || window
 
         const getLinkElement = (url) => {

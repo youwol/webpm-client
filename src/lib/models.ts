@@ -21,6 +21,11 @@ export interface InstallStyleSheetInputs {
     renderingWindow?: Window
 }
 
+export interface InstallStyleSheetDeprecated {
+    css: { resource: string }[]
+    renderingWindow?: Window
+}
+
 export interface InstallLoadingGraphInputs {
     loadingGraph: LoadingGraph
     sideEffects?: { [key: string]: ModuleSideEffectCallback }
