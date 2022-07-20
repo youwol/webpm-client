@@ -60,5 +60,5 @@ this includes the installation of the required indirect dependencies using appro
 
 ## Documentation
 
-Documentation of the library can be found [here](https://platform.youwol.com/applications/@youwol/cdn-explorer/latest?package=@youwol/cdn-client&tab=doc).
+Documentation of the library can be found [here](https://platform.youwol.com/applications/@youwol/cdn-explorer/latest?package=@youwol/cdn-client).
 
