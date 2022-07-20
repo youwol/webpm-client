@@ -59,5 +59,6 @@ this includes the installation of the required indirect dependencies using appro
 > requested, as well as their direct and indirect dependencies, must exist in there.
 
 ## Documentation
-Documentation of the library can be found [here](https://platform.youwol.com/applications/@youwol/cdn-explorer/latest?package=@youwol/cdn-client).
+
+Documentation of the library can be found [here](https://platform.youwol.com/applications/@youwol/cdn-explorer/latest?package=@youwol/cdn-client&tab=doc).
 
