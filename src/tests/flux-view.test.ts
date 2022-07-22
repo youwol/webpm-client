@@ -11,7 +11,8 @@ beforeAll((done) => {
     installPackages$([
         './.packages-test/rxjs-test#6/cdn.zip',
         './.packages-test/rxjs-test#7/cdn.zip',
-        './.packages-test/flux-view-test#0/cdn.zip',
+        './.packages-test/flux-view-test#0.1/cdn.zip',
+        './.packages-test/flux-view-test#0.2/cdn.zip',
         './.packages-test/flux-view-test#1/cdn.zip',
     ]).subscribe(() => {
         done()
@@ -43,31 +44,29 @@ test('install flux-view-test#0', (done) => {
     const events = []
     const packageName = '@youwol/flux-view-test'
     from(
-        install(
-            {
-                modules: [{ name: packageName, version: '0.x' }], // ['@youwol/flux-view-test#0'],
-                aliases: {
-                    rxjs6: 'rxjs-test#6',
-                    rxjs: 'rxjs-test',
-                    fv0: '@youwol/flux-view-test#0',
-                    fv: '@youwol/flux-view-test',
-                },
+        install({
+            modules: [{ name: packageName, version: '0.x' }], // ['@youwol/flux-view-test#0'],
+            aliases: {
+                rxjs6: 'rxjs-test#6',
+                rxjs: 'rxjs-test',
+                fv0: '@youwol/flux-view-test#0',
+                fv: '@youwol/flux-view-test',
             },
-            {
-                onEvent: (event) => {
-                    events.push(event)
-                },
+            onEvent: (event) => {
+                events.push(event)
             },
-        ) as Promise<any>,
+        }) as Promise<any>,
     )
         .pipe(
             tap(({ rxjs, rxjs6, fv0, fv }) => {
                 expect(document.scripts).toHaveLength(2)
-                expect(document.scripts.item(0).id).toBe(
+                const scriptRxjs6 = document.scripts.item(0)
+                expect(scriptRxjs6.id).toBe(
                     getUrlBase('rxjs-test', '6.5.5') + `/dist/rxjs-test.js`,
                 )
-                expect(document.scripts.item(1).id).toBe(
-                    getUrlBase(packageName, '0.1.1') +
+                const scriptFv0 = document.scripts.item(1)
+                expect(scriptFv0.id).toBe(
+                    getUrlBase(packageName, '0.2.0') +
                         `/dist/${packageName}.js`,
                 )
 
@@ -99,22 +98,18 @@ test('install flux-view-test#1', (done) => {
     const events = []
     const packageName = '@youwol/flux-view-test'
     from(
-        install(
-            {
-                modules: [{ name: packageName, version: '1.x' }],
-                aliases: {
-                    rxjs7: 'rxjs-test#7',
-                    rxjs: 'rxjs-test',
-                    fv1: '@youwol/flux-view-test#1',
-                    fv: '@youwol/flux-view-test',
-                },
+        install({
+            modules: [{ name: packageName, version: '1.x' }],
+            aliases: {
+                rxjs7: 'rxjs-test#7',
+                rxjs: 'rxjs-test',
+                fv1: '@youwol/flux-view-test#1',
+                fv: '@youwol/flux-view-test',
             },
-            {
-                onEvent: (event) => {
-                    events.push(event)
-                },
+            onEvent: (event) => {
+                events.push(event)
             },
-        ) as Promise<any>,
+        }) as Promise<any>,
     )
         .pipe(
             tap(({ rxjs, rxjs7, fv1, fv }) => {
@@ -155,42 +150,38 @@ test('install flux-view-test#0 & flux-view-test#1', (done) => {
     const events = []
     const packageName = '@youwol/flux-view-test'
     from(
-        install(
-            {
-                modules: [`${packageName}#1.x`, `${packageName}#0.x`],
-                aliases: {
-                    rxjs6: 'rxjs-test#6',
-                    rxjs7: 'rxjs-test#7',
-                    rxjs: 'rxjs-test',
-                    fv0: '@youwol/flux-view-test#0',
-                    fv1: '@youwol/flux-view-test#1',
-                    fv: '@youwol/flux-view-test',
+        install({
+            modules: [`${packageName}#1.x`, `${packageName}#0.x`],
+            aliases: {
+                rxjs6: 'rxjs-test#6',
+                rxjs7: 'rxjs-test#7',
+                rxjs: 'rxjs-test',
+                fv0: '@youwol/flux-view-test#0',
+                fv1: '@youwol/flux-view-test#1',
+                fv: '@youwol/flux-view-test',
+            },
+            modulesSideEffects: {
+                'rxjs-test#*': ({ module, origin, htmlScriptElement }) => {
+                    module['sideEffects-rxjs-test#*'] = true
+                    htmlScriptElement.classList.add(
+                        `sideEffects-rxjs-test#*:${origin.name}`,
+                    )
                 },
-                modulesSideEffects: {
-                    'rxjs-test#*': ({ module, origin, htmlScriptElement }) => {
-                        module['sideEffects-rxjs-test#*'] = true
-                        htmlScriptElement.classList.add(
-                            `sideEffects-rxjs-test#*:${origin.name}`,
-                        )
-                    },
-                    'rxjs-test#6.x': async ({
-                        module,
-                        origin,
-                        htmlScriptElement,
-                    }) => {
-                        module['sideEffects-rxjs-test#6.x'] = true
-                        htmlScriptElement.classList.add(
-                            `sideEffects-rxjs-test#6.x:${origin.name}`,
-                        )
-                    },
+                'rxjs-test#6.x': async ({
+                    module,
+                    origin,
+                    htmlScriptElement,
+                }) => {
+                    module['sideEffects-rxjs-test#6.x'] = true
+                    htmlScriptElement.classList.add(
+                        `sideEffects-rxjs-test#6.x:${origin.name}`,
+                    )
                 },
             },
-            {
-                onEvent: (event) => {
-                    events.push(event)
-                },
+            onEvent: (event) => {
+                events.push(event)
             },
-        ) as Promise<any>,
+        }) as Promise<any>,
     )
         .pipe(
             tap(({ rxjs, rxjs6, rxjs7, fv0, fv1, fv }) => {
@@ -230,7 +221,7 @@ test('install flux-view-test#0 & flux-view-test#1', (done) => {
                         `/dist/${packageName}.js`,
                 )
                 expect(document.scripts.item(3).id).toBe(
-                    getUrlBase(packageName, '0.1.1') +
+                    getUrlBase(packageName, '0.2.0') +
                         `/dist/${packageName}.js`,
                 )
 
@@ -287,20 +278,16 @@ test('install flux-view-test#1 using rxjs#6.5.5 (failure expected)', (done) => {
     const events = []
     const packageName = '@youwol/flux-view-test'
     from(
-        install(
-            {
-                modules: [{ name: packageName, version: '1.x' }],
-                usingDependencies: ['rxjs-test#6.5.5'],
-                aliases: {
-                    fv1: '@youwol/flux-view-test#1',
-                },
+        install({
+            modules: [{ name: packageName, version: '1.x' }],
+            usingDependencies: ['rxjs-test#6.5.5'],
+            aliases: {
+                fv1: '@youwol/flux-view-test#1',
             },
-            {
-                onEvent: (event) => {
-                    events.push(event)
-                },
+            onEvent: (event) => {
+                events.push(event)
             },
-        ) as Promise<any>,
+        }) as Promise<any>,
     )
         .pipe(
             map(({ fv1 }) => {
@@ -318,6 +305,112 @@ test('install flux-view-test#1 using rxjs#6.5.5 (failure expected)', (done) => {
                 expect(error.message).toBe(
                     "Cannot read property 'map' of undefined",
                 )
+            }),
+        )
+        .subscribe(() => done())
+})
+
+test('Sequential installation with version upgrade', (done) => {
+    const packageName = '@youwol/flux-view-test'
+
+    from(
+        install({
+            modules: [{ name: packageName, version: '0.x' }],
+            usingDependencies: ['@youwol/flux-view-test#0.1.1'],
+            aliases: {
+                fv0: '@youwol/flux-view-test#0',
+            },
+        }) as Promise<any>,
+    )
+        .pipe(
+            tap(({ fv0 }) => {
+                expect(document.scripts).toHaveLength(2)
+                const [rxjsScript, fvScript] = [
+                    document.scripts.item(0),
+                    document.scripts.item(1),
+                ]
+                expect(rxjsScript.id).toBe(
+                    getUrlBase('rxjs-test', '6.5.5') + `/dist/rxjs-test.js`,
+                )
+                expect(fvScript.id).toBe(
+                    getUrlBase(packageName, '0.1.1') +
+                        `/dist/${packageName}.js`,
+                )
+
+                expect(fv0).toBeTruthy()
+            }),
+            mergeMap(() => {
+                return from(
+                    install({
+                        modules: [{ name: packageName, version: '0.x' }],
+                        aliases: {
+                            fv0: '@youwol/flux-view-test#0',
+                        },
+                    }) as Promise<any>,
+                )
+            }),
+            tap(({ fv0 }) => {
+                expect(document.scripts).toHaveLength(3)
+                const fvScript = document.scripts.item(2)
+                expect(fvScript.id).toBe(
+                    getUrlBase(packageName, '0.2.0') +
+                        `/dist/${packageName}.js`,
+                )
+                expect(fv0).toBeTruthy()
+                expect(fv0['__yw_set_from_version__']).toBe('0.2.0')
+            }),
+        )
+        .subscribe(() => done())
+})
+
+test('Sequential installation with version downgrade', (done) => {
+    const packageName = '@youwol/flux-view-test'
+
+    from(
+        install({
+            modules: [{ name: packageName, version: '0.x' }],
+            aliases: {
+                fv0: '@youwol/flux-view-test#0',
+            },
+        }) as Promise<any>,
+    )
+        .pipe(
+            tap(({ fv0 }) => {
+                expect(document.scripts).toHaveLength(2)
+                const [rxjsScript, fvScript] = [
+                    document.scripts.item(0),
+                    document.scripts.item(1),
+                ]
+                expect(rxjsScript.id).toBe(
+                    getUrlBase('rxjs-test', '6.5.5') + `/dist/rxjs-test.js`,
+                )
+                expect(fvScript.id).toBe(
+                    getUrlBase(packageName, '0.2.0') +
+                        `/dist/${packageName}.js`,
+                )
+
+                expect(fv0).toBeTruthy()
+            }),
+            mergeMap(() => {
+                return from(
+                    install({
+                        modules: [{ name: packageName, version: '0.x' }],
+                        usingDependencies: ['@youwol/flux-view-test#0.1.1'],
+                        aliases: {
+                            fv0: '@youwol/flux-view-test#0',
+                        },
+                    }) as Promise<any>,
+                )
+            }),
+            tap(({ fv0 }) => {
+                expect(document.scripts).toHaveLength(2)
+                const fvScript = document.scripts.item(1)
+                expect(fvScript.id).toBe(
+                    getUrlBase(packageName, '0.2.0') +
+                        `/dist/${packageName}.js`,
+                )
+                expect(fv0).toBeTruthy()
+                expect(fv0['__yw_set_from_version__']).toBe('0.2.0')
             }),
         )
         .subscribe(() => done())
