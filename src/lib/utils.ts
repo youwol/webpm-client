@@ -38,8 +38,7 @@ export function onHttpRequestLoad(
             version,
             assetId,
             url,
-            content, //content as any,
-            progressEvent: event,
+            content,
         })
     }
     if (req.status == 401) {
@@ -77,6 +76,7 @@ export function sanitizeModules(
  * -    rest-of-path is the partial url from the package's directory to the target CSS
  *
  * @param resourceId resource id in the form *{libraryName}#{version}~{rest-of-path}*
+ * @category Helpers
  */
 export function parseResourceId(resourceId: string): {
     name: string
