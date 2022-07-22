@@ -366,22 +366,30 @@ test('double install a with add-on', async () => {
     expect(events2[2]).toBeInstanceOf(InstallDoneEvent)
 })
 
-// eslint-disable-next-line jest/no-commented-out-tests -- want to keep it
-// test('install a with add-on & css', async () => {
-//     await install({
-//         modules: ['a'],
-//         scripts: ['a#1.0.0~folder/add-on.js'],
-//         css: ['a#1.0.0~style.css'],
-//     })
-//     expect(document.scripts).toHaveLength(3)
-//     expect(window['a']).toEqual({
-//         name: 'a',
-//         rootName: 'root',
-//         addOn: ['add-on'],
-//     })
-//     const div = document.createElement('div')
-//     div.classList.add('package-a')
-//     document.body.appendChild(div)
-//     const style = window.getComputedStyle(div)
-//     expect(style.getPropertyValue('background-color')).toBe('blue')
-// })
+test('install style sheet', async () => {
+    document['createElementRegular'] = document.createElement
+    document['createElement'] = (tag) => {
+        const element = document['createElementRegular'](tag)
+        if (tag != 'link') {
+            return element
+        }
+        setTimeout(() => {
+            element.onload()
+        }, 0)
+        return element
+    }
+    for (let mode of ['regular', 'deprecated']) {
+        cleanDocument()
+        await doInstallStyleSheets(
+            {
+                css: ['a#1.0.0~style.css'],
+            },
+            mode as 'regular' | 'deprecated',
+        )
+        const link = document.querySelector('link')
+        expect(link.id).toBe(
+            '/api/assets-gateway/raw/package/YQ==/1.0.0/style.css',
+        )
+        expect(link.classList.contains('a')).toBeTruthy()
+    }
+})
