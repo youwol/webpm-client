@@ -86,16 +86,6 @@ export function queryLoadingGraph(inputs: QueryLoadingGraphInputs) {
 export function fetchScript(inputs: FetchScriptInputs): Promise<FetchedScript> {
     return new Client().fetchScript(inputs)
 }
-/**
- * Deprecated function, [[fetchScript]] is the replacing function
- *
- * @category Deprecated
- * @category Entry points
- * @param inputs
- */
-export function fetchSource(inputs: FetchScriptInputs): Promise<FetchedScript> {
-    return new Client().fetchScript(inputs)
-}
 
 /**
  * @category Entry points
@@ -383,7 +373,10 @@ export class Client {
         const sources = sourcesOrErrors
             .filter((d) => d != undefined)
             .map((d) => d as FetchedScript)
-            .filter(({ name, version }) => !State.isInstalled(name, version))
+            .filter(
+                ({ name, version }) =>
+                    !State.isCompatibleVersionInstalled(name, version),
+            )
             .map((origin: FetchedScript) => {
                 const userSideEffects = Object.entries(
                     inputs.modulesSideEffects || {},

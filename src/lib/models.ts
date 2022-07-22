@@ -44,7 +44,9 @@ export type FullLibraryQueryString = string
 
 /**
  * Deprecated version, use LightModuleQueryString
+ *
  * @deprecated
+ * @category Deprecated
  */
 export interface ModuleQueryDeprecated {
     name: string
@@ -774,7 +776,7 @@ export interface LoadingGraph {
      * -    *definition[i][j]* defines the j'th library for the batch i:
      * a tuple of [*id*, *cdn-url*] where *id* is the asset id and *cdn-url* the CDN's URL
      */
-    definition: Array<Array<[string, string]>>
+    definition: string[][][]
 
     /**
      *
