@@ -1,14 +1,5 @@
 # cdn-client
 
-<p>
-    <a href="https://github.com/kefranabg/readme-md-generator/graphs/commit-activity" target="_blank">
-        <img alt="Maintenance" src="https://img.shields.io/badge/Maintained%3F-yes-green.svg" />
-    </a>
-    <a href="https://github.com/kefranabg/readme-md-generator/blob/master/LICENSE" target="_blank">
-        <img alt="License: MIT" src="https://img.shields.io/badge/License-MIT-yellow.svg" />
-    </a>
-</p>
-
 Javascript library for dynamic installation of YouWol's CDN libraries.
 
 ## Installation, Build & Test
@@ -53,10 +44,11 @@ await install({
 })
 ```
 This code snippet trigger the installation of the modules 'd3' and '@youwol/fv-tree' using their latest version,
-this includes the installation of the required indirect dependencies using appropriates version.
+this includes the installation of the required direct/indirect dependencies using compatible versions.
 
 > This client is only dealing with packages stored in the YouWol's CDN: the dependencies
-> requested, as well as their direct and indirect dependencies, must exist in there.
+> requested, as well as their direct and indirect dependencies, must have been published in it.
+> More information on packages publication [here](https://platform.youwol.com/documentation/py-youwol/publish-package).
 
 ## Documentation
 
