@@ -3,20 +3,32 @@
 
 import { writeFileSync } from 'fs'
 import {
-    CdnEvent,
     State,
     queryLoadingGraph,
     getUrlBase,
     install,
     InstallDoneEvent,
     SourceLoadedEvent,
-    SourceLoadingEvent,
-    SourceParsedEvent,
-    StartEvent,
     fetchScript,
+    InstallInputs,
+    QueryLoadingGraphInputs,
+    getLoadingGraph,
+    LightLibraryQueryString,
+    installScripts,
+    InstallScriptsInputs,
+    fetchJavascriptAddOn,
+    installLoadingGraph,
+    InstallLoadingGraphInputs,
+    fetchLoadingGraph,
+    FetchScriptInputs,
+    fetchSource,
+    parseResourceId,
+    installStyleSheets,
+    InstallStyleSheetsInputs,
+    fetchStyleSheets,
 } from '../lib'
 
-import { cleanDocument, installPackages$ } from './common'
+import { cleanDocument, expectEvents, installPackages$ } from './common'
 import './mock-requests'
 
 beforeAll((done) => {
@@ -35,60 +47,122 @@ beforeEach(() => {
     cleanDocument()
     State.resetCache()
 })
-
-function expectEvents(events: CdnEvent[], names: string[]) {
-    expect(
-        events
-            .filter((e) => e instanceof StartEvent)
-            .map((e: StartEvent) => e.targetName)
-            .sort(),
-    ).toEqual(names)
-    expect(
-        events
-            .filter((e) => e instanceof SourceLoadingEvent)
-            .map((e: SourceLoadingEvent) => e.targetName)
-            .sort(),
-    ).toEqual(names)
-    expect(
-        events
-            .filter((e) => e instanceof SourceLoadedEvent)
-            .map((e: SourceLoadedEvent) => e.targetName)
-            .sort(),
-    ).toEqual(names)
-    expect(
-        events
-            .filter((e) => e instanceof SourceParsedEvent)
-            .map((e: SourceParsedEvent) => e.targetName)
-            .sort(),
-    ).toEqual(names)
+function doFetchScript(
+    body: FetchScriptInputs,
+    version: 'deprecated' | 'regular',
+) {
+    return version == 'deprecated' ? fetchSource(body) : fetchScript(body)
 }
 
-test('install root', async () => {
-    const events = []
+function doInstallScripts(
+    body: InstallScriptsInputs,
+    version: 'deprecated' | 'regular',
+) {
+    return version == 'deprecated'
+        ? fetchJavascriptAddOn(body.scripts, body.executingWindow, body.onEvent)
+        : installScripts(body)
+}
 
-    await install(
-        {
-            modules: ['root'],
-        },
-        {
-            onEvent: (event) => {
-                events.push(event)
-            },
-        },
-    )
-    expect(document.scripts).toHaveLength(1)
-    const s0 = document.scripts.item(0)
-    const target = getUrlBase('root', '1.0.0') + '/root.js'
-    expect(s0.id).toBe(target)
-    expect(window['root'].name).toBe('root')
-    expectEvents(events, ['root'])
+function doInstall(body: InstallInputs, version: 'deprecated' | 'regular') {
+    return version == 'deprecated'
+        ? install(
+              {
+                  modules: body.modules,
+              },
+              {
+                  onEvent: body.onEvent,
+              },
+          )
+        : install({
+              modules: body.modules,
+              onEvent: body.onEvent,
+          })
+}
+
+function doQueryLoadingGraph(
+    body: QueryLoadingGraphInputs,
+    version: 'deprecated' | 'regular',
+) {
+    return version == 'deprecated'
+        ? getLoadingGraph({
+              libraries: body.modules.reduce(
+                  (acc, e: LightLibraryQueryString) => ({
+                      ...acc,
+                      [e.split('#')[0]]: e.split('#')[1],
+                  }),
+                  {},
+              ),
+          })
+        : queryLoadingGraph(body)
+}
+
+function doInstallLoadingGraph(
+    body: InstallLoadingGraphInputs,
+    version: 'deprecated' | 'regular',
+) {
+    return version == 'deprecated'
+        ? fetchLoadingGraph(
+              body.loadingGraph,
+              body.executingWindow,
+              undefined,
+              body.onEvent,
+          )
+        : installLoadingGraph(body)
+}
+
+function doInstallStyleSheets(
+    body: InstallStyleSheetsInputs,
+    version: 'deprecated' | 'regular',
+) {
+    return version == 'deprecated'
+        ? fetchStyleSheets(body.css, body.renderingWindow)
+        : installStyleSheets(body)
+}
+
+test('fetch script', async () => {
+    for (let mode of ['regular', 'deprecated']) {
+        cleanDocument()
+        State.resetCache()
+        // The script add-on.js suppose there is already the module 'a' installed
+        window['a'] = {}
+        const resource = parseResourceId('a#1.0.0~folder/add-on.js')
+        const resp = await doFetchScript(
+            resource,
+            mode as 'deprecated' | 'regular',
+        )
+        expect(resp).toEqual({
+            name: 'a',
+            version: '1.0.0',
+            assetId: 'YQ==',
+            url: '/api/assets-gateway/raw/package/YQ==/1.0.0/folder/add-on.js',
+            content:
+                "window.a.addOn = ['add-on']\n\n//# sourceURL=/api/assets-gateway/raw/package/YQ==/1.0.0/folder/",
+        })
+    }
 })
 
-test('loading graph a', async () => {
-    const loadingGraph = await queryLoadingGraph({
-        modules: ['a#latest'],
-    })
-    expect(loadingGraph).toEqual({
+test('install scripts', async () => {
+    for (let mode of ['regular', 'deprecated']) {
+        const events = []
+        cleanDocument()
+        State.resetCache()
+        // The script add-on.js suppose there is already the module 'a' installed
+        window['a'] = {}
+        await doInstallScripts(
+            {
+                scripts: ['a#1.0.0~folder/add-on.js'],
+                onEvent: (event) => {
+                    events.push(event)
+                },
+            },
+            mode as 'deprecated' | 'regular',
+        )
+        expect(document.scripts).toHaveLength(1)
+    }
+})
+
+test('install loading graph', async () => {
+    const loadingGraph = {
         graphType: 'sequential-v1',
         lock: [
             {
@@ -112,15 +186,93 @@ test('loading graph a', async () => {
             [['cm9vdA==', 'cm9vdA==/1.0.0/root.js']],
             [['YQ==', 'YQ==/1.0.0/a.js']],
         ],
-    })
-    const src = await fetchScript({ name: 'a', url: 'YQ==/1.0.0/a.js' })
-    expect(src.content).toBe(`window.a = {
+    }
+    for (let mode of ['regular', 'deprecated']) {
+        const events = []
+        cleanDocument()
+        State.resetCache()
+        // The script add-on.js suppose there is already the module 'a' installed
+        window['a'] = {}
+        await doInstallLoadingGraph(
+            {
+                loadingGraph,
+                onEvent: (event) => {
+                    events.push(event)
+                },
+            },
+            mode as 'deprecated' | 'regular',
+        )
+        expect(document.scripts).toHaveLength(2)
+    }
+})
+
+test('install root', async () => {
+    for (let mode of ['regular', 'deprecated']) {
+        const events = []
+        cleanDocument()
+        State.resetCache()
+        await doInstall(
+            {
+                modules: ['root'],
+                onEvent: (event) => {
+                    events.push(event)
+                },
+            },
+            mode as 'deprecated' | 'regular',
+        )
+        expect(document.scripts).toHaveLength(1)
+        const s0 = document.scripts.item(0)
+        const target = getUrlBase('root', '1.0.0') + '/root.js'
+        expect(s0.id).toBe(target)
+        expect(window['root'].name).toBe('root')
+        expectEvents(events, ['root'])
+    }
+})
+
+test('loading graph a', async () => {
+    for (let mode of ['regular', 'deprecated']) {
+        cleanDocument()
+        State.resetCache()
+        const loadingGraph = await doQueryLoadingGraph(
+            {
+                modules: ['a#latest'],
+            },
+            mode as 'deprecated' | 'regular',
+        )
+        expect(loadingGraph).toEqual({
+            graphType: 'sequential-v1',
+            lock: [
+                {
+                    name: 'a',
+                    fingerprint: '76270bd891a4fedd6fe6d68e83e0c025',
+                    version: '1.0.0',
+                    id: 'YQ==',
+                    namespace: '',
+                    type: 'library',
+                },
+                {
+                    name: 'root',
+                    fingerprint: '5cbfeecc7a6cf2e470d049043d57f3cb',
+                    version: '1.0.0',
+                    id: 'cm9vdA==',
+                    namespace: '',
+                    type: 'library',
+                },
+            ],
+            definition: [
+                [['cm9vdA==', 'cm9vdA==/1.0.0/root.js']],
+                [['YQ==', 'YQ==/1.0.0/a.js']],
+            ],
+        })
+        const src = await fetchScript({ name: 'a', url: 'YQ==/1.0.0/a.js' })
+        expect(src.content).toBe(`window.a = {
     rootName: window['root'].name,
     name: 'a',
     addOn: [],
 }
 
 //# sourceURL=/api/assets-gateway/raw/package/YQ==/1.0.0/`)
+    }
 })
 
 test('install a', async () => {
