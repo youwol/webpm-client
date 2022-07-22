@@ -1,5 +1,5 @@
 import { LoadingGraph, FetchedScript } from './models'
-import { lt, major as getMajor } from 'semver'
+import { lt, gt, major as getMajor } from 'semver'
 
 export type LibraryName = string
 export type Version = string
@@ -59,18 +59,44 @@ export class State {
     static latestVersion = new Map<string, Version>()
 
     /**
-     * Return whether a library at particular version hase been installed
+     * Return whether a library at particular version hase been already installed with a compatible version.
+     * Compatible version means a greater version with same major.
+     *
      * @param libName library name
      * @param version version
      */
-    static isInstalled(libName: string, version: string): boolean {
+    static isCompatibleVersionInstalled(
+        libName: string,
+        version: string,
+    ): boolean {
         if (libName == '@youwol/cdn-client') {
             return true
         }
-        return (
-            State.importedBundles.has(libName) &&
-            State.importedBundles.get(libName).includes(version)
-        )
+        if (!State.importedBundles.has(libName)) return false
+
+        if (State.importedBundles.get(libName).includes(version)) return true
+
+        const installedVersions = State.importedBundles.get(libName)
+        const compatibleVersion = installedVersions
+            .filter(
+                (installedVersion) =>
+                    getMajor(installedVersion) == getMajor(version),
+            )
+            .find((installedVersion) => {
+                return gt(installedVersion, version)
+            })
+
+        if (compatibleVersion) {
+            console.log(
+                `${libName}: a greater compatible version is already installed (${compatibleVersion}), skip install`,
+                {
+                    libName,
+                    queriedVersion: version,
+                    compatibleVersion,
+                },
+            )
+        }
+        return compatibleVersion != undefined
     }
 
     /**
