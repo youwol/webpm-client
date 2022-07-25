@@ -776,7 +776,7 @@ export interface LoadingGraph {
      * -    *definition[i][j]* defines the j'th library for the batch i:
      * a tuple of [*id*, *cdn-url*] where *id* is the asset id and *cdn-url* the CDN's URL
      */
-    definition: string[][][]
+    definition: [string, string][][]
 
     /**
      *
@@ -820,5 +820,8 @@ export interface FetchedScript {
      */
     content: string
 
-    //progressEvent: ProgressEvent
+    /**
+     * Completed progress event
+     */
+    progressEvent: ProgressEvent
 }
