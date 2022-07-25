@@ -39,6 +39,7 @@ export function onHttpRequestLoad(
             assetId,
             url,
             content,
+            progressEvent: event,
         })
     }
     if (req.status == 401) {

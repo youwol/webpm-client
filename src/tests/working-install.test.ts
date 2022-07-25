@@ -130,6 +130,7 @@ test('fetch script', async () => {
             resource,
             mode as 'deprecated' | 'regular',
         )
+        delete resp['progressEvent']
         expect(resp).toEqual({
             name: 'a',
             version: '1.0.0',
@@ -183,8 +184,8 @@ test('install loading graph', async () => {
             },
         ],
         definition: [
-            [['cm9vdA==', 'cm9vdA==/1.0.0/root.js']],
-            [['YQ==', 'YQ==/1.0.0/a.js']],
+            [['cm9vdA==', 'cm9vdA==/1.0.0/root.js'] as [string, string]],
+            [['YQ==', 'YQ==/1.0.0/a.js'] as [string, string]],
         ],
     }
     for (let mode of ['regular', 'deprecated']) {
