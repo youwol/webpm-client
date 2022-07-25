@@ -66,6 +66,32 @@ export type ModuleInput =
     | string
 
 /**
+ * specification of a CSS resource, either:
+ * *  the reference to a location
+ * *  an object with
+ *     *  'location': reference of the location
+ *     *  'sideEffects': the sideEffects to execute after the HTMLLinkElement has been loaded,
+ *     see [[CssSideEffectCallback]]
+ *
+ */
+export type CssInput =
+    | FileLocationString
+    | { location: FileLocationString; sideEffects?: CssSideEffectCallback }
+
+/**
+ * specification of a Script resource, either:
+ * *  the reference to a location
+ * *  an object with
+ *     *  'location': reference of the location
+ *     *  'sideEffects': the sideEffects to execute after the HTMLScriptElement has been loaded,
+ *     see [[ScriptSideEffectCallback]]
+ *
+ */
+export type ScriptInput =
+    | FileLocationString
+    | { location: FileLocationString; sideEffects: ScriptSideEffectCallback }
+
+/**
  * Inputs for the method [[Client.installStyleSheets]]
  *
  * Resource are like: {libraryName}#{version}~{rest-of-path}
@@ -76,7 +102,7 @@ export interface InstallStyleSheetsInputs {
     /**
      * See [[InstallInputs.css]]
      */
-    css: string[]
+    css: CssInput[]
 
     /**
      * Window global in which css elements are added. If not provided, `window` is used.
@@ -203,7 +229,7 @@ export interface InstallInputs {
      * Installation of the script elements always happen after all provided [[InstallInputs.modules]]
      * have been installed.
      *
-     * See [[FileLocationString]] for format specification.
+     * See [[ScriptInput]] for format specification.
      *
      * E.g.:
      * ```
@@ -212,13 +238,18 @@ export interface InstallInputs {
      * await install({
      *     modules: ['codemirror#5'],
      *     scripts: [
-     *         'codemirror#5.52.0~mode/javascript.min.js',
+     *         {
+     *             location: 'codemirror#5.52.0~mode/javascript.min.js',
+     *             sideEffects: ({origin, htmlScriptElement}) => {
+     *                 htmlScriptElement.id = origin.name
+     *             }
+     *         },
      *         'codemirror#5.52.0~addons/lint/lint.js',
      *     ]
      *  })
      *  ```
      */
-    scripts?: FileLocationString[]
+    scripts?: ScriptInput[]
 
     /**
      *
@@ -227,7 +258,7 @@ export interface InstallInputs {
      * Installation of the stylesheets elements always happen after both [[InstallInputs.modules]], and
      * [[InstallInputs.scripts]] have been installed.
      *
-     * See [[FileLocationString]] for format specification.
+     * See [[CssInput]] for format specification.
      * E.g.:
      * ```
      * import {install} from `@youwol/cdn-client`
@@ -235,14 +266,18 @@ export interface InstallInputs {
      * await install({
      *     modules: ['codemirror#5'],
      *     css: [
-     *         'codemirror#5.52.0~codemirror.min.css',
+     *          {
+     *          location:'codemirror#5.52.0~codemirror.min.css',
+     *          sideEffects: ({origin, htmlLinkElement}) => {
+     *              htmlLinkElement.id = `${origin.moduleName}_${origin.version}`
+     *          },
      *         'codemirror#5.52.0~theme/blackboard.min.css',
      *         'codemirror#5.52.0~addons/lint/lint.css',
      *     ]
      *  })
      *```
      */
-    css?: FileLocationString[]
+    css?: CssInput[]
 
     /**
      * Provide aliases to exported symbols name of module.
@@ -331,6 +366,11 @@ export interface FetchScriptInputs {
      * @param event event emitted
      */
     onEvent?: (event: CdnFetchEvent) => void
+
+    /**
+     * If provided, the callback is called right after the HTMLScriptElement has been installed.
+     */
+    sideEffects?: ScriptSideEffectCallback
 }
 
 /**
@@ -374,7 +414,7 @@ export interface InstallScriptsInputs {
     /**
      * See [[InstallInputs.scripts]]
      */
-    scripts: FileLocationString[]
+    scripts: ScriptInput[]
     /**
      * See [[InstallInputs.executingWindow]]
      */
@@ -412,6 +452,66 @@ export interface ModuleSideEffectCallbackArgument {
  */
 export type ModuleSideEffectCallback = (
     argument: ModuleSideEffectCallbackArgument,
+) => void | Promise<void>
+
+/**
+ * Argument type for [[CssSideEffectCallback]]
+ */
+export interface CssSideEffectCallbackArgument {
+    /**
+     * Origin of the style-sheet
+     */
+    origin: {
+        moduleName: string
+        version: string
+        assetId: string
+        url: string
+    }
+
+    /**
+     * HTML script element added
+     */
+    htmlLinkElement: HTMLLinkElement
+    /**
+     * Window instance in which the HTML link element has been added
+     */
+    renderingWindow: Window
+}
+
+/**
+ * Type definition of a css installation side effects:
+ * a callback taking an instance of [[CssSideEffectCallbackArgument]] as argument.
+ */
+export type CssSideEffectCallback = (
+    argument: CssSideEffectCallbackArgument,
+) => void | Promise<void>
+
+/**
+ * Argument type for [[CssSideEffectCallback]]
+ */
+export interface ScriptSideEffectCallbackArgument {
+    /**
+     * Origin of the style-sheet
+     */
+    origin: FetchedScript
+
+    /**
+     * HTML script element added
+     */
+    htmlScriptElement: HTMLScriptElement
+
+    /**
+     * Window instance in which the HTML script element has been added
+     */
+    executingWindow: Window
+}
+
+/**
+ * Type definition of a script installation side effects:
+ * a callback taking an instance of [[ScriptSideEffectCallbackArgument]] as argument.
+ */
+export type ScriptSideEffectCallback = (
+    argument: ScriptSideEffectCallbackArgument,
 ) => void | Promise<void>
 
 /**

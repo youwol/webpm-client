@@ -392,10 +392,14 @@ export class Client {
                     .map(([_, value]) => value)
                 return {
                     ...origin,
-                    sideEffect: (scriptNode: HTMLScriptElement) => {
+                    sideEffect: ({
+                        htmlScriptElement,
+                    }: {
+                        htmlScriptElement: HTMLScriptElement
+                    }) => {
                         applyModuleSideEffects(
                             origin,
-                            scriptNode,
+                            htmlScriptElement,
                             executingWindow,
                             userSideEffects,
                         )
@@ -456,10 +460,24 @@ export class Client {
     ): Promise<{ assetName; assetId; url; src }[]> {
         const client = new Client()
 
-        const scripts = inputs.scripts.map((elem) => parseResourceId(elem))
+        const scripts = inputs.scripts
+            .map((elem) =>
+                typeof elem == 'string'
+                    ? { location: elem, sideEffects: undefined }
+                    : elem,
+            )
+            .map((elem) => ({ ...elem, ...parseResourceId(elem.location) }))
 
-        const futures = scripts.map(({ name, url }) =>
-            client.fetchScript({ name, url, onEvent: inputs.onEvent }),
+        const futures = scripts.map(({ name, url, sideEffects }) =>
+            client
+                .fetchScript({
+                    name,
+                    url,
+                    onEvent: inputs.onEvent,
+                })
+                .then((fetchedScript) => {
+                    return { ...fetchedScript, sideEffects }
+                }),
         )
 
         const sourcesOrErrors = await Promise.all(futures)
@@ -492,12 +510,19 @@ export class Client {
         const getLinkElement = (url) => {
             return Array.from(
                 renderingWindow.document.head.querySelectorAll('link'),
-            ).find((e) => e.id == url)
+            ).find((e) => e.href == this.hostName + url)
         }
         const futures = css
-            .map((elem) => parseResourceId(elem))
+            .map((elem) =>
+                typeof elem == 'string'
+                    ? {
+                          location: elem,
+                      }
+                    : elem,
+            )
+            .map((elem) => ({ ...elem, ...parseResourceId(elem.location) }))
             .filter(({ url }) => !getLinkElement(url))
-            .map(({ assetId, version, name, url }) => {
+            .map(({ assetId, version, name, url, sideEffects }) => {
                 return new Promise<HTMLLinkElement>((resolveCb) => {
                     const link = renderingWindow.document.createElement('link')
                     link.id = url
@@ -512,6 +537,17 @@ export class Client {
                         .getElementsByTagName('head')[0]
                         .appendChild(link)
                     link.onload = () => {
+                        sideEffects &&
+                            sideEffects({
+                                origin: {
+                                    moduleName: name,
+                                    version,
+                                    assetId,
+                                    url,
+                                },
+                                htmlLinkElement: link,
+                                renderingWindow,
+                            })
                         resolveCb(link)
                     }
                 })

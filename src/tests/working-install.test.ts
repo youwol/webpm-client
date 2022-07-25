@@ -59,7 +59,11 @@ function doInstallScripts(
     version: 'deprecated' | 'regular',
 ) {
     return version == 'deprecated'
-        ? fetchJavascriptAddOn(body.scripts, body.executingWindow, body.onEvent)
+        ? fetchJavascriptAddOn(
+              body.scripts as string[],
+              body.executingWindow,
+              body.onEvent,
+          )
         : installScripts(body)
 }
 
@@ -115,7 +119,7 @@ function doInstallStyleSheets(
     version: 'deprecated' | 'regular',
 ) {
     return version == 'deprecated'
-        ? fetchStyleSheets(body.css, body.renderingWindow)
+        ? fetchStyleSheets(body.css as string[], body.renderingWindow)
         : installStyleSheets(body)
 }
 
@@ -367,18 +371,19 @@ test('double install a with add-on', async () => {
     expect(events2[2]).toBeInstanceOf(InstallDoneEvent)
 })
 
-test('install style sheet', async () => {
-    document['createElementRegular'] = document.createElement
-    document['createElement'] = (tag) => {
-        const element = document['createElementRegular'](tag)
-        if (tag != 'link') {
-            return element
-        }
-        setTimeout(() => {
-            element.onload()
-        }, 0)
+document['createElementRegular'] = document.createElement
+document['createElement'] = (tag) => {
+    const element = document['createElementRegular'](tag)
+    if (tag != 'link') {
         return element
     }
+    setTimeout(() => {
+        element.onload()
+    }, 0)
+    return element
+}
+
+test('install style sheet', async () => {
     for (let mode of ['regular', 'deprecated']) {
         cleanDocument()
         await doInstallStyleSheets(
@@ -393,4 +398,20 @@ test('install style sheet', async () => {
         )
         expect(link.classList.contains('a')).toBeTruthy()
     }
+})
+
+test('install style sheet with side effects', async () => {
+    await installStyleSheets({
+        css: [
+            {
+                location: 'a#1.0.0~style.css',
+                sideEffects: ({ origin, htmlLinkElement }) => {
+                    htmlLinkElement.id = `${origin.moduleName}_${origin.version}`
+                },
+            },
+            'a#1.0.0~style.css', // this guy should not be included (already here)
+        ],
+    })
+    const link = document.querySelector('link')
+    expect(link.id).toBe('a_1.0.0')
 })

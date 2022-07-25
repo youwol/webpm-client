@@ -12,6 +12,7 @@ import {
     ModuleSideEffectCallback,
     ModuleInput,
     FetchedScript,
+    ScriptSideEffectCallback,
 } from './models'
 import { State } from './state'
 import { LoadingScreenView } from './loader.view'
@@ -40,7 +41,7 @@ export function onHttpRequestLoad(
             url,
             content,
             progressEvent: event,
-        })
+        } as FetchedScript)
     }
     if (req.status == 401) {
         const unauthorized = new UnauthorizedEvent(name, assetId, url)
@@ -144,45 +145,67 @@ export function applyFinalSideEffects({
 }
 
 export function addScriptElements(
-    sources: (FetchedScript & { sideEffect?: (HTMLScriptElement) => void })[],
+    sources: (FetchedScript & { sideEffect?: ScriptSideEffectCallback })[],
     executingWindow?: Window,
     onEvent?: (event: CdnEvent) => void,
 ) {
     const head = document.getElementsByTagName('head')[0]
     executingWindow = executingWindow || window
-    sources.forEach(({ name, assetId, version, url, content, sideEffect }) => {
-        if (executingWindow.document.getElementById(url)) {
-            return
-        }
-        const script = document.createElement('script')
-        script.id = url
-        const classes = [assetId, name, version].map((key) =>
-            sanitizeCssId(key),
-        )
-        script.classList.add(...classes)
-        script.innerHTML = content
-        let error: string
-        const onErrorParsing = (d: ErrorEvent) => {
-            error = d.message
-        }
-        executingWindow.addEventListener('error', onErrorParsing)
-        head.appendChild(script)
-        onEvent && onEvent(new SourceParsedEvent(name, assetId, url))
-        executingWindow.removeEventListener('error', onErrorParsing)
-        if (error) {
-            console.error(
-                `Failed to parse source code of ${name}#${version}: ${error}`,
+    sources.forEach(
+        ({
+            name,
+            assetId,
+            version,
+            url,
+            content,
+            progressEvent,
+            sideEffect,
+        }) => {
+            if (executingWindow.document.getElementById(url)) {
+                return
+            }
+            const script = document.createElement('script')
+            script.id = url
+            const classes = [assetId, name, version].map((key) =>
+                sanitizeCssId(key),
             )
-            onEvent && onEvent(new ParseErrorEvent(name, assetId, url))
-            throw new SourceParsingFailed({
-                assetId,
-                name,
-                url,
-                message: error,
-            })
-        }
-        sideEffect && sideEffect(script)
-    })
+            script.classList.add(...classes)
+            script.innerHTML = content
+            let error: string
+            const onErrorParsing = (d: ErrorEvent) => {
+                error = d.message
+            }
+            executingWindow.addEventListener('error', onErrorParsing)
+            head.appendChild(script)
+            onEvent && onEvent(new SourceParsedEvent(name, assetId, url))
+            executingWindow.removeEventListener('error', onErrorParsing)
+            if (error) {
+                console.error(
+                    `Failed to parse source code of ${name}#${version}: ${error}`,
+                )
+                onEvent && onEvent(new ParseErrorEvent(name, assetId, url))
+                throw new SourceParsingFailed({
+                    assetId,
+                    name,
+                    url,
+                    message: error,
+                })
+            }
+            sideEffect &&
+                sideEffect({
+                    origin: {
+                        name,
+                        assetId,
+                        version,
+                        url,
+                        content,
+                        progressEvent,
+                    },
+                    htmlScriptElement: script,
+                    executingWindow,
+                })
+        },
+    )
 }
 
 /**
