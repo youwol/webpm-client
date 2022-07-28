@@ -29,6 +29,7 @@ export class State {
             codemirror: 'CodeMirror',
             'highlight.js': 'hljs',
             '@pyodide/pyodide': 'loadPyodide',
+            'plotly.js': 'Plotly',
         }
         return Object.keys(variants).includes(name) ? variants[name] : name
     }
