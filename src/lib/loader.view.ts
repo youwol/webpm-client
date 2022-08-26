@@ -102,7 +102,7 @@ export class DefaultLoadingScreenOptions implements LoadingScreenOptions {
  * ```
  * import {LoadingScreenView, install} from '@youwol/cdn-client'
  *
- * const loadingScreen = new cdnClient.LoadingScreenView({
+ * const loadingScreen = new LoadingScreenView({
  *     container: this,
  *     logo: `<div style='font-size:xxx-large'>🐍</div>`,
  *     wrapperStyle: {
@@ -110,7 +110,7 @@ export class DefaultLoadingScreenOptions implements LoadingScreenOptions {
  *     },
  * })
  * loadingScreen.render()
- * await cdnClient.install({
+ * await install({
  *     modules: ['rxjs#7'],
  *     onEvent: (ev) => {
  *         // event forwarding to loading screen
