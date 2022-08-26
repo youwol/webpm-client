@@ -303,7 +303,7 @@ test('install flux-view-test#1 using rxjs#6.5.5 (failure expected)', (done) => {
             }),
             tap((error) => {
                 expect(error.message).toBe(
-                    "Cannot read property 'map' of undefined",
+                    "Cannot read properties of undefined (reading 'map')",
                 )
             }),
         )
