@@ -13,7 +13,7 @@ beforeAll((done) => {
 })
 beforeEach(() => {
     cleanDocument()
-    State.resetCache()
+    State.clear()
 })
 test('install rxjs-test#latest', async () => {
     const events = []
@@ -46,7 +46,7 @@ test('install rxjs-test#latest', async () => {
 test('install rxjs-test#6.5.5 + side-effects', async () => {
     const events = []
     const packageName = 'rxjs-test'
-    let sideEffects: string[] = []
+    const sideEffects: string[] = []
     const { rxjs, rxjs6 } = (await install(
         {
             modules: [
@@ -83,7 +83,7 @@ test('install rxjs-test#6.5.5 + side-effects', async () => {
 
 test('install rxjs-test#6 & rxjs-test#7', async () => {
     const events = []
-    let sideEffects: string[] = []
+    const sideEffects: string[] = []
     const { rxjs, rxjs6, rxjs7 } = (await install(
         {
             modules: [

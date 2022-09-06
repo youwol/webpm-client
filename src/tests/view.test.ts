@@ -36,7 +36,7 @@ test('install success & custom message', async () => {
     loadingScreen.next(
         new CdnMessageEvent('custom-message', 'A custom message'),
     )
-    const elem = document.getElementById('custom-message')
+    const elem = document.getElementById('cdn-client_custom-message')
     expect(elem).toBeTruthy()
     expect(elem.textContent).toBe('> A custom message')
 })

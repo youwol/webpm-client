@@ -2,10 +2,10 @@ import { getUrlBase, install, State } from '../lib'
 import { cleanDocument, expectEvents, installPackages$ } from './common'
 import './mock-requests'
 import { of, from, ReplaySubject, combineLatest } from 'rxjs'
-import { tap } from 'rxjs/operators'
-import { map, mergeMap } from 'rxjs/operators'
+import { tap, map, mergeMap } from 'rxjs/operators'
 
-/* eslint-disable jest/no-done-callback -- eslint-comment It is required because */
+// eslint-disable-next-line eslint-comments/disable-enable-pair -- eslint-comment It is required because
+/* eslint-disable jest/no-done-callback -- eslint-comment 'done' useful with rxjs  */
 
 beforeAll((done) => {
     installPackages$([
@@ -21,19 +21,11 @@ beforeAll((done) => {
 
 beforeEach(() => {
     cleanDocument()
-    State.resetCache()
-    window['rxjs-test'] && delete window['rxjs-test']
-    window['rxjs-test#6'] && delete window['rxjs-test#6']
-    window['rxjs-test#7'] && delete window['rxjs-test#7']
-    window['@youwol/flux-view-test#0'] &&
-        delete window['@youwol/flux-view-test#0']
-    window['@youwol/flux-view-test#1'] &&
-        delete window['@youwol/flux-view-test#1']
-    window['@youwol/flux-view-test'] && delete window['@youwol/flux-view-test']
+    State.clear()
 })
 
 function attr$ToSubject(fv, data, mapper) {
-    let subj = new ReplaySubject(1)
+    const subj = new ReplaySubject(1)
     fv.attr$(of(data), (d) => mapper(d)).subscribe((d) => {
         subj.next(d)
     })
