@@ -258,3 +258,13 @@ export function getUrlBase(name: string, version: string) {
     const assetId = getAssetId(name)
     return `/api/assets-gateway/raw/package/${assetId}/${version}`
 }
+
+export function getFullExportedSymbol(name: string, version: string) {
+    const exported = State.getExportedSymbol(name, version)
+    return `${exported.symbol}_APIv${exported.apiKey}`
+}
+
+export function getFullExportedSymbolDeprecated(name: string, version: string) {
+    const exported = State.getExportedSymbol(name, version)
+    return `${exported.symbol}#${version.split('.')[0]}`
+}

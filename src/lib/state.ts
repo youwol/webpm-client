@@ -1,5 +1,6 @@
 import { LoadingGraph, FetchedScript } from './models'
 import { lt, gt, major as getMajor } from 'semver'
+import { getFullExportedSymbol, getFullExportedSymbolDeprecated } from './utils'
 
 export type LibraryName = string
 export type Version = string
