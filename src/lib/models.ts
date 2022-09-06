@@ -630,7 +630,11 @@ export class DependenciesError extends LoadingGraphError {
     constructor(
         public readonly detail: {
             context: string
-            errors: { key: string; paths: string[]; detail: string }[]
+            errors: {
+                query: string
+                fromPackage: { name: string; version: string }
+                detail: string
+            }[]
         },
     ) {
         super()
