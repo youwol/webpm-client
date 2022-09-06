@@ -111,6 +111,34 @@ export class State {
     }
 
     /**
+     * Remove installed modules & reset the cache
+     *
+     * @param executingWindow where the resources have been installed
+     */
+    static clear(executingWindow?: Window) {
+        executingWindow = executingWindow || window
+        Array.from(State.importedBundles.entries())
+            .map(([lib, versions]) => {
+                return versions.map((version) => [lib, version])
+            })
+            .flat()
+            .map(([lib, version]) => {
+                const symbolName = this.getExportedSymbol(lib, version).symbol
+                return [
+                    symbolName,
+                    getFullExportedSymbol(lib, version),
+                    getFullExportedSymbolDeprecated(lib, version),
+                ]
+            })
+            .flat()
+            .forEach((toDelete) => {
+                executingWindow[toDelete] && delete executingWindow[toDelete]
+            })
+
+        State.resetCache()
+    }
+
+    /**
      * Update [[State.latestVersion]] given a provided installed [[LoadingGraph]].
      * It also exposes the latest version in `executingWindow` using original symbol name if need be.
      *
