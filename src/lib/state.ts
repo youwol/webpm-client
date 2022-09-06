@@ -98,9 +98,13 @@ export class State {
         if (libName == '@youwol/cdn-client') {
             return true
         }
-        if (!State.importedBundles.has(libName)) return false
+        if (!State.importedBundles.has(libName)) {
+            return false
+        }
 
-        if (State.importedBundles.get(libName).includes(version)) return true
+        if (State.importedBundles.get(libName).includes(version)) {
+            return true
+        }
 
         const installedVersions = State.importedBundles.get(libName)
         const compatibleVersion = installedVersions

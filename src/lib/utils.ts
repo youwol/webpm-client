@@ -18,8 +18,6 @@ import { State } from './state'
 import { LoadingScreenView } from './loader.view'
 import { sanitizeCssId } from './utils.view'
 
-import { major as getMajor } from 'semver'
-
 export function onHttpRequestLoad(
     req: XMLHttpRequest,
     event: ProgressEvent<XMLHttpRequestEventTarget>,

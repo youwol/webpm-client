@@ -309,8 +309,7 @@ export class Client {
             css,
             renderingWindow: inputs.executingWindow,
         })
-        const jsPromise = bundlePromise.then((resp) => {
-            State.updateLatestBundleVersion(resp, executingWindow)
+        const jsPromise = bundlePromise.then(() => {
             return this.installScripts({
                 scripts: inputs.scripts || [],
                 executingWindow,
@@ -386,7 +385,9 @@ export class Client {
                     })
                     .filter(([key, _]) => {
                         const query = key.includes('#') ? key : `${key}#*`
-                        if (query.split('#')[0] != origin.name) return false
+                        if (query.split('#')[0] != origin.name) {
+                            return false
+                        }
                         return satisfies(origin.version, query.split('#')[1])
                     })
                     .map(([_, value]) => value)
