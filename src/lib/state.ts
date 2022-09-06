@@ -142,21 +142,19 @@ export class State {
      * Update [[State.latestVersion]] given a provided installed [[LoadingGraph]].
      * It also exposes the latest version in `executingWindow` using original symbol name if need be.
      *
-     * @param loadingGraph installed [[LoadingGraph]]
+     * @param modules installed [[LoadingGraph]]
      * @param executingWindow where to expose the latest version if change need be
      */
     static updateLatestBundleVersion(
-        loadingGraph: LoadingGraph,
+        modules: { name: string; version: string }[],
         executingWindow: Window,
     ) {
-        const toConsiderForUpdate = loadingGraph.lock.filter(
-            ({ name, version }) => {
-                return !(
-                    State.latestVersion.has(name) &&
-                    State.latestVersion.get(name) == version
-                )
-            },
-        )
+        const toConsiderForUpdate = modules.filter(({ name, version }) => {
+            return !(
+                State.latestVersion.has(name) &&
+                State.latestVersion.get(name) == version
+            )
+        })
         toConsiderForUpdate.forEach(({ name, version }) => {
             if (
                 State.latestVersion.has(name) &&
@@ -164,23 +162,30 @@ export class State {
             ) {
                 return
             }
-            const symbol = State.getExportedSymbolName(name)
-            const major = getMajor(version)
-            if (window[symbol] && !window[symbol]['__yw_set_from_version__']) {
-                console.warn(
-                    `Package "${name}" export symbol "${symbol}" with no major attached (should be ${major})`,
-                )
-                executingWindow[`${symbol}#${major}`] = executingWindow[symbol]
+            const symbol = State.getExportedSymbol(name, version).symbol
+            const exportedName = getFullExportedSymbol(name, version)
+
+            if (
+                executingWindow[exportedName] &&
+                !State.latestVersion.has(name)
+            ) {
+                executingWindow[symbol] = executingWindow[exportedName]
+                State.latestVersion.set(name, version)
+                State.importedBundles.set(name, [version])
+                return
             }
 
-            executingWindow[symbol] = executingWindow[`${symbol}#${major}`]
+            executingWindow[symbol] = executingWindow[exportedName]
             if (!executingWindow[symbol]) {
                 console.error(
                     `Problem with package "${name}" & export symbol "${symbol}"`,
                 )
             }
-            executingWindow[symbol]['__yw_set_from_version__'] = version
             State.latestVersion.set(name, version)
+            const existingVersions = State.importedBundles.has(name)
+                ? State.importedBundles.get(name)
+                : []
+            State.importedBundles.set(name, [...existingVersions, version])
         })
     }
 }

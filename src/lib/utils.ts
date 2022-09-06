@@ -106,13 +106,38 @@ export async function applyModuleSideEffects(
         ...versionsAvailable,
         origin.version,
     ])
-    const exportedName = `${State.getExportedSymbolName(
+    const exportedName = getFullExportedSymbol(origin.name, origin.version)
+    const symbolBase = State.getExportedSymbol(
         origin.name,
-    )}#${getMajor(origin.version)}`
+        origin.version,
+    ).symbol
+    const deprecatedExportedName = getFullExportedSymbolDeprecated(
+        origin.name,
+        origin.version,
+    )
+
+    if (executingWindow[symbolBase] && !executingWindow[exportedName]) {
+        console.warn(
+            `Package "${origin.name}#${origin.version}" export symbol "${symbolBase}" with no API version`,
+        )
+    }
+
+    executingWindow[exportedName] =
+        executingWindow[exportedName] ||
+        executingWindow[deprecatedExportedName] ||
+        executingWindow[symbolBase]
+    executingWindow[deprecatedExportedName] = executingWindow[exportedName]
+
+    if (!executingWindow[exportedName]) {
+        console.log('aaaa')
+    }
+    executingWindow[exportedName]['__yw_set_from_version__'] = origin.version
+
+    State.updateLatestBundleVersion([origin], executingWindow)
 
     for (const sideEffectFct of userSideEffects) {
         const r = sideEffectFct({
-            module: window[exportedName],
+            module: executingWindow[exportedName],
             origin,
             htmlScriptElement,
             executingWindow,
