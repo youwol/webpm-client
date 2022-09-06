@@ -861,6 +861,16 @@ export interface Library {
      * Type of the library, e.g. '*library*, *flux-pack*
      */
     type: string
+
+    /**
+     * Name of the exported symbol
+     */
+    exportedSymbol: string
+
+    /**
+     * Uid of the API version
+     */
+    apiKey: string
 }
 
 /**
@@ -907,7 +917,7 @@ export interface FetchedScript {
     /**
      * Version of the module used
      */
-    version?: string
+    version: string
 
     /**
      * asset id

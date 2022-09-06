@@ -14,26 +14,50 @@ export type Version = string
  */
 export class State {
     /**
+     * Dictionary of `${libName}#${libVersion}` -> { symbol: string; apiKey: string }
+     */
+    static exportedSymbolsDict: {
+        [k: string]: { symbol: string; apiKey: string }
+    } = {}
+
+    /**
      * Return the exported symbol name of a library.
      *
      * For now implementation is based on a hard coded dictionary.
      *
      * @param name name of the library
+     * @param version version of the library
      */
-    static getExportedSymbolName(name: string): string {
-        const variants = {
-            lodash: '_',
-            three: 'THREE',
-            typescript: 'ts',
-            'three-trackballcontrols': 'TrackballControls',
-            codemirror: 'CodeMirror',
-            'highlight.js': 'hljs',
-            '@pyodide/pyodide': 'loadPyodide',
-            'plotly.js': 'Plotly',
-        }
-        return Object.keys(variants).includes(name) ? variants[name] : name
+    static getExportedSymbol(
+        name: string,
+        version: string,
+    ): { symbol: string; apiKey: string } {
+        return State.exportedSymbolsDict[`${name}#${version}`]
     }
 
+    static updateExportedSymbolsDict(
+        modules: {
+            name: string
+            version: string
+            exportedSymbol: string
+            apiKey: string
+        }[],
+    ) {
+        const newEntries = modules.reduce(
+            (acc, e) => ({
+                ...acc,
+                [`${e.name}#${e.version}`]: {
+                    symbol: e.exportedSymbol,
+                    apiKey: e.apiKey,
+                },
+            }),
+            {},
+        )
+        State.exportedSymbolsDict = {
+            ...State.exportedSymbolsDict,
+            ...newEntries,
+        }
+    }
     /**
      * Imported modules: mapping between [[LibraryName]] and list of installed [[Version]]
      */

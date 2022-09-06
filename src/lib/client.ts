@@ -344,7 +344,7 @@ export class Client {
             (acc, e) => ({ ...acc, ...{ [e.id]: e } }),
             {},
         )
-
+        State.updateExportedSymbolsDict(inputs.loadingGraph.lock)
         const packagesSelected = inputs.loadingGraph.definition
             .flat()
             .map(([assetId, cdn_url]) => {
