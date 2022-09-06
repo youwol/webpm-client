@@ -354,6 +354,10 @@ export class Client {
                     version: libraries[assetId].version,
                 }
             })
+            .filter(
+                ({ name, version }) =>
+                    !State.isCompatibleVersionInstalled(name, version),
+            )
 
         const errors = []
         const futures = packagesSelected.map(({ name, url }) => {
@@ -372,10 +376,6 @@ export class Client {
         const sources = sourcesOrErrors
             .filter((d) => d != undefined)
             .map((d) => d as FetchedScript)
-            .filter(
-                ({ name, version }) =>
-                    !State.isCompatibleVersionInstalled(name, version),
-            )
             .map((origin: FetchedScript) => {
                 const userSideEffects = Object.entries(
                     inputs.modulesSideEffects || {},
