@@ -35,7 +35,7 @@ import {
  * Use default [[Client]] to install a set of resources, see [[Client.install]]
  *
  * @category Getting Started
- * @category Entry points
+ * @category Entry Points
  * @param inputs
  */
 export function install(inputs: InstallInputs): Promise<Window>
@@ -73,7 +73,7 @@ export function install(
 
 /**
  * @param inputs
- * @category Entry points
+ * @category Entry Points
  */
 export function queryLoadingGraph(inputs: QueryLoadingGraphInputs) {
     return new Client().queryLoadingGraph(inputs)
@@ -81,14 +81,14 @@ export function queryLoadingGraph(inputs: QueryLoadingGraphInputs) {
 
 /**
  * @param inputs
- * @category Entry points
+ * @category Entry Points
  */
 export function fetchScript(inputs: FetchScriptInputs): Promise<FetchedScript> {
     return new Client().fetchScript(inputs)
 }
 
 /**
- * @category Entry points
+ * @category Entry Points
  * @param inputs
  */
 export function installLoadingGraph(inputs: InstallLoadingGraphInputs) {
@@ -96,7 +96,7 @@ export function installLoadingGraph(inputs: InstallLoadingGraphInputs) {
 }
 
 /**
- * @category Entry points
+ * @category Entry Points
  * @param inputs
  */
 export function installModules(inputs: InstallModulesInputs) {
@@ -104,7 +104,7 @@ export function installModules(inputs: InstallModulesInputs) {
 }
 
 /**
- * @category Entry points
+ * @category Entry Points
  * @param inputs
  */
 export function installScripts(inputs: InstallScriptsInputs) {
@@ -112,7 +112,7 @@ export function installScripts(inputs: InstallScriptsInputs) {
 }
 
 /**
- * @category Entry points
+ * @category Entry Points
  * @param inputs
  */
 export function installStyleSheets(inputs: InstallStyleSheetsInputs) {
@@ -137,7 +137,7 @@ export function installStyleSheets(inputs: InstallStyleSheetsInputs) {
  * while installing a script only install the provided target
  *
  * @category Getting Started
- * @category Entry points
+ * @category Entry Points
  */
 export class Client {
     static Headers: { [key: string]: string } = {}
