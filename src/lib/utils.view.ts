@@ -11,7 +11,9 @@ import {
 } from './models'
 
 export function sanitizeCssId(id: string) {
-    return id.replace('/', '-').replace('.', '-').replace('@', '')
+    return (
+        'cdn-client_' + id.replace('/', '-').replace('.', '-').replace('@', '')
+    )
 }
 
 function setErrorCssProperties(div: HTMLDivElement) {
