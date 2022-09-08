@@ -109,7 +109,7 @@ export async function applyModuleSideEffects(
         origin.name,
         origin.version,
     ).symbol
-    const deprecatedExportedName = getFullExportedSymbolDeprecated(
+    const aliasExportedName = getFullExportedSymbolAlias(
         origin.name,
         origin.version,
     )
@@ -122,12 +122,21 @@ export async function applyModuleSideEffects(
 
     executingWindow[exportedName] =
         executingWindow[exportedName] ||
-        executingWindow[deprecatedExportedName] ||
+        executingWindow[aliasExportedName] ||
         executingWindow[symbolBase]
-    executingWindow[deprecatedExportedName] = executingWindow[exportedName]
+    executingWindow[aliasExportedName] = executingWindow[exportedName]
 
     if (!executingWindow[exportedName]) {
-        console.log('aaaa')
+        console.warn(
+            `Can not find exported symbol of library ${origin.name}#${origin.version} in current context`,
+            {
+                exportedName,
+                aliasExportedName,
+                symbolBase,
+                contextKeys: Object.keys(window),
+            },
+        )
+        return
     }
     executingWindow[exportedName]['__yw_set_from_version__'] = origin.version
 
@@ -257,12 +266,23 @@ export function getUrlBase(name: string, version: string) {
     return `/api/assets-gateway/raw/package/${assetId}/${version}`
 }
 
+/**
+ * Return the full exported symbol name of a library (including API version)
+ *
+ * @param name name of the library
+ * @param version version of the library
+ */
 export function getFullExportedSymbol(name: string, version: string) {
     const exported = State.getExportedSymbol(name, version)
     return `${exported.symbol}_APIv${exported.apiKey}`
 }
 
-export function getFullExportedSymbolDeprecated(name: string, version: string) {
-    const exported = State.getExportedSymbol(name, version)
-    return `${exported.symbol}#${version.split('.')[0]}`
+/**
+ * Return the alias (using '#') of full exported symbol name of a library (including API version)
+ *
+ * @param name name of the library
+ * @param version version of the library
+ */
+export function getFullExportedSymbolAlias(name: string, version: string) {
+    return getFullExportedSymbol(name, version).replace('_APIv', '#')
 }

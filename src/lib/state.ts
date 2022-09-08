@@ -1,6 +1,6 @@
 import { LoadingGraph, FetchedScript } from './models'
-import { lt, gt, major as getMajor } from 'semver'
-import { getFullExportedSymbol, getFullExportedSymbolDeprecated } from './utils'
+import { lt, gt } from 'semver'
+import { getFullExportedSymbol, getFullExportedSymbolAlias } from './utils'
 
 export type LibraryName = string
 export type Version = string
@@ -110,7 +110,8 @@ export class State {
         const compatibleVersion = installedVersions
             .filter(
                 (installedVersion) =>
-                    getMajor(installedVersion) == getMajor(version),
+                    State.getExportedSymbol(libName, installedVersion).apiKey ==
+                    State.getExportedSymbol(libName, version).apiKey,
             )
             .find((installedVersion) => {
                 return gt(installedVersion, version)
@@ -123,6 +124,7 @@ export class State {
                     libName,
                     queriedVersion: version,
                     compatibleVersion,
+                    apiKey: State.getExportedSymbol(libName, version).apiKey,
                 },
             )
         }
@@ -156,7 +158,7 @@ export class State {
                 return [
                     symbolName,
                     getFullExportedSymbol(lib, version),
-                    getFullExportedSymbolDeprecated(lib, version),
+                    getFullExportedSymbolAlias(lib, version),
                 ]
             })
             .flat()
