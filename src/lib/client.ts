@@ -219,7 +219,8 @@ export class Client {
      * @param inputs
      */
     async fetchScript(inputs: FetchScriptInputs): Promise<FetchedScript> {
-        let { url, onEvent, name } = inputs
+        let { url, name } = inputs
+        const onEvent = inputs.onEvent
         if (!url.startsWith('/api/assets-gateway/raw/package')) {
             url = url.startsWith('/') ? url : `/${url}`
             url = `/api/assets-gateway/raw/package${url}`
