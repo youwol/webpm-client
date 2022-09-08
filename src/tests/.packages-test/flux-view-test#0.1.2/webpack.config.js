@@ -20,7 +20,7 @@ module.exports = {
         path: DESTINATION,
         libraryTarget: 'umd',
         umdNamedDefine: true,
-        library: `${pkg.name}#${pkg.version.split(".")[0]}`,
+        library: `${pkg.name}_APIv01`,
         filename: pkg.name + '.js',
         globalObject: `(typeof self !== 'undefined' ? self : this)`,
     },
@@ -30,11 +30,11 @@ module.exports = {
     },
     externals: [
         {
-            rxjs: 'rxjs-test#6',
+            rxjs: 'rxjs-test_APIv6',
             'rxjs/operators': {
-                commonjs: 'rxjs-test#6/operators',
-                commonjs2: 'rxjs-test#6/operators',
-                root: ['rxjs-test#6', 'operators'],
+                commonjs: 'rxjs-test_APIv6/operators',
+                commonjs2: 'rxjs-test_APIv6/operators',
+                root: ['rxjs-test_APIv6', 'operators'],
             },
         },
     ],

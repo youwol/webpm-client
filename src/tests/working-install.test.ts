@@ -248,7 +248,7 @@ test('loading graph a', async () => {
             mode as 'deprecated' | 'regular',
         )
         expect(loadingGraph).toEqual({
-            graphType: 'sequential-v1',
+            graphType: 'sequential-v2',
             lock: [
                 {
                     name: 'a',

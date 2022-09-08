@@ -11,8 +11,8 @@ beforeAll((done) => {
     installPackages$([
         './.packages-test/rxjs-test#6/cdn.zip',
         './.packages-test/rxjs-test#7/cdn.zip',
-        './.packages-test/flux-view-test#0.1/cdn.zip',
-        './.packages-test/flux-view-test#0.2/cdn.zip',
+        './.packages-test/flux-view-test#0.1.1/cdn.zip',
+        './.packages-test/flux-view-test#0.1.2/cdn.zip',
         './.packages-test/flux-view-test#1/cdn.zip',
     ]).subscribe(() => {
         done()
@@ -41,7 +41,7 @@ test('install flux-view-test#0', (done) => {
             aliases: {
                 rxjs6: 'rxjs-test#6',
                 rxjs: 'rxjs-test',
-                fv0: '@youwol/flux-view-test#0',
+                fv0: '@youwol/flux-view-test#01',
                 fv: '@youwol/flux-view-test',
             },
             onEvent: (event) => {
@@ -58,7 +58,7 @@ test('install flux-view-test#0', (done) => {
                 )
                 const scriptFv0 = document.scripts.item(1)
                 expect(scriptFv0.id).toBe(
-                    getUrlBase(packageName, '0.2.0') +
+                    getUrlBase(packageName, '0.1.2') +
                         `/dist/${packageName}.js`,
                 )
 
@@ -148,7 +148,7 @@ test('install flux-view-test#0 & flux-view-test#1', (done) => {
                 rxjs6: 'rxjs-test#6',
                 rxjs7: 'rxjs-test#7',
                 rxjs: 'rxjs-test',
-                fv0: '@youwol/flux-view-test#0',
+                fv0: '@youwol/flux-view-test#01',
                 fv1: '@youwol/flux-view-test#1',
                 fv: '@youwol/flux-view-test',
             },
@@ -213,7 +213,7 @@ test('install flux-view-test#0 & flux-view-test#1', (done) => {
                         `/dist/${packageName}.js`,
                 )
                 expect(document.scripts.item(3).id).toBe(
-                    getUrlBase(packageName, '0.2.0') +
+                    getUrlBase(packageName, '0.1.2') +
                         `/dist/${packageName}.js`,
                 )
 
@@ -310,7 +310,7 @@ test('Sequential installation with version upgrade', (done) => {
             modules: [{ name: packageName, version: '0.x' }],
             usingDependencies: ['@youwol/flux-view-test#0.1.1'],
             aliases: {
-                fv0: '@youwol/flux-view-test#0',
+                fv0: '@youwol/flux-view-test#01',
             },
         }) as Promise<any>,
     )
@@ -336,7 +336,7 @@ test('Sequential installation with version upgrade', (done) => {
                     install({
                         modules: [{ name: packageName, version: '0.x' }],
                         aliases: {
-                            fv0: '@youwol/flux-view-test#0',
+                            fv0: '@youwol/flux-view-test#01',
                         },
                     }) as Promise<any>,
                 )
@@ -345,11 +345,11 @@ test('Sequential installation with version upgrade', (done) => {
                 expect(document.scripts).toHaveLength(3)
                 const fvScript = document.scripts.item(2)
                 expect(fvScript.id).toBe(
-                    getUrlBase(packageName, '0.2.0') +
+                    getUrlBase(packageName, '0.1.2') +
                         `/dist/${packageName}.js`,
                 )
                 expect(fv0).toBeTruthy()
-                expect(fv0['__yw_set_from_version__']).toBe('0.2.0')
+                expect(fv0['__yw_set_from_version__']).toBe('0.1.2')
             }),
         )
         .subscribe(() => done())
@@ -362,7 +362,7 @@ test('Sequential installation with version downgrade', (done) => {
         install({
             modules: [{ name: packageName, version: '0.x' }],
             aliases: {
-                fv0: '@youwol/flux-view-test#0',
+                fv0: '@youwol/flux-view-test#01',
             },
         }) as Promise<any>,
     )
@@ -377,7 +377,7 @@ test('Sequential installation with version downgrade', (done) => {
                     getUrlBase('rxjs-test', '6.5.5') + `/dist/rxjs-test.js`,
                 )
                 expect(fvScript.id).toBe(
-                    getUrlBase(packageName, '0.2.0') +
+                    getUrlBase(packageName, '0.1.2') +
                         `/dist/${packageName}.js`,
                 )
 
@@ -389,7 +389,7 @@ test('Sequential installation with version downgrade', (done) => {
                         modules: [{ name: packageName, version: '0.x' }],
                         usingDependencies: ['@youwol/flux-view-test#0.1.1'],
                         aliases: {
-                            fv0: '@youwol/flux-view-test#0',
+                            fv0: '@youwol/flux-view-test#01',
                         },
                     }) as Promise<any>,
                 )
@@ -398,11 +398,11 @@ test('Sequential installation with version downgrade', (done) => {
                 expect(document.scripts).toHaveLength(2)
                 const fvScript = document.scripts.item(1)
                 expect(fvScript.id).toBe(
-                    getUrlBase(packageName, '0.2.0') +
+                    getUrlBase(packageName, '0.1.2') +
                         `/dist/${packageName}.js`,
                 )
                 expect(fv0).toBeTruthy()
-                expect(fv0['__yw_set_from_version__']).toBe('0.2.0')
+                expect(fv0['__yw_set_from_version__']).toBe('0.1.2')
             }),
         )
         .subscribe(() => done())
