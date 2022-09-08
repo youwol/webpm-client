@@ -899,7 +899,7 @@ export interface LoadingGraph {
     lock: Array<Library>
 
     /**
-     * Type of the graph (versioning to be able to change the fetching mecanism)
+     * Type of the graph (versioning to be able to change the fetching mechanism)
      */
     graphType: string
 }
