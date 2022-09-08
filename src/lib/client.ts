@@ -419,7 +419,10 @@ export class Client {
      * @param inputs
      */
     async installModules(inputs: InstallModulesInputs): Promise<LoadingGraph> {
-        const usingDependencies = inputs.usingDependencies || []
+        const usingDependencies = [
+            ...State.pinedDependencies,
+            ...(inputs.usingDependencies || []),
+        ]
         const modules = sanitizeModules(inputs.modules || [])
         const body = {
             modules: modules,

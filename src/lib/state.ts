@@ -217,4 +217,10 @@ export class State {
             State.importedBundles.set(name, [...existingVersions, version])
         })
     }
+
+    static pinedDependencies: string[] = []
+
+    static pinDependencies(dependencies: string[]) {
+        State.pinedDependencies = [...State.pinedDependencies, ...dependencies]
+    }
 }
