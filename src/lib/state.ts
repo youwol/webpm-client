@@ -225,4 +225,14 @@ export class State {
     static pinDependencies(dependencies: string[]) {
         State.pinedDependencies = [...State.pinedDependencies, ...dependencies]
     }
+
+    static urlPatcher: ({ name, version, assetId, url }) => string = ({
+        url,
+    }) => url
+
+    static registerUrlPatcher(
+        patcher: ({ name, version, assetId, url }) => string,
+    ) {
+        State.urlPatcher = patcher
+    }
 }

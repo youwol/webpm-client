@@ -230,7 +230,12 @@ export class Client {
         const assetId = parts[5]
         const version = parts[6]
         name = name || parts[parts.length - 1]
-
+        url = State.urlPatcher({
+            name,
+            version,
+            assetId,
+            url,
+        })
         if (State.importedScripts[url]) {
             const { progressEvent } = await State.importedScripts[url]
             onEvent &&
@@ -526,6 +531,15 @@ export class Client {
                     : elem,
             )
             .map((elem) => ({ ...elem, ...parseResourceId(elem.location) }))
+            .map(({ assetId, version, name, url, sideEffects }) => {
+                url = State.urlPatcher({
+                    name,
+                    version,
+                    assetId,
+                    url,
+                })
+                return { assetId, version, name, url, sideEffects }
+            })
             .filter(({ url }) => !getLinkElement(url))
             .map(({ assetId, version, name, url, sideEffects }) => {
                 return new Promise<HTMLLinkElement>((resolveCb) => {
