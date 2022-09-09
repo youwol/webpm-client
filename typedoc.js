@@ -6,7 +6,7 @@ module.exports = {
     categorizeByGroup: false,
     categoryOrder: [
         'Getting Started',
-        'Entry points',
+        'Entry Points',
         'Loading screen',
         'State',
         "Client's method inputs",

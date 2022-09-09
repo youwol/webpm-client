@@ -11,6 +11,7 @@ import {
     install,
     ParseErrorEvent,
     SourceParsingFailed,
+    State,
     UnauthorizedEvent,
 } from '../lib'
 import { cleanDocument, installPackages$, saveScreen } from './common'
@@ -56,6 +57,7 @@ beforeAll((done) => {
 
 beforeEach(() => {
     cleanDocument()
+    State.clear()
 })
 
 test('install unauthorized', async () => {

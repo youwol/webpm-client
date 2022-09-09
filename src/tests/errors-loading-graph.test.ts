@@ -43,10 +43,9 @@ test('indirect dependencies not found', async () => {
         expect(error).toBeInstanceOf(LoadingGraphError)
         // eslint-disable-next-line jest/no-conditional-expect -- more convenient that expect(fct).toThrow
         expect(error['detail'].errors).toHaveLength(1)
-        expect(error['detail'].errors[0].key).toEqual('unknown#1')
-        expect(error['detail'].errors[0].paths).toEqual([
-            'b#1 > c#1 > unknown#1',
-        ])
+        expect(error['detail'].errors[0].query).toBe('unknown#^1.0.0')
+        expect(error['detail'].errors[0].fromPackage.name).toBe('c')
+        expect(error['detail'].errors[0].fromPackage.version).toBe('1.0.0')
     }
 })
 
@@ -66,7 +65,7 @@ test('packages not found', async () => {
         // eslint-disable-next-line jest/no-conditional-expect -- more convenient that expect(fct).toThrow
         expect(error).toBeInstanceOf(LoadingGraphError)
         // eslint-disable-next-line jest/no-conditional-expect -- more convenient that expect(fct).toThrow
-        expect(error['detail'].errors[0].key).toEqual('unknown#?')
+        expect(error['detail'].errors[0].query).toBe('unknown#latest')
     }
 })
 
@@ -88,7 +87,7 @@ test('cyclic dependencies', async () => {
         expect(error['detail'].context).toBe('Loading graph resolution stuck')
         // eslint-disable-next-line jest/no-conditional-expect -- more convenient that expect(fct).toThrow
         expect(error['detail'].packages).toEqual({
-            'd#1': [{ name: 'd', version: '^1.0.0' }],
+            'd#1.0.0': [{ name: 'd', version: '^1.0.0' }],
         })
     }
 })

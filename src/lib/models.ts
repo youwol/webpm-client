@@ -630,7 +630,11 @@ export class DependenciesError extends LoadingGraphError {
     constructor(
         public readonly detail: {
             context: string
-            errors: { key: string; paths: string[]; detail: string }[]
+            errors: {
+                query: string
+                fromPackage: { name: string; version: string }
+                detail: string
+            }[]
         },
     ) {
         super()
@@ -857,6 +861,16 @@ export interface Library {
      * Type of the library, e.g. '*library*, *flux-pack*
      */
     type: string
+
+    /**
+     * Name of the exported symbol
+     */
+    exportedSymbol: string
+
+    /**
+     * Uid of the API version
+     */
+    apiKey: string
 }
 
 /**
@@ -885,7 +899,7 @@ export interface LoadingGraph {
     lock: Array<Library>
 
     /**
-     * Type of the graph (versioning to be able to change the fetching mecanism)
+     * Type of the graph (versioning to be able to change the fetching mechanism)
      */
     graphType: string
 }
@@ -903,7 +917,7 @@ export interface FetchedScript {
     /**
      * Version of the module used
      */
-    version?: string
+    version: string
 
     /**
      * asset id

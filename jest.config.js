@@ -4,4 +4,5 @@ module.exports = {
     testURL: 'http://localhost:2001',
     reporters: ['default', 'jest-junit'],
     modulePathIgnorePatterns: ['/dist'],
+    testPathIgnorePatterns: ['.packages', '.packages-test'],
 }

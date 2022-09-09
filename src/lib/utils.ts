@@ -18,8 +18,6 @@ import { State } from './state'
 import { LoadingScreenView } from './loader.view'
 import { sanitizeCssId } from './utils.view'
 
-import { major as getMajor } from 'semver'
-
 export function onHttpRequestLoad(
     req: XMLHttpRequest,
     event: ProgressEvent<XMLHttpRequestEventTarget>,
@@ -106,13 +104,47 @@ export async function applyModuleSideEffects(
         ...versionsAvailable,
         origin.version,
     ])
-    const exportedName = `${State.getExportedSymbolName(
+    const exportedName = getFullExportedSymbol(origin.name, origin.version)
+    const symbolBase = State.getExportedSymbol(
         origin.name,
-    )}#${getMajor(origin.version)}`
+        origin.version,
+    ).symbol
+    const aliasExportedName = getFullExportedSymbolAlias(
+        origin.name,
+        origin.version,
+    )
+
+    if (executingWindow[symbolBase] && !executingWindow[exportedName]) {
+        console.warn(
+            `Package "${origin.name}#${origin.version}" export symbol "${symbolBase}" with no API version`,
+        )
+    }
+
+    executingWindow[exportedName] =
+        executingWindow[exportedName] ||
+        executingWindow[aliasExportedName] ||
+        executingWindow[symbolBase]
+    executingWindow[aliasExportedName] = executingWindow[exportedName]
+
+    if (!executingWindow[exportedName]) {
+        console.warn(
+            `Can not find exported symbol of library ${origin.name}#${origin.version} in current context`,
+            {
+                exportedName,
+                aliasExportedName,
+                symbolBase,
+                contextKeys: Object.keys(window),
+            },
+        )
+        return
+    }
+    executingWindow[exportedName]['__yw_set_from_version__'] = origin.version
+
+    State.updateLatestBundleVersion([origin], executingWindow)
 
     for (const sideEffectFct of userSideEffects) {
         const r = sideEffectFct({
-            module: window[exportedName],
+            module: executingWindow[exportedName],
             origin,
             htmlScriptElement,
             executingWindow,
@@ -232,4 +264,25 @@ export function getAssetId(name: string) {
 export function getUrlBase(name: string, version: string) {
     const assetId = getAssetId(name)
     return `/api/assets-gateway/raw/package/${assetId}/${version}`
+}
+
+/**
+ * Return the full exported symbol name of a library (including API version)
+ *
+ * @param name name of the library
+ * @param version version of the library
+ */
+export function getFullExportedSymbol(name: string, version: string) {
+    const exported = State.getExportedSymbol(name, version)
+    return `${exported.symbol}_APIv${exported.apiKey}`
+}
+
+/**
+ * Return the alias (using '#') of full exported symbol name of a library (including API version)
+ *
+ * @param name name of the library
+ * @param version version of the library
+ */
+export function getFullExportedSymbolAlias(name: string, version: string) {
+    return getFullExportedSymbol(name, version).replace('_APIv', '#')
 }

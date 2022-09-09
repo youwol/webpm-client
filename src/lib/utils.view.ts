@@ -11,7 +11,9 @@ import {
 } from './models'
 
 export function sanitizeCssId(id: string) {
-    return id.replace('/', '-').replace('.', '-').replace('@', '')
+    return (
+        'cdn-client_' + id.replace('/', '-').replace('.', '-').replace('@', '')
+    )
 }
 
 function setErrorCssProperties(div: HTMLDivElement) {
@@ -35,13 +37,9 @@ export function insertLoadingGraphError(
 
 export function dependenciesErrorView(error: DependenciesError) {
     const errorDiv = document.createElement('div')
-    const innerHTML = error.detail.errors.map(({ key, paths }) => {
+    const innerHTML = error.detail.errors.map(({ query, fromPackage }) => {
         return `
-        <li> <b>${key}</b>: requested by 
-        <ul>
-        ${listView(paths)}
-        </ul>
-        </li>
+        <li> <b>${query}</b>: requested by ${fromPackage.name} with version ${fromPackage.version}</li>
         `
     })
     errorDiv.innerHTML = `Some dependencies do not exist in the CDN
@@ -53,11 +51,11 @@ export function dependenciesErrorView(error: DependenciesError) {
 export function circularDependenciesView(error: CircularDependencies) {
     const errorDiv = document.createElement('div')
     const innerHTML = Object.entries(error.detail.packages).map(
-        ([name, paths]) => {
+        ([name, dependenciesError]) => {
             return `
         <li> <b>${name}</b>: problem with following dependencies 
         <ul>
-        ${listView(paths.map((path) => `${path.name}#${path.version}`))}
+        ${listView(dependenciesError.map((d) => `${d.name}#${d.version}`))}
         </ul>
         </li>
         `

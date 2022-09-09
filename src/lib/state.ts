@@ -1,5 +1,6 @@
 import { LoadingGraph, FetchedScript } from './models'
-import { lt, gt, major as getMajor } from 'semver'
+import { lt, gt } from 'semver'
+import { getFullExportedSymbol, getFullExportedSymbolAlias } from './utils'
 
 export type LibraryName = string
 export type Version = string
@@ -14,26 +15,50 @@ export type Version = string
  */
 export class State {
     /**
+     * Dictionary of `${libName}#${libVersion}` -> { symbol: string; apiKey: string }
+     */
+    static exportedSymbolsDict: {
+        [k: string]: { symbol: string; apiKey: string }
+    } = {}
+
+    /**
      * Return the exported symbol name of a library.
      *
      * For now implementation is based on a hard coded dictionary.
      *
      * @param name name of the library
+     * @param version version of the library
      */
-    static getExportedSymbolName(name: string): string {
-        const variants = {
-            lodash: '_',
-            three: 'THREE',
-            typescript: 'ts',
-            'three-trackballcontrols': 'TrackballControls',
-            codemirror: 'CodeMirror',
-            'highlight.js': 'hljs',
-            '@pyodide/pyodide': 'loadPyodide',
-            'plotly.js': 'Plotly',
-        }
-        return Object.keys(variants).includes(name) ? variants[name] : name
+    static getExportedSymbol(
+        name: string,
+        version: string,
+    ): { symbol: string; apiKey: string } {
+        return State.exportedSymbolsDict[`${name}#${version}`]
     }
 
+    static updateExportedSymbolsDict(
+        modules: {
+            name: string
+            version: string
+            exportedSymbol: string
+            apiKey: string
+        }[],
+    ) {
+        const newEntries = modules.reduce(
+            (acc, e) => ({
+                ...acc,
+                [`${e.name}#${e.version}`]: {
+                    symbol: e.exportedSymbol,
+                    apiKey: e.apiKey,
+                },
+            }),
+            {},
+        )
+        State.exportedSymbolsDict = {
+            ...State.exportedSymbolsDict,
+            ...newEntries,
+        }
+    }
     /**
      * Imported modules: mapping between [[LibraryName]] and list of installed [[Version]]
      */
@@ -73,15 +98,20 @@ export class State {
         if (libName == '@youwol/cdn-client') {
             return true
         }
-        if (!State.importedBundles.has(libName)) return false
+        if (!State.importedBundles.has(libName)) {
+            return false
+        }
 
-        if (State.importedBundles.get(libName).includes(version)) return true
+        if (State.importedBundles.get(libName).includes(version)) {
+            return true
+        }
 
         const installedVersions = State.importedBundles.get(libName)
         const compatibleVersion = installedVersions
             .filter(
                 (installedVersion) =>
-                    getMajor(installedVersion) == getMajor(version),
+                    State.getExportedSymbol(libName, installedVersion).apiKey ==
+                    State.getExportedSymbol(libName, version).apiKey,
             )
             .find((installedVersion) => {
                 return gt(installedVersion, version)
@@ -94,6 +124,7 @@ export class State {
                     libName,
                     queriedVersion: version,
                     compatibleVersion,
+                    apiKey: State.getExportedSymbol(libName, version).apiKey,
                 },
             )
         }
@@ -111,24 +142,50 @@ export class State {
     }
 
     /**
+     * Remove installed modules & reset the cache
+     *
+     * @param executingWindow where the resources have been installed
+     */
+    static clear(executingWindow?: Window) {
+        executingWindow = executingWindow || window
+        Array.from(State.importedBundles.entries())
+            .map(([lib, versions]) => {
+                return versions.map((version) => [lib, version])
+            })
+            .flat()
+            .map(([lib, version]) => {
+                const symbolName = this.getExportedSymbol(lib, version).symbol
+                return [
+                    symbolName,
+                    getFullExportedSymbol(lib, version),
+                    getFullExportedSymbolAlias(lib, version),
+                ]
+            })
+            .flat()
+            .forEach((toDelete) => {
+                executingWindow[toDelete] && delete executingWindow[toDelete]
+            })
+
+        State.resetCache()
+    }
+
+    /**
      * Update [[State.latestVersion]] given a provided installed [[LoadingGraph]].
      * It also exposes the latest version in `executingWindow` using original symbol name if need be.
      *
-     * @param loadingGraph installed [[LoadingGraph]]
+     * @param modules installed [[LoadingGraph]]
      * @param executingWindow where to expose the latest version if change need be
      */
     static updateLatestBundleVersion(
-        loadingGraph: LoadingGraph,
+        modules: { name: string; version: string }[],
         executingWindow: Window,
     ) {
-        const toConsiderForUpdate = loadingGraph.lock.filter(
-            ({ name, version }) => {
-                return !(
-                    State.latestVersion.has(name) &&
-                    State.latestVersion.get(name) == version
-                )
-            },
-        )
+        const toConsiderForUpdate = modules.filter(({ name, version }) => {
+            return !(
+                State.latestVersion.has(name) &&
+                State.latestVersion.get(name) == version
+            )
+        })
         toConsiderForUpdate.forEach(({ name, version }) => {
             if (
                 State.latestVersion.has(name) &&
@@ -136,23 +193,46 @@ export class State {
             ) {
                 return
             }
-            const symbol = State.getExportedSymbolName(name)
-            const major = getMajor(version)
-            if (window[symbol] && !window[symbol]['__yw_set_from_version__']) {
-                console.warn(
-                    `Package "${name}" export symbol "${symbol}" with no major attached (should be ${major})`,
-                )
-                executingWindow[`${symbol}#${major}`] = executingWindow[symbol]
+            const symbol = State.getExportedSymbol(name, version).symbol
+            const exportedName = getFullExportedSymbol(name, version)
+
+            if (
+                executingWindow[exportedName] &&
+                !State.latestVersion.has(name)
+            ) {
+                executingWindow[symbol] = executingWindow[exportedName]
+                State.latestVersion.set(name, version)
+                State.importedBundles.set(name, [version])
+                return
             }
 
-            executingWindow[symbol] = executingWindow[`${symbol}#${major}`]
+            executingWindow[symbol] = executingWindow[exportedName]
             if (!executingWindow[symbol]) {
                 console.error(
                     `Problem with package "${name}" & export symbol "${symbol}"`,
                 )
             }
-            executingWindow[symbol]['__yw_set_from_version__'] = version
             State.latestVersion.set(name, version)
+            const existingVersions = State.importedBundles.has(name)
+                ? State.importedBundles.get(name)
+                : []
+            State.importedBundles.set(name, [...existingVersions, version])
         })
+    }
+
+    static pinedDependencies: string[] = []
+
+    static pinDependencies(dependencies: string[]) {
+        State.pinedDependencies = [...State.pinedDependencies, ...dependencies]
+    }
+
+    static urlPatcher: ({ name, version, assetId, url }) => string = ({
+        url,
+    }) => url
+
+    static registerUrlPatcher(
+        patcher: ({ name, version, assetId, url }) => string,
+    ) {
+        State.urlPatcher = patcher
     }
 }

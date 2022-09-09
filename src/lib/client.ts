@@ -35,7 +35,7 @@ import {
  * Use default [[Client]] to install a set of resources, see [[Client.install]]
  *
  * @category Getting Started
- * @category Entry points
+ * @category Entry Points
  * @param inputs
  */
 export function install(inputs: InstallInputs): Promise<Window>
@@ -73,7 +73,7 @@ export function install(
 
 /**
  * @param inputs
- * @category Entry points
+ * @category Entry Points
  */
 export function queryLoadingGraph(inputs: QueryLoadingGraphInputs) {
     return new Client().queryLoadingGraph(inputs)
@@ -81,14 +81,14 @@ export function queryLoadingGraph(inputs: QueryLoadingGraphInputs) {
 
 /**
  * @param inputs
- * @category Entry points
+ * @category Entry Points
  */
 export function fetchScript(inputs: FetchScriptInputs): Promise<FetchedScript> {
     return new Client().fetchScript(inputs)
 }
 
 /**
- * @category Entry points
+ * @category Entry Points
  * @param inputs
  */
 export function installLoadingGraph(inputs: InstallLoadingGraphInputs) {
@@ -96,7 +96,7 @@ export function installLoadingGraph(inputs: InstallLoadingGraphInputs) {
 }
 
 /**
- * @category Entry points
+ * @category Entry Points
  * @param inputs
  */
 export function installModules(inputs: InstallModulesInputs) {
@@ -104,7 +104,7 @@ export function installModules(inputs: InstallModulesInputs) {
 }
 
 /**
- * @category Entry points
+ * @category Entry Points
  * @param inputs
  */
 export function installScripts(inputs: InstallScriptsInputs) {
@@ -112,7 +112,7 @@ export function installScripts(inputs: InstallScriptsInputs) {
 }
 
 /**
- * @category Entry points
+ * @category Entry Points
  * @param inputs
  */
 export function installStyleSheets(inputs: InstallStyleSheetsInputs) {
@@ -137,7 +137,7 @@ export function installStyleSheets(inputs: InstallStyleSheetsInputs) {
  * while installing a script only install the provided target
  *
  * @category Getting Started
- * @category Entry points
+ * @category Entry Points
  */
 export class Client {
     static Headers: { [key: string]: string } = {}
@@ -219,7 +219,8 @@ export class Client {
      * @param inputs
      */
     async fetchScript(inputs: FetchScriptInputs): Promise<FetchedScript> {
-        let { url, onEvent, name } = inputs
+        let { url, name } = inputs
+        const onEvent = inputs.onEvent
         if (!url.startsWith('/api/assets-gateway/raw/package')) {
             url = url.startsWith('/') ? url : `/${url}`
             url = `/api/assets-gateway/raw/package${url}`
@@ -229,7 +230,12 @@ export class Client {
         const assetId = parts[5]
         const version = parts[6]
         name = name || parts[parts.length - 1]
-
+        url = State.urlPatcher({
+            name,
+            version,
+            assetId,
+            url,
+        })
         if (State.importedScripts[url]) {
             const { progressEvent } = await State.importedScripts[url]
             onEvent &&
@@ -309,8 +315,7 @@ export class Client {
             css,
             renderingWindow: inputs.executingWindow,
         })
-        const jsPromise = bundlePromise.then((resp) => {
-            State.updateLatestBundleVersion(resp, executingWindow)
+        const jsPromise = bundlePromise.then(() => {
             return this.installScripts({
                 scripts: inputs.scripts || [],
                 executingWindow,
@@ -344,7 +349,7 @@ export class Client {
             (acc, e) => ({ ...acc, ...{ [e.id]: e } }),
             {},
         )
-
+        State.updateExportedSymbolsDict(inputs.loadingGraph.lock)
         const packagesSelected = inputs.loadingGraph.definition
             .flat()
             .map(([assetId, cdn_url]) => {
@@ -355,6 +360,10 @@ export class Client {
                     version: libraries[assetId].version,
                 }
             })
+            .filter(
+                ({ name, version }) =>
+                    !State.isCompatibleVersionInstalled(name, version),
+            )
 
         const errors = []
         const futures = packagesSelected.map(({ name, url }) => {
@@ -373,10 +382,6 @@ export class Client {
         const sources = sourcesOrErrors
             .filter((d) => d != undefined)
             .map((d) => d as FetchedScript)
-            .filter(
-                ({ name, version }) =>
-                    !State.isCompatibleVersionInstalled(name, version),
-            )
             .map((origin: FetchedScript) => {
                 const userSideEffects = Object.entries(
                     inputs.modulesSideEffects || {},
@@ -386,7 +391,9 @@ export class Client {
                     })
                     .filter(([key, _]) => {
                         const query = key.includes('#') ? key : `${key}#*`
-                        if (query.split('#')[0] != origin.name) return false
+                        if (query.split('#')[0] != origin.name) {
+                            return false
+                        }
                         return satisfies(origin.version, query.split('#')[1])
                     })
                     .map(([_, value]) => value)
@@ -418,7 +425,10 @@ export class Client {
      * @param inputs
      */
     async installModules(inputs: InstallModulesInputs): Promise<LoadingGraph> {
-        const usingDependencies = inputs.usingDependencies || []
+        const usingDependencies = [
+            ...State.pinedDependencies,
+            ...(inputs.usingDependencies || []),
+        ]
         const modules = sanitizeModules(inputs.modules || [])
         const body = {
             modules: modules,
@@ -521,6 +531,15 @@ export class Client {
                     : elem,
             )
             .map((elem) => ({ ...elem, ...parseResourceId(elem.location) }))
+            .map(({ assetId, version, name, url, sideEffects }) => {
+                url = State.urlPatcher({
+                    name,
+                    version,
+                    assetId,
+                    url,
+                })
+                return { assetId, version, name, url, sideEffects }
+            })
             .filter(({ url }) => !getLinkElement(url))
             .map(({ assetId, version, name, url, sideEffects }) => {
                 return new Promise<HTMLLinkElement>((resolveCb) => {

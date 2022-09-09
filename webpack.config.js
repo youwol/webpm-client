@@ -1,3 +1,5 @@
+const apiVersion = '01'
+const externals = {}
 const path = require('path')
 const pkg = require('./package.json')
 const ROOT = path.resolve(__dirname, 'src')
@@ -20,7 +22,7 @@ module.exports = {
         path: DESTINATION,
         libraryTarget: 'umd',
         umdNamedDefine: true,
-        library: pkg.name,
+        library: `${pkg.name}_APIv${apiVersion}`,
         filename: pkg.name + '.js',
         globalObject: `(typeof self !== 'undefined' ? self : this)`,
     },
@@ -28,6 +30,7 @@ module.exports = {
         extensions: ['.ts', 'tsx', '.js'],
         modules: [ROOT, 'node_modules'],
     },
+    externals,
     module: {
         rules: [
             {

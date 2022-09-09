@@ -29,8 +29,7 @@ class PipelineFactory(IPipelineFactory):
             target=JsBundle(links=[
                 Link(name="doc", url="dist/docs/index.html"),
                 Link(name="coverage", url="coverage/lcov-report/index.html"),
-                Link(name="bundle-analysis", url="dist/bundle-analysis.html"),
-                Link(name="html outputs", url="src/tests/.html-outputs/index.html")
+                Link(name="bundle-analysis", url="dist/bundle-analysis.html")
             ]),
             testConfig=TestStepConfig(
                 artifacts=[test_result, test_coverage, test_html_outputs]
