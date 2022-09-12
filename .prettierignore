@@ -1,4 +1,5 @@
 node_modules
+.template/
 dist/
 coverage/
 junit.xml
