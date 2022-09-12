@@ -9,7 +9,7 @@ const externals = {}
 export const setup = {
     name: '@youwol/cdn-client',
     assetId: 'QHlvdXdvbC9jZG4tY2xpZW50',
-    version: '1.0.1-wip',
+    version: '1.0.1',
     shortDescription:
         "Library for dynamic npm's libraries installation from YouWol's CDN.",
     developerDocumentation:
