@@ -1,5 +1,6 @@
 import * as path from 'path'
-import { setup } from './src'
+// Do not shorten following import, it will cause webpack.config file to not compile anymore
+import { setup } from './src/auto-generated'
 import * as webpack from 'webpack'
 import { BundleAnalyzerPlugin } from 'webpack-bundle-analyzer'
 
