@@ -2,8 +2,9 @@
  * Public API Surface of @youwol/cdn
  */
 export * from './lib'
-
+export { setup } from './auto-generated'
 import * as cdnClient from './lib'
+import { setup } from './auto-generated'
 
 if (window['@youwol/cdn-client']) {
     console.warn("Multiple version of '@youwol/cdn-client' have been installed")
@@ -16,5 +17,5 @@ if (window['@youwol/cdn-client']) {
  */
 if (!window['@youwol/cdn-client']) {
     window['@youwol/cdn-client'] = cdnClient
-    window['@youwol/cdn-client_APIv01'] = cdnClient
+    window[`@youwol/cdn-client_APIv${setup.apiVersion}`] = cdnClient
 }
