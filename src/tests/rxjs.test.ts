@@ -1,3 +1,7 @@
+// eslint-disable jest/no-conditional-expect
+// eslint-disable-next-line eslint-comments/disable-enable-pair -- to not have problem
+/* eslint-disable jest/no-done-callback -- eslint-comment Find a good way to work with rxjs in jest */
+
 import { getUrlBase, install, State } from '../lib'
 import { cleanDocument, expectEvents, installPackages$ } from './common'
 
@@ -31,7 +35,7 @@ test('install rxjs-test#latest', async () => {
                 events.push(event)
             },
         },
-    )) as any
+    )) as unknown as { rxjs: unknown; rxjs7: unknown }
 
     expect(document.scripts).toHaveLength(1)
     expect(rxjs).toBeTruthy()
@@ -68,7 +72,7 @@ test('install rxjs-test#6.5.5 + side-effects', async () => {
                 events.push(event)
             },
         },
-    )) as any
+    )) as unknown as { rxjs: unknown; rxjs6: unknown }
 
     expect(document.scripts).toHaveLength(1)
     expect(sideEffects).toHaveLength(1)
@@ -109,7 +113,7 @@ test('install rxjs-test#6 & rxjs-test#7', async () => {
                 events.push(event)
             },
         },
-    )) as any
+    )) as unknown as { rxjs: unknown; rxjs6: unknown; rxjs7: unknown }
 
     expect(document.scripts).toHaveLength(2)
     expect(sideEffects).toHaveLength(2)
@@ -135,7 +139,7 @@ test('install rxjs-test#7 with pined dependencies @#6', async () => {
             rxjs6: 'rxjs-test#6',
             rxjs7: 'rxjs-test#7',
         },
-    })) as any
+    })) as unknown as { rxjs: unknown; rxjs6: unknown; rxjs7: unknown }
 
     expect(document.scripts).toHaveLength(1)
     expect(rxjs).toBeTruthy()

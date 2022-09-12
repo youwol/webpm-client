@@ -47,7 +47,7 @@ test('install flux-view-test#0', (done) => {
             onEvent: (event) => {
                 events.push(event)
             },
-        }) as Promise<any>,
+        }) as Promise<unknown>,
     )
         .pipe(
             tap(({ rxjs, rxjs6, fv0, fv }) => {
@@ -101,7 +101,7 @@ test('install flux-view-test#1', (done) => {
             onEvent: (event) => {
                 events.push(event)
             },
-        }) as Promise<any>,
+        }) as Promise<unknown>,
     )
         .pipe(
             tap(({ rxjs, rxjs7, fv1, fv }) => {
@@ -173,7 +173,7 @@ test('install flux-view-test#0 & flux-view-test#1', (done) => {
             onEvent: (event) => {
                 events.push(event)
             },
-        }) as Promise<any>,
+        }) as Promise<unknown>,
     )
         .pipe(
             tap(({ rxjs, rxjs6, rxjs7, fv0, fv1, fv }) => {
@@ -279,7 +279,7 @@ test('install flux-view-test#1 using rxjs#6.5.5 (failure expected)', (done) => {
             onEvent: (event) => {
                 events.push(event)
             },
-        }) as Promise<any>,
+        }) as Promise<unknown>,
     )
         .pipe(
             map(({ fv1 }) => {
@@ -312,7 +312,7 @@ test('Sequential installation with version upgrade', (done) => {
             aliases: {
                 fv0: '@youwol/flux-view-test#01',
             },
-        }) as Promise<any>,
+        }) as Promise<unknown>,
     )
         .pipe(
             tap(({ fv0 }) => {
@@ -338,7 +338,7 @@ test('Sequential installation with version upgrade', (done) => {
                         aliases: {
                             fv0: '@youwol/flux-view-test#01',
                         },
-                    }) as Promise<any>,
+                    }) as Promise<unknown>,
                 )
             }),
             tap(({ fv0 }) => {
@@ -364,7 +364,7 @@ test('Sequential installation with version downgrade', (done) => {
             aliases: {
                 fv0: '@youwol/flux-view-test#01',
             },
-        }) as Promise<any>,
+        }) as Promise<unknown>,
     )
         .pipe(
             tap(({ fv0 }) => {
@@ -391,7 +391,7 @@ test('Sequential installation with version downgrade', (done) => {
                         aliases: {
                             fv0: '@youwol/flux-view-test#01',
                         },
-                    }) as Promise<any>,
+                    }) as Promise<unknown>,
                 )
             }),
             tap(({ fv0 }) => {

@@ -1,6 +1,6 @@
-// eslint-disable jest/no-conditional-expect
 // eslint-disable-next-line eslint-comments/disable-enable-pair -- to not have problem
-/* eslint-disable jest/no-done-callback -- eslint-comment Find a good way to work with rxjs in jest */
+/* eslint-disable jest/no-done-callback --  Find a good way to work with rxjs in jest
+ */
 
 import { CdnLoadingGraphErrorEvent, install, LoadingGraphError } from '../lib'
 import { cleanDocument, installPackages$, saveScreen } from './common'
@@ -43,8 +43,11 @@ test('indirect dependencies not found', async () => {
         expect(error).toBeInstanceOf(LoadingGraphError)
         // eslint-disable-next-line jest/no-conditional-expect -- more convenient that expect(fct).toThrow
         expect(error['detail'].errors).toHaveLength(1)
+        // eslint-disable-next-line jest/no-conditional-expect -- more convenient that expect(fct).toThrow
         expect(error['detail'].errors[0].query).toBe('unknown#^1.0.0')
+        // eslint-disable-next-line jest/no-conditional-expect -- more convenient that expect(fct).toThrow
         expect(error['detail'].errors[0].fromPackage.name).toBe('c')
+        // eslint-disable-next-line jest/no-conditional-expect -- more convenient that expect(fct).toThrow
         expect(error['detail'].errors[0].fromPackage.version).toBe('1.0.0')
     }
 })
