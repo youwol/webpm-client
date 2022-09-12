@@ -1,7 +1,9 @@
+# @youwol/cdn-client
+
 Library for dynamic npm's libraries installation from YouWol's CDN.
 
 This library is part of the hybrid cloud/local ecosystem 
-[YouWol](https://platform.youwol.com/applications/@youwol/platform/latest)
+[YouWol](https://platform.youwol.com/applications/@youwol/platform/latest).
 
 ## Links
 

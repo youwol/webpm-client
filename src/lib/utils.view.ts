@@ -110,7 +110,7 @@ function listView(list: string[]) {
  * @category Loading screen
  */
 export function youwolSvgLogo() {
-    return `<svg id='logo2bis' xmlns='http://www.w3.org/2000/svg' style='transform:translate(0px,-12px);' viewBox='0 0 109.58 121.1'>
+    return `<svg id='logo2bis' xmlns='http://www.w3.org/2000/svg' style='transform:translate(0px,-12px);margin: auto' viewBox='0 0 109.58 121.1' width='109px' height='121px'>
         <defs><style>.cls-1{fill:#008000;}</style></defs>
         <title>logo_YouWol_white</title>
         <polygon class='cls-1' points='109.58 94.68 109.58 84.14 91.39 73.64 109.58 63.14 109.58 42.06 63.95 68.41 63.94 68.41 63.94 121.1 82.2 110.56 82.2 89.41 100.52 99.99 109.58 94.76 109.58 94.68'/>

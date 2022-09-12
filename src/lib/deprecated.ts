@@ -52,6 +52,8 @@ export function fetchSource(inputs: FetchScriptInputs): Promise<FetchedScript> {
  * @category Deprecated
  *
  * @param loadingGraph
+ * @param executingWindow
+ * @param _
  * @param onEvent
  */
 export function fetchLoadingGraph(

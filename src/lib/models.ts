@@ -432,7 +432,7 @@ export interface ModuleSideEffectCallbackArgument {
     /**
      * The installed module
      */
-    module: any
+    module: unknown
     /**
      * Origin of the module
      */
