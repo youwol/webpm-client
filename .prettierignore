@@ -1,6 +1,6 @@
 node_modules
-.template/
 dist/
+.template/
 coverage/
 junit.xml
 yarn.lock
@@ -10,6 +10,7 @@ yarn.lock
 LICENSE
 yarn-error.log
 /*.iml
+src/auto-generated.ts
 /src/tests/.html-outputs/**/*
 /src/tests/.packages/**/*
 /src/tests/.packages-test/**/*

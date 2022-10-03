@@ -12,3 +12,4 @@ cdn.zip
 /src/tests/html-outputs/loading-view-unauthorized.html
 __pycache__
 *.iml
+.template

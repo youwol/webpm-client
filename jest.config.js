@@ -1,8 +1,12 @@
+/** @format */
+
 module.exports = {
     preset: 'ts-jest',
+    testRunner: 'jest-jasmine2',
     testEnvironment: 'jsdom',
-    testURL: 'http://localhost:2001',
+    testEnvironmentOptions: {
+        url: 'http://localhost:2001',
+    },
     reporters: ['default', 'jest-junit'],
-    modulePathIgnorePatterns: ['/dist'],
-    testPathIgnorePatterns: ['.packages', '.packages-test'],
+    modulePathIgnorePatterns: ['/dist', '/.template'],
 }
