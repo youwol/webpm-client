@@ -2,7 +2,7 @@
 // eslint-disable-next-line eslint-comments/disable-enable-pair -- to not have problem
 /* eslint-disable jest/no-done-callback -- eslint-comment Find a good way to work with rxjs in jest */
 
-import { AssetsGateway, PyYouwol, raiseHTTPErrors } from '@youwol/http-clients'
+import { AssetsGateway } from '@youwol/http-clients'
 import { readFileSync } from 'fs'
 import path from 'path'
 import { mergeMap, take } from 'rxjs/operators'
@@ -16,6 +16,7 @@ import {
 } from '../lib'
 import { cleanDocument, installPackages$, saveScreen } from './common'
 import './mock-requests'
+import { LocalYouwol, raiseHTTPErrors } from '@youwol/http-primitives'
 
 beforeAll((done) => {
     const assetsGtw = new AssetsGateway.AssetsGatewayClient()
@@ -28,7 +29,7 @@ beforeAll((done) => {
     ])
         .pipe(
             mergeMap(() => {
-                const client = new PyYouwol.PyYouwolClient()
+                const client = new LocalYouwol.Client()
                 return client.admin.environment.login$({
                     body: {
                         email: 'int_tests_yw-users_bis@test-user',

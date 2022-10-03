@@ -1,10 +1,9 @@
+import { AssetsGateway, ExplorerBackend } from '@youwol/http-clients'
 import {
-    AssetsGateway,
-    PyYouwol,
-    ExplorerBackend,
+    LocalYouwol,
     raiseHTTPErrors,
     RootRouter,
-} from '@youwol/http-clients'
+} from '@youwol/http-primitives'
 import { readFileSync, writeFileSync } from 'fs'
 import path from 'path'
 import { from } from 'rxjs'
@@ -31,7 +30,7 @@ Client.Headers = RootRouter.Headers
  */
 export function installPackages$(packages: string[]) {
     const assetsGtw = new AssetsGateway.AssetsGatewayClient()
-    const pyYouwol = new PyYouwol.PyYouwolClient()
+    const pyYouwol = new LocalYouwol.Client()
     return resetPyYouwolDbs$().pipe(
         mergeMap(() => {
             return pyYouwol.admin.environment.login$({
@@ -70,7 +69,7 @@ export function getPyYouwolBasePath() {
 }
 
 export function resetPyYouwolDbs$() {
-    return new PyYouwol.PyYouwolClient().admin.customCommands.doGet$({
+    return new LocalYouwol.Client().admin.customCommands.doGet$({
         name: 'reset',
     })
 }
