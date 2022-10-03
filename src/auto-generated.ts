@@ -10,14 +10,14 @@ const exportedSymbols = {}
 
 // eslint-disable-next-line @typescript-eslint/ban-types -- allow to allow no secondary entries
 const mainEntry : Object = {
-    "entryFile": "lib/index.ts",
+    "entryFile": "./index.ts",
     "loadDependencies": []
 }
 
 // eslint-disable-next-line @typescript-eslint/ban-types -- allow to allow no secondary entries
 const secondaryEntries : Object = {}
 const entries = {
-     '@youwol/cdn-client': 'lib/index.ts',
+     '@youwol/cdn-client': './index.ts',
     ...Object.values(secondaryEntries).reduce( (acc,e) => ({...acc, [`@youwol/cdn-client/${e.name}`]:e.entryFile}), {})
 }
 export const setup = {

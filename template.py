@@ -32,7 +32,7 @@ template = Template(
     userGuide=True,
     bundles=Bundles(
         mainModule=MainModule(
-            entryFile="lib/index.ts"
+            entryFile="./index.ts"
         )
     )
 )
