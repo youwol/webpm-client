@@ -292,8 +292,8 @@ export class Client {
         const executingWindow = inputs.executingWindow || window
         const aliases = inputs.aliases || {}
         const display = inputs.displayLoadingScreen || false
+        const customInstallers = inputs.customInstallers || []
         let loadingScreen = undefined
-
         if (display) {
             loadingScreen = new LoadingScreenView()
             loadingScreen.render()
@@ -303,7 +303,7 @@ export class Client {
             inputs.onEvent && inputs.onEvent(ev)
         }
 
-        const bundlePromise = this.installModules({
+        const bundlesPromise = this.installModules({
             modules: inputs.modules,
             modulesSideEffects: inputs.modulesSideEffects,
             usingDependencies: inputs.usingDependencies,
@@ -315,14 +315,24 @@ export class Client {
             css,
             renderingWindow: inputs.executingWindow,
         })
-        const jsPromise = bundlePromise.then(() => {
+        const jsPromise = bundlesPromise.then(() => {
             return this.installScripts({
                 scripts: inputs.scripts || [],
                 executingWindow,
             })
         })
-
-        return Promise.all([jsPromise, cssPromise]).then(() => {
+        const customInstallersPromises = customInstallers.map(
+            ({ module, installInputs }) => {
+                return this.install({ modules: [module] }).then((window) => {
+                    return window[module].install(installInputs)
+                })
+            },
+        )
+        return Promise.all([
+            jsPromise,
+            cssPromise,
+            ...customInstallersPromises,
+        ]).then(() => {
             applyFinalSideEffects({
                 aliases,
                 executingWindow,

@@ -151,6 +151,24 @@ export interface InstallLoadingGraphInputs {
 }
 
 /**
+ *
+ * A custom installer is a module exporting a function 'async function install(inputs)'.
+ *
+ * @category Client's method inputs
+ */
+export interface CustomInstaller {
+    /**
+     * module name of the custom installer
+     */
+    module: string
+
+    /**
+     * Inputs forwarded to 'async function install(inputs)'.
+     */
+    installInputs: unknown
+}
+
+/**
  * Inputs for the method [[Client.install]]
  *
  * @category Client's method inputs
@@ -169,6 +187,22 @@ export interface InstallInputs {
      * ```
      */
     modules?: (LightLibraryQueryString | ModuleQueryDeprecated)[]
+
+    /**
+     * List of python modules to install in a pyodide environment, see [[LightLibraryQueryString]] for specification.
+     * If a pyodide environment is available, installation is realized in it, otherwise create a new instance
+     * (can be retrieved via `window['pyodide']`, multiple pyodide python interpreters are not allowed).
+     *
+     * A typical example:
+     * ```
+     * import {install} from `@youwol/cdn-client`
+     *
+     * await install({
+     *     pythonModules: ['numpy#^1.1.0', 'scikit-learn#x']
+     * })
+     * ```
+     */
+    pythonModules?: (LightLibraryQueryString | ModuleQueryDeprecated)[]
 
     /**
      * Override the 'natural' version used for some libraries coming from the dependency graph when resolving
@@ -342,6 +376,12 @@ export interface InstallInputs {
      * For a granular control of the loading screen display see [[LoadingScreenView]]
      */
     displayLoadingScreen?: boolean
+
+    /**
+     * Install resources using 'custom installers'.
+     *
+     */
+    customInstallers?: CustomInstaller[]
 }
 
 /**
@@ -393,6 +433,28 @@ export interface InstallModulesInputs {
      * See [[InstallInputs.usingDependencies]]
      */
     usingDependencies?: LightLibraryQueryString[]
+
+    /**
+     * See [[InstallInputs.executingWindow]]
+     */
+    executingWindow?: Window
+
+    /**
+     * See [[InstallInputs.onEvent]]
+     */
+    onEvent?: (event: CdnEvent) => void
+}
+
+/**
+ * Inputs for the method [[Client.installPythonModules]]
+ *
+ * @category Client's method inputs
+ */
+export interface InstallPythonModulesInputs {
+    /**
+     * See [[InstallInputs.modules]]
+     */
+    pythonModules: (LightLibraryQueryString | ModuleQueryDeprecated)[]
 
     /**
      * See [[InstallInputs.executingWindow]]
