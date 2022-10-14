@@ -323,7 +323,10 @@ export class Client {
         })
         const customInstallersPromises = customInstallers.map(
             ({ module, installInputs }) => {
-                return this.install({ modules: [module] }).then((window) => {
+                return this.install({
+                    modules: [module],
+                    executingWindow,
+                }).then((window) => {
                     return window[module].install(installInputs)
                 })
             },
