@@ -252,7 +252,7 @@ test('loading graph a', async () => {
             lock: [
                 {
                     name: 'a',
-                    fingerprint: '76270bd891a4fedd6fe6d68e83e0c025',
+                    fingerprint: 'ff112efc2e5ca845654a11ef333e6f04',
                     version: '1.0.0',
                     id: 'YQ==',
                     namespace: '',
@@ -262,7 +262,7 @@ test('loading graph a', async () => {
                 },
                 {
                     name: 'root',
-                    fingerprint: '5cbfeecc7a6cf2e470d049043d57f3cb',
+                    fingerprint: '9f28cd4094d663c2989fa735f58a00fd',
                     version: '1.0.0',
                     id: 'cm9vdA==',
                     namespace: '',
