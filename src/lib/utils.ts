@@ -41,7 +41,7 @@ export function onHttpRequestLoad(
             progressEvent: event,
         } as FetchedScript)
     }
-    if (req.status == 401) {
+    if (req.status == 401 || req.status == 403) {
         const unauthorized = new UnauthorizedEvent(name, assetId, url)
         onEvent && onEvent(unauthorized)
         reject(new Unauthorized({ assetId, name, url }))
