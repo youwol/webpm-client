@@ -216,7 +216,7 @@ export class LoadingScreenView {
         }
         if (event instanceof CdnMessageEvent) {
             let divLib: HTMLDivElement = this.wrapperDiv.querySelector(
-                `#${event.id}`,
+                `#${sanitizeCssId(event.id)}`,
             )
             if (divLib) {
                 divLib.textContent = '> ' + event.text

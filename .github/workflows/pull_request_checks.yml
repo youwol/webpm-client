@@ -20,7 +20,7 @@ jobs:
               with:
                   py-youwol_conf_path: yw_config_IT.py
                   py-youwol_conf_repository: youwol/integrations-tests-conf
-                  py-youwol_ref: bug/tmp_zips_in_tmp
+                  py-youwol_ref: feature/remove-deprecated-end-points
 
             - name: On Tests Failure
               id: on_tests_failure
