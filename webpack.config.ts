@@ -9,7 +9,7 @@ const DESTINATION = path.resolve(__dirname, 'dist')
 
 const webpackConfig: webpack.Configuration = {
     context: ROOT,
-    entry:  setup.entries,
+    entry: setup.entries,
     plugins: [
         new BundleAnalyzerPlugin({
             analyzerMode: 'static',
