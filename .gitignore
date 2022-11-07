@@ -4,12 +4,8 @@ dist/
 coverage/
 junit.xml
 cdn.zip
-/src/tests/html-outputs/circular_dependencies.html
-/src/tests/html-outputs/indirect_not_found.html
-/src/tests/html-outputs/loading-view.html
-/src/tests/html-outputs/packages_not_found.html
-/src/tests/html-outputs/loading-view-parse-error.html
-/src/tests/html-outputs/loading-view-unauthorized.html
+/src/tests/.html-outputs/*
+!/src/tests/.html-outputs/index.html
 __pycache__
 *.iml
 .template
