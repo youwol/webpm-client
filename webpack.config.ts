@@ -1,8 +1,8 @@
 import * as path from 'path'
-// Do not shorten following import, it will cause webpack.config file to not compile anymore
-import { setup } from './src/auto-generated'
 import * as webpack from 'webpack'
 import { BundleAnalyzerPlugin } from 'webpack-bundle-analyzer'
+// Do not shorten following import, it will cause webpack.config file to not compile anymore
+import { setup } from './src/auto-generated'
 
 const ROOT = path.resolve(__dirname, 'src')
 const DESTINATION = path.resolve(__dirname, 'dist')
