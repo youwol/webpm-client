@@ -67,7 +67,7 @@ export class DefaultLoadingScreenOptions implements LoadingScreenOptions {
     /**
      * Default [[LoadingScreenOptions.container]]
      */
-    public readonly container: HTMLElement = document.body
+    public readonly container: HTMLElement
 
     /**
      * Default [[LoadingScreenOptions.wrapperStyle]]:
