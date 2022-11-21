@@ -244,6 +244,20 @@ export class Client {
                 )
             return State.importedScripts[url]
         }
+        if (!window.document) {
+            // In a web-worker the script will be imported using self.importScripts(url).
+            // No need to pre-fetch the source file in this case.
+            return new Promise((resolve) => {
+                resolve({
+                    name,
+                    version,
+                    assetId,
+                    url,
+                    content: undefined,
+                    progressEvent: undefined,
+                })
+            })
+        }
         State.importedScripts[url] = new Promise((resolve, reject) => {
             const req = new XMLHttpRequest()
             // report progress events

@@ -189,22 +189,6 @@ export interface InstallInputs {
     modules?: (LightLibraryQueryString | ModuleQueryDeprecated)[]
 
     /**
-     * List of python modules to install in a pyodide environment, see [[LightLibraryQueryString]] for specification.
-     * If a pyodide environment is available, installation is realized in it, otherwise create a new instance
-     * (can be retrieved via `window['pyodide']`, multiple pyodide python interpreters are not allowed).
-     *
-     * A typical example:
-     * ```
-     * import {install} from `@youwol/cdn-client`
-     *
-     * await install({
-     *     pythonModules: ['numpy#^1.1.0', 'scikit-learn#x']
-     * })
-     * ```
-     */
-    pythonModules?: (LightLibraryQueryString | ModuleQueryDeprecated)[]
-
-    /**
      * Override the 'natural' version used for some libraries coming from the dependency graph when resolving
      * the installation. Items are provided in the form [[LightLibraryQueryString]].
      *

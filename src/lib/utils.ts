@@ -17,6 +17,7 @@ import {
 import { State } from './state'
 import { LoadingScreenView } from './loader.view'
 import { sanitizeCssId } from './utils.view'
+import { Client } from './client'
 
 export function onHttpRequestLoad(
     req: XMLHttpRequest,
@@ -176,12 +177,63 @@ export function applyFinalSideEffects({
     loadingScreen && loadingScreen.done()
 }
 
+export function importScriptMainWindow({
+    url,
+    assetId,
+    version,
+    name,
+    content,
+    executingWindow,
+}: {
+    url
+    assetId
+    version
+    name
+    content
+    executingWindow: Window
+}): HTMLScriptElement | ErrorEvent {
+    const head = document.getElementsByTagName('head')[0]
+    if (executingWindow.document.getElementById(url)) {
+        return executingWindow.document.getElementById(url) as HTMLScriptElement
+    }
+    const script = document.createElement('script')
+    script.id = url
+    const classes = [assetId, name, version].map((key) => sanitizeCssId(key))
+    script.classList.add(...classes)
+    script.innerHTML = content
+    const onErrorParsing = (d: ErrorEvent) => {
+        executingWindow.removeEventListener('error', onErrorParsing)
+        return d
+    }
+    executingWindow.addEventListener('error', onErrorParsing)
+    head.appendChild(script)
+    executingWindow.removeEventListener('error', onErrorParsing)
+    return script
+}
+
+export function importScriptWebWorker({ url }): undefined | Error {
+    const importedScripts = self['cdnClientImportedScriptUrls'] || []
+
+    if (importedScripts.includes[url]) {
+        return
+    }
+    try {
+        self['importScripts'](`${Client.HostName}${url}`)
+        self['cdnClientImportedScriptUrls'] = [...importedScripts, url]
+    } catch (error) {
+        console.error(`Failed to import script ${url} in WebWorker`, error)
+        return error
+    }
+}
+
 export function addScriptElements(
     sources: (FetchedScript & { sideEffect?: ScriptSideEffectCallback })[],
     executingWindow?: Window,
     onEvent?: (event: CdnEvent) => void,
 ) {
-    const head = document.getElementsByTagName('head')[0]
+    if (sources.length == 0) {
+        return
+    }
     executingWindow = executingWindow || window
     sources.forEach(
         ({
@@ -193,36 +245,34 @@ export function addScriptElements(
             progressEvent,
             sideEffect,
         }) => {
-            if (executingWindow.document.getElementById(url)) {
-                return
-            }
-            const script = document.createElement('script')
-            script.id = url
-            const classes = [assetId, name, version].map((key) =>
-                sanitizeCssId(key),
-            )
-            script.classList.add(...classes)
-            script.innerHTML = content
-            let error: string
-            const onErrorParsing = (d: ErrorEvent) => {
-                error = d.message
-            }
-            executingWindow.addEventListener('error', onErrorParsing)
-            head.appendChild(script)
-            onEvent && onEvent(new SourceParsedEvent(name, assetId, url))
-            executingWindow.removeEventListener('error', onErrorParsing)
-            if (error) {
+            const scriptOrError = executingWindow.document
+                ? importScriptMainWindow({
+                      url,
+                      assetId,
+                      version,
+                      name,
+                      content,
+                      executingWindow,
+                  })
+                : importScriptWebWorker({ url })
+
+            if (
+                scriptOrError instanceof Error ||
+                scriptOrError instanceof ErrorEvent
+            ) {
                 console.error(
-                    `Failed to parse source code of ${name}#${version}: ${error}`,
+                    `Failed to parse source code of ${name}#${version}: ${scriptOrError.message}`,
                 )
                 onEvent && onEvent(new ParseErrorEvent(name, assetId, url))
                 throw new SourceParsingFailed({
                     assetId,
                     name,
                     url,
-                    message: error,
+                    message: scriptOrError.message,
                 })
             }
+            onEvent && onEvent(new SourceParsedEvent(name, assetId, url))
+
             sideEffect &&
                 sideEffect({
                     origin: {
@@ -233,7 +283,9 @@ export function addScriptElements(
                         content,
                         progressEvent,
                     },
-                    htmlScriptElement: script,
+                    // If the script has been imported in web-worker, scriptOrError is undefined.
+                    // It can't be anything else as there is no concept of DOM in web-worker.
+                    htmlScriptElement: scriptOrError,
                     executingWindow,
                 })
         },
