@@ -35,7 +35,8 @@ export function installPackages$(packages: string[]) {
         mergeMap(() => {
             return pyYouwol.admin.environment.login$({
                 body: {
-                    email: 'int_tests_yw-users@test-user',
+                    authId: 'int_tests_yw-users@test-user',
+                    envId: 'prod',
                 },
             })
         }),

@@ -32,7 +32,8 @@ beforeAll((done) => {
                 const client = new LocalYouwol.Client()
                 return client.admin.environment.login$({
                     body: {
-                        email: 'int_tests_yw-users_bis@test-user',
+                        authId: 'int_tests_yw-users_bis@test-user',
+                        envId: 'prod',
                     },
                 })
             }),
