@@ -1,6 +1,5 @@
-from youwol.environment.forward_declaration import YouwolEnvironment
-from youwol.environment.models import IPipelineFactory
-from youwol.environment.models_project import JsBundle, Artifact, FileListing, Link
+from youwol.environment import YouwolEnvironment
+from youwol.environment.models_project import IPipelineFactory, JsBundle, Artifact, FileListing, Link
 from youwol.pipelines.pipeline_typescript_weback_npm import pipeline, PipelineConfig, TestStepConfig, test_result, \
     test_coverage, PublishConfig
 from youwol_utils.context import Context
