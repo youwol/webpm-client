@@ -26,7 +26,7 @@ template = Template(
             "brotli": "^1.3.2",
             "rxjs": "^6.5.5",
             "@youwol/http-clients": "^2.0.0",
-            "@youwol/http-primitives": "^0.1.1"
+            "@youwol/http-primitives": "^0.1.2"
         }),
     testConfig="https://github.com/youwol/integration-tests-conf",
     userGuide=True,
