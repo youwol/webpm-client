@@ -16,6 +16,7 @@ import {
     CdnEvent,
     FetchedScript,
     InstallStyleSheetInputsDeprecated,
+    InstallDoneEvent,
 } from './models'
 import { State } from './state'
 import { LoadingScreenView } from './loader.view'
@@ -23,11 +24,11 @@ import { sanitizeCssId } from './utils.view'
 import { satisfies } from 'semver'
 import {
     addScriptElements,
-    applyFinalSideEffects,
     applyModuleSideEffects,
     onHttpRequestLoad,
     sanitizeModules,
     parseResourceId,
+    resolveCustomInstaller,
 } from './utils'
 
 /**
@@ -321,6 +322,7 @@ export class Client {
             modules: inputs.modules,
             modulesSideEffects: inputs.modulesSideEffects,
             usingDependencies: inputs.usingDependencies,
+            aliases: aliases,
             executingWindow,
             onEvent,
         })
@@ -335,27 +337,17 @@ export class Client {
                 executingWindow,
             })
         })
-        const customInstallersPromises = customInstallers.map(
-            ({ module, installInputs }) => {
-                return this.install({
-                    modules: [module],
-                    executingWindow,
-                }).then((window) => {
-                    return window[module].install(installInputs)
-                })
-            },
+
+        const customInstallersPromises = customInstallers.map((installer) =>
+            resolveCustomInstaller(installer),
         )
         return Promise.all([
             jsPromise,
             cssPromise,
             ...customInstallersPromises,
         ]).then(() => {
-            applyFinalSideEffects({
-                aliases,
-                executingWindow,
-                onEvent,
-                loadingScreen,
-            })
+            onEvent && onEvent(new InstallDoneEvent())
+            loadingScreen && loadingScreen.done()
             return executingWindow
         })
     }
@@ -371,12 +363,17 @@ export class Client {
      */
     async installLoadingGraph(inputs: InstallLoadingGraphInputs) {
         const executingWindow = inputs.executingWindow || window
-
+        const customInstallers = inputs.customInstallers || []
         const libraries = inputs.loadingGraph.lock.reduce(
             (acc, e) => ({ ...acc, ...{ [e.id]: e } }),
             {},
         )
         State.updateExportedSymbolsDict(inputs.loadingGraph.lock)
+
+        const customInstallersFuture = customInstallers.map((installer) => {
+            return resolveCustomInstaller(installer)
+        })
+
         const packagesSelected = inputs.loadingGraph.definition
             .flat()
             .map(([assetId, cdn_url]) => {
@@ -402,11 +399,15 @@ export class Client {
                 errors.push(error)
             })
         })
-        const sourcesOrErrors = await Promise.all(futures)
+        const sourcesOrErrors = await Promise.all([
+            ...customInstallersFuture,
+            ...futures,
+        ])
         if (errors.length > 0) {
             throw new FetchErrors({ errors })
         }
         const sources = sourcesOrErrors
+            .slice(customInstallersFuture.length)
             .filter((d) => d != undefined)
             .map((d) => d as FetchedScript)
             .map((origin: FetchedScript) => {
@@ -442,6 +443,14 @@ export class Client {
             })
 
         addScriptElements(sources, executingWindow, inputs.onEvent)
+        if (inputs.aliases) {
+            Object.entries(inputs.aliases).forEach(([alias, original]) => {
+                executingWindow[alias] =
+                    typeof original == 'string'
+                        ? executingWindow[original]
+                        : original(executingWindow)
+            })
+        }
     }
 
     /**
@@ -476,6 +485,7 @@ export class Client {
                 modulesSideEffects,
                 executingWindow: inputs.executingWindow,
                 onEvent: inputs.onEvent,
+                aliases: inputs.aliases,
             })
             return loadingGraph
         } catch (error) {

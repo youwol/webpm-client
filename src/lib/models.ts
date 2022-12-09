@@ -133,6 +133,12 @@ export interface InstallLoadingGraphInputs {
     loadingGraph: LoadingGraph
 
     /**
+     * Install resources using 'custom installers'.
+     *
+     */
+    customInstallers?: CustomInstaller[]
+
+    /**
      * See [[InstallInputs.modulesSideEffects]]
      */
     modulesSideEffects?: { [key: string]: ModuleSideEffectCallback }
@@ -141,6 +147,11 @@ export interface InstallLoadingGraphInputs {
      * Window global in which scripts elements are added. If not provided, `window` is used.
      */
     executingWindow?: Window
+
+    /**
+     * See [[InstallInputs.aliases]]
+     */
+    aliases?: { [key: string]: string | ((Window) => unknown) }
 
     /**
      * If provided, any [[CdnFetchEvent]] emitted are forwarded to this callback.
@@ -417,6 +428,11 @@ export interface InstallModulesInputs {
      * See [[InstallInputs.usingDependencies]]
      */
     usingDependencies?: LightLibraryQueryString[]
+
+    /**
+     * See [[InstallInputs.aliases]]
+     */
+    aliases?: { [key: string]: string | ((Window) => unknown) }
 
     /**
      * See [[InstallInputs.executingWindow]]
