@@ -1,6 +1,5 @@
 import {
     CdnEvent,
-    InstallDoneEvent,
     ParseErrorEvent,
     SourceLoadedEvent,
     SourceParsedEvent,
@@ -16,7 +15,6 @@ import {
     CustomInstaller,
 } from './models'
 import { State } from './state'
-import { LoadingScreenView } from './loader.view'
 import { sanitizeCssId } from './utils.view'
 import { Client, install } from './client'
 
@@ -155,27 +153,6 @@ export async function applyModuleSideEffects(
             await r
         }
     }
-}
-
-export function applyFinalSideEffects({
-    aliases,
-    executingWindow,
-    onEvent,
-    loadingScreen,
-}: {
-    aliases: Record<string, string | ((window: Window) => unknown)>
-    executingWindow: Window
-    onEvent?: (event: CdnEvent) => void
-    loadingScreen?: LoadingScreenView
-}) {
-    Object.entries(aliases).forEach(([alias, original]) => {
-        executingWindow[alias] =
-            typeof original == 'string'
-                ? executingWindow[original]
-                : original(executingWindow)
-    })
-    onEvent && onEvent(new InstallDoneEvent())
-    loadingScreen && loadingScreen.done()
 }
 
 export function importScriptMainWindow({
