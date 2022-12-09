@@ -13,11 +13,12 @@ import {
     ModuleInput,
     FetchedScript,
     ScriptSideEffectCallback,
+    CustomInstaller,
 } from './models'
 import { State } from './state'
 import { LoadingScreenView } from './loader.view'
 import { sanitizeCssId } from './utils.view'
-import { Client } from './client'
+import { Client, install } from './client'
 
 export function onHttpRequestLoad(
     req: XMLHttpRequest,
@@ -337,4 +338,26 @@ export function getFullExportedSymbol(name: string, version: string) {
  */
 export function getFullExportedSymbolAlias(name: string, version: string) {
     return getFullExportedSymbol(name, version).replace('_APIv', '#')
+}
+
+/**
+ * Install resources using a custom installer.
+ *
+ * @param installer
+ */
+export function resolveCustomInstaller(installer: CustomInstaller) {
+    const moduleName = installer.module.includes('#')
+        ? installer.module.split('#')[0]
+        : installer.module
+    const promise = install({
+        modules: [installer.module],
+        aliases: {
+            installerModule: moduleName,
+        },
+    }) as unknown as Promise<{
+        installerModule: { install: (unknown) => unknown }
+    }>
+    return promise.then(({ installerModule }) => {
+        return installerModule.install(installer.installInputs)
+    })
 }
