@@ -424,7 +424,10 @@ export class Client {
                         if (query.split('#')[0] != origin.name) {
                             return false
                         }
-                        return satisfies(origin.version, query.split('#')[1])
+                        return satisfies(
+                            origin.version.replace('-wip', ''),
+                            query.split('#')[1],
+                        )
                     })
                     .map(([_, value]) => value)
                 return {
