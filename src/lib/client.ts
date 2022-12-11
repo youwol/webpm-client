@@ -432,22 +432,23 @@ export class Client {
                     .map(([_, value]) => value)
                 return {
                     ...origin,
-                    sideEffect: ({
+                    sideEffect: async ({
                         htmlScriptElement,
                     }: {
                         htmlScriptElement: HTMLScriptElement
                     }) => {
-                        applyModuleSideEffects(
+                        await applyModuleSideEffects(
                             origin,
                             htmlScriptElement,
                             executingWindow,
                             userSideEffects,
+                            inputs.onEvent,
                         )
                     },
                 }
             })
 
-        addScriptElements(sources, executingWindow, inputs.onEvent)
+        await addScriptElements(sources, executingWindow, inputs.onEvent)
         if (inputs.aliases) {
             installAliases(inputs.aliases, executingWindow)
         }
@@ -532,7 +533,7 @@ export class Client {
             (d) => !(d instanceof ErrorEvent),
         )
 
-        addScriptElements(sources, inputs.executingWindow, inputs.onEvent)
+        await addScriptElements(sources, inputs.executingWindow, inputs.onEvent)
         if (inputs.aliases) {
             installAliases(inputs.aliases, executingWindow)
         }

@@ -98,6 +98,7 @@ export async function applyModuleSideEffects(
     htmlScriptElement: HTMLScriptElement,
     executingWindow: Window,
     userSideEffects: ModuleSideEffectCallback[],
+    onEvent: (CdnEvent) => void,
 ) {
     const versionsAvailable = State.importedBundles.get(origin.name) || []
     State.importedBundles.set(origin.name, [
@@ -143,15 +144,18 @@ export async function applyModuleSideEffects(
     State.updateLatestBundleVersion([origin], executingWindow)
 
     for (const sideEffectFct of userSideEffects) {
-        const r = sideEffectFct({
+        const args = {
             module: executingWindow[exportedName],
             origin,
             htmlScriptElement,
             executingWindow,
-        })
-        if (r && r instanceof Promise) {
-            await r
+            onEvent,
         }
+        if (sideEffectFct.constructor.name === 'AsyncFunction') {
+            await sideEffectFct(args)
+            continue
+        }
+        sideEffectFct(args)
     }
 }
 
@@ -204,7 +208,7 @@ export function importScriptWebWorker({ url }): undefined | Error {
     }
 }
 
-export function addScriptElements(
+export async function addScriptElements(
     sources: (FetchedScript & { sideEffect?: ScriptSideEffectCallback })[],
     executingWindow?: Window,
     onEvent?: (event: CdnEvent) => void,
@@ -213,61 +217,64 @@ export function addScriptElements(
         return
     }
     executingWindow = executingWindow || window
-    sources.forEach(
-        ({
-            name,
-            assetId,
-            version,
-            url,
-            content,
-            progressEvent,
-            sideEffect,
-        }) => {
-            const scriptOrError = executingWindow.document
-                ? importScriptMainWindow({
-                      url,
-                      assetId,
-                      version,
-                      name,
-                      content,
-                      executingWindow,
-                  })
-                : importScriptWebWorker({ url })
+    const sideEffects = sources
+        .map(
+            ({
+                name,
+                assetId,
+                version,
+                url,
+                content,
+                progressEvent,
+                sideEffect,
+            }) => {
+                const scriptOrError = executingWindow.document
+                    ? importScriptMainWindow({
+                          url,
+                          assetId,
+                          version,
+                          name,
+                          content,
+                          executingWindow,
+                      })
+                    : importScriptWebWorker({ url })
 
-            if (
-                scriptOrError instanceof Error ||
-                scriptOrError instanceof ErrorEvent
-            ) {
-                console.error(
-                    `Failed to parse source code of ${name}#${version}: ${scriptOrError.message}`,
-                )
-                onEvent && onEvent(new ParseErrorEvent(name, assetId, url))
-                throw new SourceParsingFailed({
-                    assetId,
-                    name,
-                    url,
-                    message: scriptOrError.message,
-                })
-            }
-            onEvent && onEvent(new SourceParsedEvent(name, assetId, url))
-
-            sideEffect &&
-                sideEffect({
-                    origin: {
-                        name,
+                if (
+                    scriptOrError instanceof Error ||
+                    scriptOrError instanceof ErrorEvent
+                ) {
+                    console.error(
+                        `Failed to parse source code of ${name}#${version}: ${scriptOrError.message}`,
+                    )
+                    onEvent && onEvent(new ParseErrorEvent(name, assetId, url))
+                    throw new SourceParsingFailed({
                         assetId,
-                        version,
+                        name,
                         url,
-                        content,
-                        progressEvent,
-                    },
-                    // If the script has been imported in web-worker, scriptOrError is undefined.
-                    // It can't be anything else as there is no concept of DOM in web-worker.
-                    htmlScriptElement: scriptOrError,
-                    executingWindow,
-                })
-        },
-    )
+                        message: scriptOrError.message,
+                    })
+                }
+                onEvent && onEvent(new SourceParsedEvent(name, assetId, url))
+                if (sideEffect) {
+                    return sideEffect({
+                        origin: {
+                            name,
+                            assetId,
+                            version,
+                            url,
+                            content,
+                            progressEvent,
+                        },
+                        // If the script has been imported in web-worker, scriptOrError is undefined.
+                        // It can't be anything else as there is no concept of DOM in web-worker.
+                        htmlScriptElement: scriptOrError,
+                        executingWindow,
+                    })
+                }
+            },
+        )
+        .filter((sideEffect) => sideEffect != undefined)
+    await Promise.all(sideEffects)
 }
 
 /**
