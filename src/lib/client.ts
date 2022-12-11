@@ -29,6 +29,7 @@ import {
     sanitizeModules,
     parseResourceId,
     resolveCustomInstaller,
+    installAliases,
 } from './utils'
 
 /**
@@ -335,6 +336,7 @@ export class Client {
             return this.installScripts({
                 scripts: inputs.scripts || [],
                 executingWindow,
+                aliases: inputs.aliases,
             })
         })
 
@@ -444,12 +446,7 @@ export class Client {
 
         addScriptElements(sources, executingWindow, inputs.onEvent)
         if (inputs.aliases) {
-            Object.entries(inputs.aliases).forEach(([alias, original]) => {
-                executingWindow[alias] =
-                    typeof original == 'string'
-                        ? executingWindow[original]
-                        : original(executingWindow)
-            })
+            installAliases(inputs.aliases, executingWindow)
         }
     }
 
@@ -506,7 +503,7 @@ export class Client {
         inputs: InstallScriptsInputs,
     ): Promise<{ assetName; assetId; url; src }[]> {
         const client = new Client()
-
+        const executingWindow = inputs.executingWindow || window
         const scripts = inputs.scripts
             .map((elem) =>
                 typeof elem == 'string'
@@ -533,7 +530,9 @@ export class Client {
         )
 
         addScriptElements(sources, inputs.executingWindow, inputs.onEvent)
-
+        if (inputs.aliases) {
+            installAliases(inputs.aliases, executingWindow)
+        }
         return sources.map(({ assetId, url, name, content }) => {
             return { assetId, url, assetName: name, src: content }
         })
