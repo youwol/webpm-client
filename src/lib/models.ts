@@ -485,6 +485,11 @@ export interface InstallScriptsInputs {
      * See [[InstallInputs.onEvent]]
      */
     onEvent?: (CdnEvent) => void
+
+    /**
+     * See [[InstallInputs.aliases]]
+     */
+    aliases?: { [key: string]: string | ((Window) => unknown) }
 }
 
 /**
