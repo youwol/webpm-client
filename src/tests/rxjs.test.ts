@@ -99,7 +99,15 @@ test('install rxjs-test#6 & rxjs-test#7', async () => {
                 {
                     name: 'rxjs-test',
                     version: '7.5.5',
-                    sideEffects: () => sideEffects.push('rxjs-test#7.5.5'),
+                    sideEffects: async () => {
+                        // Test async side-effects here
+                        await new Promise<void>((resolve) =>
+                            setTimeout(() => {
+                                sideEffects.push('rxjs-test#7.5.5')
+                                resolve()
+                            }, 200),
+                        )
+                    },
                 },
             ],
             aliases: {
