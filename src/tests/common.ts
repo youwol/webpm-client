@@ -66,7 +66,11 @@ export function installPackages$(packages: string[]) {
 }
 
 export function getPyYouwolBasePath() {
-    return 'http://localhost:2001'
+    const url = globalThis.youwolJestPresetGlobals.integrationUrl
+    if (globalThis.youwolJestPresetGlobals.debug) {
+        console.log('URL in common.ts : ', url)
+    }
+    return url
 }
 
 export function resetPyYouwolDbs$() {
