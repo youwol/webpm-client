@@ -9,6 +9,7 @@ import {
     InstallLoadingGraphInputs,
 } from '..'
 import { setup } from '../../auto-generated'
+import { WorkersPoolView } from './views'
 type WorkerId = string
 
 export interface Context {
@@ -772,5 +773,9 @@ export class WorkersPool {
         Object.values(this.workers$.value).forEach(({ worker }) =>
             worker.terminate(),
         )
+    }
+
+    view() {
+        return new WorkersPoolView({ workersPool: this })
     }
 }
