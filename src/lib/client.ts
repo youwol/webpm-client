@@ -552,6 +552,8 @@ export class Client {
     installStyleSheets(
         inputs: InstallStyleSheetsInputs | InstallStyleSheetInputsDeprecated,
     ): Promise<Array<HTMLLinkElement>> {
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- false error: map is available
+        // @ts-ignore
         const css = inputs.css.map((stylesheet) =>
             stylesheet.resource ? stylesheet.resource : stylesheet,
         )
