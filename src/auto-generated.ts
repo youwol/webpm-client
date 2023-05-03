@@ -1,7 +1,8 @@
 
 const runTimeDependencies = {
     "externals": {
-        "rxjs": "^6.5.5"
+        "rxjs": "^6.5.5",
+        "@youwol/flux-view": "^1.1.0"
     },
     "includedInBundle": {
         "semver": "^7.3.4"
@@ -12,6 +13,11 @@ const externals = {
         "commonjs": "rxjs",
         "commonjs2": "rxjs",
         "root": "rxjs_APIv6"
+    },
+    "@youwol/flux-view": {
+        "commonjs": "@youwol/flux-view",
+        "commonjs2": "@youwol/flux-view",
+        "root": "@youwol/flux-view_APIv1"
     },
     "rxjs/operators": {
         "commonjs": "rxjs/operators",
@@ -26,6 +32,10 @@ const exportedSymbols = {
     "rxjs": {
         "apiKey": "6",
         "exportedSymbol": "rxjs"
+    },
+    "@youwol/flux-view": {
+        "apiKey": "1",
+        "exportedSymbol": "@youwol/flux-view"
     }
 }
 
@@ -38,7 +48,8 @@ const secondaryEntries : {[k:string]:{entryFile: string, name: string, loadDepen
     "workersPool": {
         "entryFile": "./lib/workers-pool/index.ts",
         "loadDependencies": [
-            "rxjs"
+            "rxjs",
+            "@youwol/flux-view"
         ],
         "name": "workersPool"
     }

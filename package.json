@@ -52,6 +52,7 @@
     },
     "dependencies": {
         "rxjs": "^6.5.5",
+        "@youwol/flux-view": "^1.1.0",
         "semver": "^7.3.4"
     },
     "youwol": {

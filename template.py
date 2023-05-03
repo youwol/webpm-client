@@ -8,9 +8,9 @@ from youwol_utils import parse_json
 folder_path = Path(__file__).parent
 
 pkg_json = parse_json(folder_path / 'package.json')
-
 externals = {
-    'rxjs': '^6.5.5'
+    'rxjs': '^6.5.5',
+    '@youwol/flux-view': '^1.1.0'
 }
 template = Template(
     path=folder_path,
