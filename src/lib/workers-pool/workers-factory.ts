@@ -702,6 +702,7 @@ export class WorkersPool {
                         ...this.workers$.value,
                         [workerId]: { worker, channel$: workerChannel$ },
                     })
+                    this.pickTask(workerId, ctx)
                 }),
                 mapTo({ workerId, worker, channel$: taskChannel$ }),
             )
