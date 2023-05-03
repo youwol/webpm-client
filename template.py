@@ -2,13 +2,16 @@ import shutil
 from pathlib import Path
 
 from youwol.pipelines.pipeline_typescript_weback_npm import Template, PackageType, Dependencies, \
-    RunTimeDeps, generate_template, Bundles, MainModule
+    RunTimeDeps, generate_template, Bundles, MainModule, AuxiliaryModule
 from youwol_utils import parse_json
 
 folder_path = Path(__file__).parent
 
 pkg_json = parse_json(folder_path / 'package.json')
 
+externals = {
+    'rxjs': '^6.5.5'
+}
 template = Template(
     path=folder_path,
     type=PackageType.Library,
@@ -18,6 +21,7 @@ template = Template(
     author=pkg_json['author'],
     dependencies=Dependencies(
         runTime=RunTimeDeps(
+            externals=externals,
             includedInBundle={
                 "semver": "^7.3.4"
             }
@@ -33,7 +37,14 @@ template = Template(
     bundles=Bundles(
         mainModule=MainModule(
             entryFile="./index.ts"
-        )
+        ),
+        auxiliaryModules=[
+            AuxiliaryModule(
+                name='workersPool',
+                entryFile="./lib/workers-pool/index.ts",
+                loadDependencies=list(externals.keys())
+            )
+        ]
     )
 )
 

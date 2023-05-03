@@ -10,3 +10,4 @@ export {
     sanitizeModules,
 } from './utils'
 export { youwolSvgLogo } from './utils.view'
+export * from './add-ons'

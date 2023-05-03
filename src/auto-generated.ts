@@ -1,19 +1,48 @@
 
 const runTimeDependencies = {
-    "externals": {},
+    "externals": {
+        "rxjs": "^6.5.5"
+    },
     "includedInBundle": {
         "semver": "^7.3.4"
     }
 }
-const externals = {}
-const exportedSymbols = {}
+const externals = {
+    "rxjs": {
+        "commonjs": "rxjs",
+        "commonjs2": "rxjs",
+        "root": "rxjs_APIv6"
+    },
+    "rxjs/operators": {
+        "commonjs": "rxjs/operators",
+        "commonjs2": "rxjs/operators",
+        "root": [
+            "rxjs_APIv6",
+            "operators"
+        ]
+    }
+}
+const exportedSymbols = {
+    "rxjs": {
+        "apiKey": "6",
+        "exportedSymbol": "rxjs"
+    }
+}
 
 const mainEntry : {entryFile: string,loadDependencies:string[]} = {
     "entryFile": "./index.ts",
     "loadDependencies": []
 }
 
-const secondaryEntries : {[k:string]:{entryFile: string, name: string, loadDependencies:string[]}}= {}
+const secondaryEntries : {[k:string]:{entryFile: string, name: string, loadDependencies:string[]}}= {
+    "workersPool": {
+        "entryFile": "./lib/workers-pool/index.ts",
+        "loadDependencies": [
+            "rxjs"
+        ],
+        "name": "workersPool"
+    }
+}
 
 const entries = {
      '@youwol/cdn-client': './index.ts',
