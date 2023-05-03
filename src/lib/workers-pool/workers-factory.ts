@@ -354,7 +354,7 @@ export class Process {
 }
 
 export class WorkersPool {
-    public readonly poolSize: number
+    public readonly pool: { startAt: number; stretchTo: number }
     private requestedWorkersCount = 0
 
     public readonly mergedChannel$ = new Subject<MessageEventData>()
@@ -400,7 +400,7 @@ export class WorkersPool {
         install?: InstallInputs | InstallLoadingGraphInputs
         postInstallTasks?: Task[]
         ctxFactory?: (name: string) => Context
-        pool: { startAt: number; stretchTo?: number }
+        pool?: { startAt?: number; stretchTo?: number }
     }) {
         const hostName =
             window.location.origin != 'null'
@@ -445,8 +445,11 @@ export class WorkersPool {
             cdnInstallation: install,
             postInstallTasks: postInstallTasks || [],
         }
-        this.poolSize = pool.stretchTo || navigator.hardwareConcurrency - 2
-        this.reserve({ workersCount: pool.startAt }).subscribe()
+        this.pool = {
+            startAt: pool?.startAt || 0,
+            stretchTo: pool?.stretchTo || navigator.hardwareConcurrency - 2,
+        }
+        this.reserve({ workersCount: this.pool.startAt || 0 }).subscribe()
     }
 
     reserve({ workersCount }: { workersCount: number }) {
@@ -604,7 +607,7 @@ export class WorkersPool {
                     channel$: this.workers$.value[idleWorkerId].channel$,
                 })
             }
-            if (this.requestedWorkersCount < this.poolSize) {
+            if (this.requestedWorkersCount < this.pool.stretchTo) {
                 return this.createWorker$(ctx)
             }
             return undefined
