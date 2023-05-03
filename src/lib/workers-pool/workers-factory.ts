@@ -1,7 +1,7 @@
 /** @format */
 
 import { BehaviorSubject, forkJoin, Observable, of, Subject } from 'rxjs'
-import { filter, map, mapTo, take, takeWhile, tap } from 'rxjs/operators'
+import { filter, last, map, mapTo, take, takeWhile, tap } from 'rxjs/operators'
 import {
     CdnEvent,
     getUrlBase,
@@ -463,7 +463,21 @@ export class WorkersPool {
                 ),
         )
     }
-
+    async ready() {
+        return new Promise<void>((resolve) => {
+            this.workers$
+                .pipe(
+                    takeWhile(
+                        (workers) =>
+                            Object.entries(workers).length < this.pool.startAt,
+                    ),
+                    last(),
+                )
+                .subscribe(() => {
+                    resolve()
+                })
+        })
+    }
     schedule<TArgs = unknown>(
         {
             title,
