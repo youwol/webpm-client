@@ -1,7 +1,7 @@
 {
     "name": "@youwol/cdn-client",
     "description": "Library for dynamic npm's libraries installation from YouWol's CDN.",
-    "version": "1.0.10",
+    "version": "1.0.11-wip",
     "author": "greinisch@youwol.com",
     "homepage": "https://github.com/youwol/cdn-client#README.md",
     "main": "dist/@youwol/cdn-client.js",
