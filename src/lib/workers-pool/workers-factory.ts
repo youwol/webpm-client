@@ -413,7 +413,7 @@ export class WorkersPool {
         )}/dist/${cdnPackage}.js`
         this.backgroundContext =
             ctxFactory && ctxFactory('background management')
-        this.cdnEvent$ = cdnEvent$
+        this.cdnEvent$ = cdnEvent$ || new Subject<CdnEvent>()
         // Need to manage lifecycle of following subscription
         this.workerReleased$.subscribe(({ workerId, taskId }) => {
             this.busyWorkers$.next(
