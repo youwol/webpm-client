@@ -271,3 +271,43 @@ test('schedule async with ready', (done) => {
             done()
         })
 })
+
+test('schedule async with ready on particular worker', (done) => {
+    const pool = new WorkersPool({
+        install: {
+            modules: ['rxjs#^6.5.5'],
+        },
+        pool: {
+            startAt: 1,
+        },
+    })
+    let workerId
+    from(pool.ready())
+        .pipe(
+            tap(() => {
+                const workers = Object.values(pool.workers$.value)
+                workerId = workers[0].worker.uid
+            }),
+            mergeMap(() => {
+                return pool.schedule({
+                    title: 'test',
+                    entryPoint: scheduleFunctionAsync,
+                    args: { value: 21 },
+                    targetWorkerId: workerId,
+                })
+            }),
+            takeWhile((m) => m.type != 'Exit', true),
+            last(),
+            // let the time to subscription (busy$ in particular) to be handled
+            delay(1),
+            tap((m) => {
+                const workers = Object.values(pool.workers$.value)
+                expect(workers).toHaveLength(1)
+                expect(workers[0].worker.uid).toBe(workerId)
+                expect(m.data['result']).toBe(42)
+            }),
+        )
+        .subscribe(() => {
+            done()
+        })
+})
