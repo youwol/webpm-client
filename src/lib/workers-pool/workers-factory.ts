@@ -127,7 +127,7 @@ export interface EntryPointArguments<TArgs> {
     workerScope
 }
 
-function entryPointWorker(messageEvent: MessageEvent) {
+export function entryPointWorker(messageEvent: MessageEvent) {
     // The following interface avoid the interpreter to interpret self as 'Window':
     // in a worker 'self' is of type DedicatedWorkerGlobalScope.
     // We can get a proper type definition for DedicatedWorkerGlobalScope from typescript:
