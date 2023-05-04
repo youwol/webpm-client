@@ -276,8 +276,9 @@ function entryPointInstall(input: EntryPointArguments<MessageDataInstall>) {
         const message = { type: 'CdnEvent', event: cdnEvent }
         input.context.sendData(message)
     }
-
-    input.args.cdnInstallation.customInstallers.map((installer) => {
+    input.args.cdnInstallation.onEvent = onEvent
+    const customInstallers = input.args.cdnInstallation.customInstallers || []
+    customInstallers.map((installer) => {
         installer.installInputs['onEvent'] = onEvent
     })
     const install = isLoadingGraphInstallInputs(input.args.cdnInstallation)
