@@ -64,7 +64,7 @@ interface WorkerVariable<T> {
 
 interface Task {
     title: string
-    entryPoint: (args: unknown) => Promise<unknown>
+    entryPoint: (args: unknown) => unknown | Promise<unknown>
     args: unknown
 }
 
@@ -295,12 +295,13 @@ function entryPointInstall(input: EntryPointArguments<MessageDataInstall>) {
             for (const task of input.args.postInstallTasks) {
                 input.context.info(`Start post-install task '${task.title}'`)
                 const entryPoint = new Function(task.entryPoint)()
-                entryPoint({
+                const r = entryPoint({
                     args: task.args,
                     context: input.context,
                     taskId: input.taskId,
                     workerScope: input.workerScope,
-                })
+                })()
+                r instanceof Promise && r.then()
             }
             input.context.info('Post install tasks done')
             input.context.sendData({
