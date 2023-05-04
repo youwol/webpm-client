@@ -445,13 +445,13 @@ export class WorkersPool {
             cdnUrl,
             hostName,
             variables: Object.entries(globals || {})
-                .filter((_, value) => typeof value != 'function')
+                .filter(([_, value]) => typeof value != 'function')
                 .map(([id, value]) => ({
                     id,
                     value,
                 })),
             functions: Object.entries(globals || {})
-                .filter((_, value) => typeof value == 'function')
+                .filter(([_, value]) => typeof value == 'function')
                 .map(([id, target]) => ({
                     id,
                     target,
