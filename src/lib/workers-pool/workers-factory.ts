@@ -10,6 +10,11 @@ import {
 } from '..'
 import { setup } from '../../auto-generated'
 import { WorkersPoolView } from './views'
+import {
+    IWWorkerProxy,
+    WebWorkersBrowser,
+    WWorkerTrait,
+} from './web-worker.proxy'
 type WorkerId = string
 
 export interface Context {
@@ -361,13 +366,15 @@ export class Process {
 }
 
 export class WorkersPool {
+    static webWorkersProxy: IWWorkerProxy = new WebWorkersBrowser()
+
     public readonly pool: { startAt: number; stretchTo: number }
     private requestedWorkersCount = 0
 
     public readonly mergedChannel$ = new Subject<MessageEventData>()
     public readonly workers$ = new BehaviorSubject<{
         [p: string]: {
-            worker: Worker
+            worker: WWorkerTrait
             channel$: Observable<MessageEventData>
         }
     }>({})
@@ -642,18 +649,17 @@ export class WorkersPool {
     }> {
         return context.withChild('create worker', (ctx) => {
             this.requestedWorkersCount++
-            const workerId = `w${Math.floor(Math.random() * 1e6)}`
-            ctx.info(`Create worker ${workerId}`)
-
-            const blob = new Blob(
-                ['self.onmessage = ', entryPointWorker.toString()],
-                { type: 'text/javascript' },
-            )
-            const url = URL.createObjectURL(blob)
-            const worker = new Worker(url)
-
-            const taskId = `t${Math.floor(Math.random() * 1e6)}`
             const workerChannel$ = new Subject<MessageEventData>()
+
+            const workerProxy = WorkersPool.webWorkersProxy.createWorker({
+                onMessageWorker: entryPointWorker,
+                onMessageMain: ({ data }) => {
+                    workerChannel$.next(data)
+                    this.mergedChannel$.next(data)
+                },
+            })
+            const workerId = workerProxy.uid
+            const taskId = `t${Math.floor(Math.random() * 1e6)}`
             const title = 'Install environment'
             const p = new Process({
                 taskId,
@@ -661,10 +667,6 @@ export class WorkersPool {
                 context: ctx,
             })
             p.schedule()
-            worker.onmessage = ({ data }) => {
-                workerChannel$.next(data)
-                this.mergedChannel$.next(data)
-            }
             const taskChannel$ = this.getTaskChannel$(p, taskId, context)
             const argsInstall: MessageDataInstall = {
                 cdnUrl: this.environment.cdnUrl,
@@ -685,14 +687,10 @@ export class WorkersPool {
                     },
                 ),
             }
-            worker.postMessage({
-                type: 'Execute',
-                data: {
-                    taskId,
-                    workerId,
-                    args: argsInstall,
-                    entryPoint: `return ${String(entryPointInstall)}`,
-                },
+            workerProxy.execute({
+                taskId,
+                entryPoint: entryPointInstall,
+                args: argsInstall,
             })
 
             return workerChannel$.pipe(
@@ -707,11 +705,18 @@ export class WorkersPool {
                 tap(() => {
                     this.workers$.next({
                         ...this.workers$.value,
-                        [workerId]: { worker, channel$: workerChannel$ },
+                        [workerId]: {
+                            worker: workerProxy,
+                            channel$: workerChannel$,
+                        },
                     })
                     this.pickTask(workerId, ctx)
                 }),
-                mapTo({ workerId, worker, channel$: taskChannel$ }),
+                mapTo({
+                    workerId,
+                    worker: workerProxy,
+                    channel$: taskChannel$,
+                }),
             )
         })
     }
@@ -763,15 +768,7 @@ export class WorkersPool {
                 worker,
                 entryPoint: String(entryPoint),
             })
-            worker.postMessage({
-                type: 'Execute',
-                data: {
-                    taskId,
-                    workerId,
-                    args,
-                    entryPoint: `return ${String(entryPoint)}`,
-                },
-            })
+            worker.execute({ taskId, entryPoint, args })
         })
     }
 
