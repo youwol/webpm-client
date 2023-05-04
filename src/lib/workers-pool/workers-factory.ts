@@ -171,7 +171,11 @@ export function entryPointWorker(messageEvent: MessageEvent) {
             },
         }
 
-        const entryPoint = new Function(data.entryPoint)()
+        const entryPoint =
+            // The first branch is to facilitate test environment
+            typeof data.entryPoint == 'function'
+                ? data.entryPoint
+                : new Function(data.entryPoint)()
 
         workerScope.postMessage({
             type: 'Start',
