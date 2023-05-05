@@ -4,13 +4,19 @@ import {
     VirtualDOM,
     childrenFromStore$,
 } from '@youwol/flux-view'
-import { CdnEvent } from '..'
-import { distinctUntilChanged, map, scan } from 'rxjs/operators'
-import { CdnEventWorker, WorkersPool } from './workers-factory'
-import { ReplaySubject } from 'rxjs'
+import { CdnEventStatus } from '..'
+import { filter } from 'rxjs/operators'
+import {
+    CdnEventWorker,
+    implementEventWithWorkerTrait,
+    WorkersPool,
+} from './workers-factory'
+import { BehaviorSubject, of } from 'rxjs'
 
-function isWorkerEvent(event: CdnEvent): event is CdnEventWorker {
-    return event['workerId'] != undefined
+type EventData = {
+    id: string
+    text: string
+    status: CdnEventStatus
 }
 
 export class WorkersPoolState {
@@ -21,23 +27,51 @@ export class WorkersPoolState {
     /**
      * @group Observables
      */
-    public readonly cdnEvents$ = new ReplaySubject<CdnEvent[]>(1)
+    public readonly cdnEvents$: { [k: string]: BehaviorSubject<EventData[]> } =
+        {}
 
     constructor(params: { workersPool: WorkersPool }) {
         Object.assign(this, params)
+        this.workersPool.pendingWorkers$.subscribe((ids) => {
+            ids.forEach((workerId) => {
+                if (!this.cdnEvents$[workerId]) {
+                    this.cdnEvents$[workerId] = new BehaviorSubject<
+                        EventData[]
+                    >([])
+                }
+            })
+        })
         this.workersPool.cdnEvent$
-            .pipe(scan((acc, e) => [...acc, e], []))
-            .subscribe((d) => this.cdnEvents$.next(d))
+            .pipe(filter((event) => implementEventWithWorkerTrait(event)))
+            .subscribe((event) => {
+                this.add(event)
+            })
+    }
+
+    add(event: CdnEventWorker) {
+        const workerId = event['workerId']
+        const elem = {
+            id: event.id,
+            status: event.status,
+            timeStamp: Date.now(),
+            text: event.text,
+        }
+        const values = this.cdnEvents$[workerId].value.filter(
+            (d) => d.id != elem.id,
+        )
+        this.cdnEvents$[workerId].next([...values, elem])
     }
 }
 /**
  * @category View
  */
 export class WorkersPoolView implements VirtualDOM {
+    static Class = 'WorkersPoolView'
+
     /**
      * @group Immutable DOM Constants
      */
-    public class = 'w-100 h-100 d-flex flex-column'
+    public class = `${WorkersPoolView.Class} w-100 h-100 d-flex flex-column`
 
     /**
      * @group States
@@ -53,32 +87,20 @@ export class WorkersPoolView implements VirtualDOM {
         this.workersPoolState = new WorkersPoolState({
             workersPool: params.workersPool,
         })
-        const eqSet = (xs, ys) =>
-            xs.size === ys.size && [...xs].every((x) => ys.has(x))
-
-        const workerIds$ = this.workersPoolState.cdnEvents$.pipe(
-            map(
-                (events) =>
-                    new Set(
-                        events
-                            .filter((event) => isWorkerEvent(event))
-                            .map((e: CdnEventWorker) => e.workerId),
-                    ),
-            ),
-            distinctUntilChanged(eqSet),
-        )
-
         this.children = [
             {
                 class: 'w-100 d-flex flex-grow-1 p-2 flex-wrap overflow-auto',
-                children: children$(workerIds$, (workerIds) => {
-                    return [...workerIds].map((workerId) => {
-                        return new WorkerCard({
-                            workerId,
-                            workersPoolState: this.workersPoolState,
+                children: children$(
+                    this.workersPoolState.workersPool.pendingWorkers$,
+                    (workerIds) => {
+                        return [...workerIds].map((workerId) => {
+                            return new WorkerCard({
+                                workerId,
+                                workersPoolState: this.workersPoolState,
+                            })
                         })
-                    })
-                }),
+                    },
+                ),
             },
         ]
     }
@@ -88,10 +110,12 @@ export class WorkersPoolView implements VirtualDOM {
  * @category View
  */
 export class WorkerCard implements VirtualDOM {
+    static Class = 'WorkerCard'
+
     /**
      * @group Immutable DOM Constants
      */
-    public readonly class = 'p-2 m-2 rounded border'
+    public readonly class = `${WorkerCard.Class} p-2 m-2 rounded border`
 
     /**
      * @group Immutable DOM Constants
@@ -126,43 +150,54 @@ export class WorkerCard implements VirtualDOM {
             {
                 class: 'p-2',
                 children: childrenFromStore$(
-                    this.workersPoolState.cdnEvents$.pipe(
-                        map((cdnEvents: CdnEvent[]) => {
-                            return cdnEvents.filter((event) =>
-                                isWorkerEvent(event),
-                            )
-                        }),
-                        map((cdnWorkerEvents: CdnEventWorker[]) => {
-                            const filtered = cdnWorkerEvents.filter(
-                                (cdnEvent) =>
-                                    cdnEvent.workerId == this.workerId,
-                            )
-                            const ids = new Set(filtered.map((f) => f.id))
-                            const reversed = filtered.reverse()
-                            return [...ids].map((id) =>
-                                reversed.find((event) => event.id == id),
-                            )
-                        }),
-                    ),
-                    (cdnEvent: CdnEventWorker) => {
-                        return {
-                            innerText: cdnEvent.text,
-                        }
+                    this.workersPoolState.cdnEvents$[this.workerId] || of([]),
+                    (eventData: EventData) => {
+                        return new CdnEventView(eventData)
                     },
                 ),
             },
         ]
     }
 }
+/**
+ * @category View
+ */
+export class CdnEventView implements VirtualDOM {
+    static Class = 'CdnEventView'
+    /**
+     * @group Immutable DOM Constants
+     */
+    public readonly class = `${CdnEventView.Class} d-flex align-items-center`
+    /**
+     * @group Immutable DOM Constants
+     */
+    public readonly children: VirtualDOM[]
 
+    constructor(event: EventData) {
+        const icons: Record<CdnEventStatus, string> = {
+            Succeeded: 'fas fa-check fv-text-success',
+            Failed: 'fas fa-times fv-text-error',
+            Pending: 'fas fa-spinner fa-spin',
+            None: '',
+        }
+
+        this.children = [
+            { class: icons[event.status] },
+            { class: 'mx-1' },
+            { innerText: event.text },
+        ]
+    }
+}
 /**
  * @category View
  */
 export class WorkerCardTitleView implements VirtualDOM {
+    static Class = 'WorkerCardTitleView'
+
     /**
      * @group Immutable DOM Constants
      */
-    public readonly class = 'd-flex align-items-center'
+    public readonly class = `${WorkerCardTitleView.Class} d-flex align-items-center`
 
     /**
      * @group Immutable DOM Constants
