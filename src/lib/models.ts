@@ -755,22 +755,59 @@ export function errorFactory(error) {
     }
 }
 
+export type StepEventType =
+    | 'CdnMessageEvent'
+    | 'StartEvent'
+    | 'SourceLoadingEvent'
+    | 'SourceLoadedEvent'
+    | 'SourceParsedEvent'
+    | 'InstallDoneEvent'
+    | 'UnauthorizedEvent'
+    | 'UrlNotFoundEvent'
+    | 'ParseErrorEvent'
+    | 'CdnLoadingGraphErrorEvent'
+
+export type CdnEventStatus = 'Pending' | 'Succeeded' | 'Failed' | 'None'
 /**
  * Base class of events.
  *
  * @category Events
  */
-export class CdnEvent {}
+export interface CdnEvent {
+    step: StepEventType
+    id: string
+    text: string
+    status: CdnEventStatus
+}
+
+export function isCdnEvent(event: unknown): event is CdnEvent {
+    const types: StepEventType[] = [
+        'CdnMessageEvent',
+        'StartEvent',
+        'SourceLoadingEvent',
+        'SourceLoadedEvent',
+        'SourceParsedEvent',
+        'InstallDoneEvent',
+        'UnauthorizedEvent',
+        'UrlNotFoundEvent',
+        'ParseErrorEvent',
+        'CdnLoadingGraphErrorEvent',
+    ]
+    return types.includes((event as CdnEvent).step)
+}
 
 /**
- * A message has been emitted.
+ * Generic custom CDN event.
  *
  * @category Events
  */
-export class CdnMessageEvent extends CdnEvent {
-    constructor(public readonly id: string, public readonly text: string) {
-        super()
-    }
+export class CdnMessageEvent implements CdnEvent {
+    public readonly step = 'CdnMessageEvent'
+    constructor(
+        public readonly id: string,
+        public readonly text: string,
+        public readonly status: CdnEventStatus = 'None',
+    ) {}
 }
 
 /**
@@ -778,25 +815,10 @@ export class CdnMessageEvent extends CdnEvent {
  *
  * @category Events
  */
-export class CdnFetchEvent extends CdnEvent {
-    constructor(
-        public readonly targetName: string,
-        public readonly assetId: string,
-        public readonly url: string,
-    ) {
-        super()
-    }
-}
-
-/**
- * Event emitted when an error while fetching a script occurred.
- *
- * @category Events
- */
-export class FetchErrorEvent extends CdnFetchEvent {
-    constructor(targetName: string, assetId: string, url: string) {
-        super(targetName, assetId, url)
-    }
+export type CdnFetchEvent = CdnEvent & {
+    id: string
+    assetId: string
+    url: string
 }
 
 /**
@@ -804,9 +826,16 @@ export class FetchErrorEvent extends CdnFetchEvent {
  *
  * @category Events
  */
-export class StartEvent extends CdnFetchEvent {
-    constructor(targetName: string, assetId: string, url: string) {
-        super(targetName, assetId, url)
+export class StartEvent implements CdnFetchEvent {
+    public readonly step = 'StartEvent'
+    public readonly text: string
+    public readonly status = 'Pending'
+    constructor(
+        public readonly id: string,
+        public readonly assetId: string,
+        public readonly url: string,
+    ) {
+        this.text = `${id}: start importing`
     }
 }
 
@@ -815,14 +844,17 @@ export class StartEvent extends CdnFetchEvent {
  *
  * @category Events
  */
-export class SourceLoadingEvent extends CdnFetchEvent {
+export class SourceLoadingEvent implements CdnFetchEvent {
+    public readonly step = 'SourceLoadingEvent'
+    public readonly text: string
+    public readonly status = 'Pending'
     constructor(
-        targetName: string,
-        assetId: string,
-        url: string,
+        public readonly id: string,
+        public readonly assetId: string,
+        public readonly url: string,
         public readonly progress: ProgressEvent<XMLHttpRequestEventTarget>,
     ) {
-        super(targetName, assetId, url)
+        this.text = `${id}: fetching over HTTP`
     }
 }
 
@@ -831,14 +863,17 @@ export class SourceLoadingEvent extends CdnFetchEvent {
  *
  * @category Events
  */
-export class SourceLoadedEvent extends CdnFetchEvent {
+export class SourceLoadedEvent implements CdnFetchEvent {
+    public readonly step = 'SourceLoadedEvent'
+    public readonly text: string
+    public readonly status = 'Pending'
     constructor(
-        targetName: string,
-        assetId: string,
-        url: string,
+        public readonly id: string,
+        public readonly assetId: string,
+        public readonly url: string,
         public readonly progress: ProgressEvent<XMLHttpRequestEventTarget>,
     ) {
-        super(targetName, assetId, url)
+        this.text = `${id}: source fetched`
     }
 }
 
@@ -847,9 +882,16 @@ export class SourceLoadedEvent extends CdnFetchEvent {
  *
  * @category Events
  */
-export class SourceParsedEvent extends CdnFetchEvent {
-    constructor(targetName: string, assetId: string, url: string) {
-        super(targetName, assetId, url)
+export class SourceParsedEvent implements CdnFetchEvent {
+    public readonly step = 'SourceParsedEvent'
+    public readonly text: string
+    public readonly status = 'Succeeded'
+    constructor(
+        public readonly id: string,
+        public readonly assetId: string,
+        public readonly url: string,
+    ) {
+        this.text = `${id}: module/script imported`
     }
 }
 
@@ -858,9 +900,16 @@ export class SourceParsedEvent extends CdnFetchEvent {
  *
  * @category Events
  */
-export class UnauthorizedEvent extends FetchErrorEvent {
-    constructor(targetName: string, assetId: string, url: string) {
-        super(targetName, assetId, url)
+export class UnauthorizedEvent implements CdnFetchEvent {
+    public readonly step = 'UnauthorizedEvent'
+    public readonly text: string
+    public readonly status = 'Failed'
+    constructor(
+        public readonly id: string,
+        public readonly assetId: string,
+        public readonly url: string,
+    ) {
+        this.text = `${id}: unauthorized to access the resource`
     }
 }
 
@@ -869,9 +918,16 @@ export class UnauthorizedEvent extends FetchErrorEvent {
  *
  * @category Events
  */
-export class UrlNotFoundEvent extends FetchErrorEvent {
-    constructor(targetName: string, assetId: string, url: string) {
-        super(targetName, assetId, url)
+export class UrlNotFoundEvent implements CdnFetchEvent {
+    public readonly step = 'UrlNotFoundEvent'
+    public readonly text: string
+    public readonly status = 'Failed'
+    constructor(
+        public readonly id: string,
+        public readonly assetId: string,
+        public readonly url: string,
+    ) {
+        this.text = `${id}: resource not found at ${url}`
     }
 }
 
@@ -880,9 +936,16 @@ export class UrlNotFoundEvent extends FetchErrorEvent {
  *
  * @category Events
  */
-export class ParseErrorEvent extends FetchErrorEvent {
-    constructor(targetName: string, assetId: string, url: string) {
-        super(targetName, assetId, url)
+export class ParseErrorEvent implements CdnFetchEvent {
+    public readonly step = 'UrlNotFoundEvent'
+    public readonly text: string
+    public readonly status = 'Failed'
+    constructor(
+        public readonly id: string,
+        public readonly assetId: string,
+        public readonly url: string,
+    ) {
+        this.text = `${id}: parsing the module/script failed`
     }
 }
 
@@ -891,10 +954,12 @@ export class ParseErrorEvent extends FetchErrorEvent {
  *
  * @category Events
  */
-export class CdnLoadingGraphErrorEvent extends CdnEvent {
-    constructor(public readonly error: LoadingGraphError) {
-        super()
-    }
+export class CdnLoadingGraphErrorEvent implements CdnEvent {
+    public readonly id = 'loading-graph'
+    public readonly step = 'CdnLoadingGraphErrorEvent'
+    public readonly text = 'Failed to retrieve the loading graph'
+    public readonly status = 'Failed'
+    constructor(public readonly error: LoadingGraphError) {}
 }
 
 /**
@@ -902,10 +967,11 @@ export class CdnLoadingGraphErrorEvent extends CdnEvent {
  *
  * @category Events
  */
-export class InstallDoneEvent extends CdnEvent {
-    constructor() {
-        super()
-    }
+export class InstallDoneEvent implements CdnEvent {
+    public readonly id = 'InstallDoneEvent'
+    public readonly step = 'InstallDoneEvent'
+    public readonly text = 'Installation successful'
+    public readonly status = 'Succeeded'
 }
 
 export interface Library {

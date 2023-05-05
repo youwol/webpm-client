@@ -1,9 +1,4 @@
-import {
-    CdnEvent,
-    CdnFetchEvent,
-    CdnLoadingGraphErrorEvent,
-    CdnMessageEvent,
-} from './models'
+import { CdnEvent, CdnLoadingGraphErrorEvent, CdnMessageEvent } from './models'
 import {
     insertLoadingGraphError,
     sanitizeCssId,
@@ -227,20 +222,17 @@ export class LoadingScreenView {
                 divLib.textContent = '> ' + event.text
                 this.contentDiv.appendChild(divLib)
             }
+            return
         }
-        if (event instanceof CdnFetchEvent) {
-            const libraryName = event.targetName
-            const cssId = sanitizeCssId(libraryName)
-            let divLib: HTMLDivElement = this.wrapperDiv.querySelector(
-                `#${cssId}`,
-            )
-            if (!divLib) {
-                divLib = document.createElement('div')
-                divLib.id = cssId
-                this.contentDiv.appendChild(divLib)
-            }
-            updateLibStatusView(libraryName, divLib, event)
+        const libraryName = event.id
+        const cssId = sanitizeCssId(libraryName)
+        let divLib: HTMLDivElement = this.wrapperDiv.querySelector(`#${cssId}`)
+        if (!divLib) {
+            divLib = document.createElement('div')
+            divLib.id = cssId
+            this.contentDiv.appendChild(divLib)
         }
+        updateLibStatusView(libraryName, divLib, event)
     }
 
     /**

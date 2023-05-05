@@ -1,5 +1,5 @@
 import {
-    CdnFetchEvent,
+    CdnEvent,
     CdnLoadingGraphErrorEvent,
     CircularDependencies,
     DependenciesError,
@@ -70,7 +70,7 @@ export function circularDependenciesView(error: CircularDependencies) {
 export function updateLibStatusView(
     libraryName: string,
     divLib: HTMLDivElement,
-    event: CdnFetchEvent,
+    event: CdnEvent,
 ) {
     if (event instanceof StartEvent) {
         divLib.style.setProperty('color', 'lightgray')
