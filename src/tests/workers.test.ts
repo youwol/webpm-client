@@ -2,10 +2,16 @@
 // eslint-disable-next-line eslint-comments/disable-enable-pair -- to not have problem
 /* eslint-disable jest/no-done-callback -- eslint-comment Find a good way to work with rxjs in jest */
 
-import { CdnEvent, installWorkersPoolModule, State } from '../lib'
+import { installWorkersPoolModule, State } from '../lib'
 import { cleanDocument, installPackages$ } from './common'
 import './mock-requests'
-import { entryPointWorker, WorkersPool } from '../lib/workers-pool'
+import {
+    CdnEventView,
+    CdnEventWorker,
+    entryPointWorker,
+    WorkerCard,
+    WorkersPool,
+} from '../lib/workers-pool'
 import { delay, last, mergeMap, takeWhile, tap } from 'rxjs/operators'
 import { from, Subject } from 'rxjs'
 import {
@@ -13,7 +19,8 @@ import {
     WWorkerTrait,
 } from '../lib/workers-pool/web-worker.proxy'
 import * as cdnClient from '../../src/lib'
-jest.setTimeout(5 * 1000)
+import { render } from '@youwol/flux-view'
+jest.setTimeout(100 * 1000)
 
 console.log = () => {
     /*no-op*/
@@ -143,7 +150,7 @@ test('ready', async () => {
 })
 
 test('ready with variables, function, & postInstall tasks', async () => {
-    const cdnEvent$ = new Subject<CdnEvent>()
+    const cdnEvent$ = new Subject<CdnEventWorker>()
     const events = []
     cdnEvent$.subscribe((d) => {
         events.push(d)
@@ -305,6 +312,54 @@ test('schedule async with ready on particular worker', (done) => {
                 expect(workers).toHaveLength(1)
                 expect(workers[0].worker.uid).toBe(workerId)
                 expect(m.data['result']).toBe(42)
+            }),
+        )
+        .subscribe(() => {
+            done()
+        })
+})
+
+test('view', (done) => {
+    const pool = new WorkersPool({
+        install: {
+            modules: ['rxjs#^6.5.5'],
+        },
+        pool: {
+            startAt: 1,
+        },
+    })
+    window.document.body.append(render(pool.view()))
+    let workerId
+    from(pool.ready())
+        .pipe(
+            tap(() => {
+                const workers = Object.values(pool.workers$.value)
+                workerId = workers[0].worker.uid
+            }),
+            mergeMap(() => {
+                return pool.schedule({
+                    title: 'test',
+                    entryPoint: scheduleFunctionAsync,
+                    args: { value: 21 },
+                    targetWorkerId: workerId,
+                })
+            }),
+            takeWhile((m) => m.type != 'Exit', true),
+            last(),
+            // let the time to subscription (busy$ in particular) to be handled
+            delay(1),
+            tap(() => {
+                const elems = Array.from(
+                    document.querySelectorAll(`.${WorkerCard.Class}`),
+                )
+                expect(elems).toHaveLength(1)
+                const view = elems[0] as unknown as WorkerCard & HTMLDivElement
+                expect(view.workerId).toBe(workerId)
+                const cdnEvents = Array.from(
+                    view.querySelectorAll(`.${CdnEventView.Class}`),
+                )
+                // rxjs imported + install done
+                expect(cdnEvents).toHaveLength(2)
             }),
         )
         .subscribe(() => {
