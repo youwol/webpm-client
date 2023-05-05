@@ -828,14 +828,16 @@ export type CdnFetchEvent = CdnEvent & {
  */
 export class StartEvent implements CdnFetchEvent {
     public readonly step = 'StartEvent'
+    public readonly id: string
     public readonly text: string
     public readonly status = 'Pending'
     constructor(
-        public readonly id: string,
+        public readonly targetName: string,
         public readonly assetId: string,
         public readonly url: string,
     ) {
-        this.text = `${id}: start importing`
+        this.id = targetName
+        this.text = `${targetName}: start importing`
     }
 }
 
@@ -846,15 +848,17 @@ export class StartEvent implements CdnFetchEvent {
  */
 export class SourceLoadingEvent implements CdnFetchEvent {
     public readonly step = 'SourceLoadingEvent'
+    public readonly id: string
     public readonly text: string
     public readonly status = 'Pending'
     constructor(
-        public readonly id: string,
+        public readonly targetName: string,
         public readonly assetId: string,
         public readonly url: string,
         public readonly progress: ProgressEvent<XMLHttpRequestEventTarget>,
     ) {
-        this.text = `${id}: fetching over HTTP`
+        this.id = targetName
+        this.text = `${targetName}: fetching over HTTP`
     }
 }
 
@@ -865,15 +869,17 @@ export class SourceLoadingEvent implements CdnFetchEvent {
  */
 export class SourceLoadedEvent implements CdnFetchEvent {
     public readonly step = 'SourceLoadedEvent'
+    public readonly id: string
     public readonly text: string
     public readonly status = 'Pending'
     constructor(
-        public readonly id: string,
+        public readonly targetName: string,
         public readonly assetId: string,
         public readonly url: string,
         public readonly progress: ProgressEvent<XMLHttpRequestEventTarget>,
     ) {
-        this.text = `${id}: source fetched`
+        this.id = targetName
+        this.text = `${targetName}: source fetched`
     }
 }
 
@@ -884,14 +890,16 @@ export class SourceLoadedEvent implements CdnFetchEvent {
  */
 export class SourceParsedEvent implements CdnFetchEvent {
     public readonly step = 'SourceParsedEvent'
+    public readonly id: string
     public readonly text: string
     public readonly status = 'Succeeded'
     constructor(
-        public readonly id: string,
+        public readonly targetName: string,
         public readonly assetId: string,
         public readonly url: string,
     ) {
-        this.text = `${id}: module/script imported`
+        this.id = targetName
+        this.text = `${targetName}: module/script imported`
     }
 }
 
@@ -902,14 +910,16 @@ export class SourceParsedEvent implements CdnFetchEvent {
  */
 export class UnauthorizedEvent implements CdnFetchEvent {
     public readonly step = 'UnauthorizedEvent'
+    public readonly id: string
     public readonly text: string
     public readonly status = 'Failed'
     constructor(
-        public readonly id: string,
+        public readonly targetName: string,
         public readonly assetId: string,
         public readonly url: string,
     ) {
-        this.text = `${id}: unauthorized to access the resource`
+        this.id = targetName
+        this.text = `${targetName}: unauthorized to access the resource`
     }
 }
 
@@ -920,14 +930,16 @@ export class UnauthorizedEvent implements CdnFetchEvent {
  */
 export class UrlNotFoundEvent implements CdnFetchEvent {
     public readonly step = 'UrlNotFoundEvent'
+    public readonly id: string
     public readonly text: string
     public readonly status = 'Failed'
     constructor(
-        public readonly id: string,
+        public readonly targetName: string,
         public readonly assetId: string,
         public readonly url: string,
     ) {
-        this.text = `${id}: resource not found at ${url}`
+        this.id = targetName
+        this.text = `${targetName}: resource not found at ${url}`
     }
 }
 
@@ -938,14 +950,16 @@ export class UrlNotFoundEvent implements CdnFetchEvent {
  */
 export class ParseErrorEvent implements CdnFetchEvent {
     public readonly step = 'UrlNotFoundEvent'
+    public readonly id: string
     public readonly text: string
     public readonly status = 'Failed'
     constructor(
-        public readonly id: string,
+        public readonly targetName: string,
         public readonly assetId: string,
         public readonly url: string,
     ) {
-        this.text = `${id}: parsing the module/script failed`
+        this.id = targetName
+        this.text = `${targetName}: parsing the module/script failed`
     }
 }
 
