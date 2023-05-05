@@ -7,6 +7,7 @@ import {
     getUrlBase,
     InstallInputs,
     InstallLoadingGraphInputs,
+    isCdnEvent,
 } from '..'
 import { setup } from '../../auto-generated'
 import { WorkersPoolView } from './views'
@@ -29,19 +30,20 @@ export class NoContext implements Context {
         /** no op*/
     }
 }
-export interface CdnEventWorker {
-    text: string
+export type CdnEventWorker = CdnEvent & {
     workerId: string
-    id: string
+}
+
+export function implementEventWithWorkerTrait(
+    event: unknown,
+): event is CdnEventWorker {
+    return isCdnEvent(event) && (event as CdnEventWorker).step != undefined
 }
 
 export interface MessageCdnEventData {
     type: string
     workerId: string
-    event: {
-        id: string
-        text: string
-    }
+    event: CdnEvent
 }
 
 export function isCdnEventMessage(
@@ -389,7 +391,7 @@ export class WorkersPool {
 
     public readonly backgroundContext: Context
 
-    public readonly cdnEvent$: Subject<CdnEvent>
+    public readonly cdnEvent$: Subject<CdnEventWorker>
 
     public readonly environment: WorkerEnvironment
 
@@ -409,7 +411,7 @@ export class WorkersPool {
         ctxFactory,
         pool,
     }: {
-        cdnEvent$?: Subject<CdnEvent>
+        cdnEvent$?: Subject<CdnEventWorker>
         globals?: { [_k: string]: unknown }
         install?: InstallInputs | InstallLoadingGraphInputs
         postInstallTasks?: Task[]
@@ -427,7 +429,7 @@ export class WorkersPool {
         )}/dist/${cdnPackage}.js`
         this.backgroundContext =
             ctxFactory && ctxFactory('background management')
-        this.cdnEvent$ = cdnEvent$ || new Subject<CdnEvent>()
+        this.cdnEvent$ = cdnEvent$ || new Subject<CdnEventWorker>()
         // Need to manage lifecycle of following subscription
         this.workerReleased$.subscribe(({ workerId, taskId }) => {
             this.busyWorkers$.next(
