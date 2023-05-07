@@ -5,13 +5,13 @@ import {
     childrenFromStore$,
 } from '@youwol/flux-view'
 import { CdnEventStatus } from '..'
-import { filter } from 'rxjs/operators'
+import { filter, map } from 'rxjs/operators'
 import {
     CdnEventWorker,
     implementEventWithWorkerTrait,
     WorkersPool,
 } from './workers-factory'
-import { BehaviorSubject, of } from 'rxjs'
+import { BehaviorSubject, combineLatest, of } from 'rxjs'
 
 type EventData = {
     id: string
@@ -188,6 +188,8 @@ export class CdnEventView implements VirtualDOM {
         ]
     }
 }
+
+type WorkerStatus = 'Pending' | 'Created' | 'Busy'
 /**
  * @category View
  */
@@ -219,6 +221,24 @@ export class WorkerCardTitleView implements VirtualDOM {
         workersPoolState: WorkersPoolViewState
     }) {
         Object.assign(this, params)
+        const wp = this.workersPoolState.workersPool
+        const classes: Record<WorkerStatus, string> = {
+            Pending: 'fa-cloud-download-alt',
+            Created: '',
+            Busy: 'fa-play',
+        }
+        const statusWorker$ = combineLatest([
+            wp.workers$.pipe(map((workers) => Object.keys(workers))),
+            wp.busyWorkers$,
+        ]).pipe(
+            map(([ready, busy]) => {
+                return busy.includes(this.workerId)
+                    ? 'Busy'
+                    : ready.includes(this.workerId)
+                    ? 'Created'
+                    : 'Pending'
+            }),
+        )
         this.children = [
             {
                 tag: 'h3',
@@ -226,11 +246,12 @@ export class WorkerCardTitleView implements VirtualDOM {
             },
             {
                 class: attr$(
-                    this.workersPoolState.workersPool.busyWorkers$,
-                    (busyWorkers) =>
-                        busyWorkers.includes(this.workerId)
-                            ? 'fas fa-play fv-text-success fv-blink mx-2'
-                            : '',
+                    statusWorker$,
+                    (status: WorkerStatus): string => classes[status],
+                    {
+                        wrapper: (d) =>
+                            `fas ${d} fv-text-success fv-blink mx-2`,
+                    },
                 ),
             },
         ]
