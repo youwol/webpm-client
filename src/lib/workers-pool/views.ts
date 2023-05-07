@@ -32,7 +32,7 @@ export class WorkersPoolViewState {
 
     constructor(params: { workersPool: WorkersPool }) {
         Object.assign(this, params)
-        this.workersPool.pendingWorkers$.subscribe((ids) => {
+        this.workersPool.startedWorkers$.subscribe((ids) => {
             ids.forEach((workerId) => {
                 if (!this.cdnEvents$[workerId]) {
                     this.cdnEvents$[workerId] = new BehaviorSubject<
@@ -91,7 +91,7 @@ export class WorkersPoolView implements VirtualDOM {
             {
                 class: 'w-100 d-flex flex-grow-1 p-2 flex-wrap overflow-auto',
                 children: children$(
-                    this.workersPoolState.workersPool.pendingWorkers$,
+                    this.workersPoolState.workersPool.startedWorkers$,
                     (workerIds) => {
                         return [...workerIds].map((workerId) => {
                             return new WorkerCard({

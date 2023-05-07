@@ -374,7 +374,7 @@ export class WorkersPool {
     private requestedWorkersCount = 0
 
     public readonly mergedChannel$ = new Subject<MessageEventData>()
-    public readonly pendingWorkers$ = new BehaviorSubject<string[]>([])
+    public readonly startedWorkers$ = new BehaviorSubject<string[]>([])
     public readonly workers$ = new BehaviorSubject<{
         [p: string]: {
             worker: WWorkerTrait
@@ -662,7 +662,7 @@ export class WorkersPool {
                 },
             })
             const workerId = workerProxy.uid
-            this.pendingWorkers$.next([...this.pendingWorkers$.value, workerId])
+            this.startedWorkers$.next([...this.startedWorkers$.value, workerId])
             const taskId = `t${Math.floor(Math.random() * 1e6)}`
             const title = 'Install environment'
             const p = new Process({
