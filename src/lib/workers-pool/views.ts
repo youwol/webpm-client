@@ -19,7 +19,7 @@ type EventData = {
     status: CdnEventStatus
 }
 
-export class WorkersPoolState {
+export class WorkersPoolViewState {
     /**
      * @group States
      */
@@ -76,7 +76,7 @@ export class WorkersPoolView implements VirtualDOM {
     /**
      * @group States
      */
-    public readonly workersPoolState: WorkersPoolState
+    public readonly workersPoolState: WorkersPoolViewState
 
     /**
      * @group Immutable DOM Constants
@@ -84,7 +84,7 @@ export class WorkersPoolView implements VirtualDOM {
     public readonly children: VirtualDOM[]
 
     constructor(params: { workersPool: WorkersPool }) {
-        this.workersPoolState = new WorkersPoolState({
+        this.workersPoolState = new WorkersPoolViewState({
             workersPool: params.workersPool,
         })
         this.children = [
@@ -138,11 +138,11 @@ export class WorkerCard implements VirtualDOM {
     /**
      * @group States
      */
-    public readonly workersPoolState: WorkersPoolState
+    public readonly workersPoolState: WorkersPoolViewState
 
     constructor(params: {
         workerId: string
-        workersPoolState: WorkersPoolState
+        workersPoolState: WorkersPoolViewState
     }) {
         Object.assign(this, params)
         this.children = [
@@ -212,11 +212,11 @@ export class WorkerCardTitleView implements VirtualDOM {
     /**
      * @group States
      */
-    public readonly workersPoolState: WorkersPoolState
+    public readonly workersPoolState: WorkersPoolViewState
 
     constructor(params: {
         workerId: string
-        workersPoolState: WorkersPoolState
+        workersPoolState: WorkersPoolViewState
     }) {
         Object.assign(this, params)
         this.children = [
