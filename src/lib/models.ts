@@ -86,7 +86,7 @@ export type ScriptInput =
  *
  * @category Client's method inputs
  */
-export interface InstallStyleSheetsInputs {
+export type InstallStyleSheetsInputs = {
     /**
      * See [[InstallInputs.css]]
      */
@@ -103,7 +103,7 @@ export interface InstallStyleSheetsInputs {
  *
  * @category Client's method inputs
  */
-export interface InstallLoadingGraphInputs {
+export type InstallLoadingGraphInputs = {
     /**
      * Specification of the loading graph (e.g. retrieved using [[queryLoadingGraph]]).
      */
@@ -144,7 +144,7 @@ export interface InstallLoadingGraphInputs {
  *
  * @category Client's method inputs
  */
-export interface CustomInstaller {
+export type CustomInstaller = {
     /**
      * module name of the custom installer
      */
@@ -161,7 +161,7 @@ export interface CustomInstaller {
  *
  * @category Client's method inputs
  */
-export interface InstallInputs {
+export type InstallInputs = {
     /**
      * List of modules to install, see [[LightLibraryQueryString]] for specification.
      *
@@ -361,7 +361,7 @@ export interface InstallInputs {
  *
  * @category Client's method inputs
  */
-export interface FetchScriptInputs {
+export type FetchScriptInputs = {
     /**
      * url of the script, see [[getUrlBase]].
      */
@@ -390,7 +390,7 @@ export interface FetchScriptInputs {
  *
  * @category Client's method inputs
  */
-export interface InstallModulesInputs {
+export type InstallModulesInputs = {
     /**
      * See [[InstallInputs.modules]]
      */
@@ -427,7 +427,7 @@ export interface InstallModulesInputs {
  *
  * @category Client's method inputs
  */
-export interface InstallPythonModulesInputs {
+export type InstallPythonModulesInputs = {
     /**
      * See [[InstallInputs.modules]]
      */
@@ -449,7 +449,7 @@ export interface InstallPythonModulesInputs {
  *
  * @category Client's method inputs
  */
-export interface InstallScriptsInputs {
+export type InstallScriptsInputs = {
     /**
      * See [[InstallInputs.scripts]]
      */
@@ -472,7 +472,7 @@ export interface InstallScriptsInputs {
 /**
  * Argument type for [[ModuleSideEffectCallback]]
  */
-export interface ModuleSideEffectCallbackArgument {
+export type ModuleSideEffectCallbackArgument = {
     /**
      * The installed module
      */
@@ -501,7 +501,7 @@ export type ModuleSideEffectCallback = (
 /**
  * Argument type for [[CssSideEffectCallback]]
  */
-export interface CssSideEffectCallbackArgument {
+export type CssSideEffectCallbackArgument = {
     /**
      * Origin of the style-sheet
      */
@@ -533,7 +533,7 @@ export type CssSideEffectCallback = (
 /**
  * Argument type for [[CssSideEffectCallback]]
  */
-export interface ScriptSideEffectCallbackArgument {
+export type ScriptSideEffectCallbackArgument = {
     /**
      * Origin of the style-sheet
      */
@@ -563,7 +563,7 @@ export type ScriptSideEffectCallback = (
  *
  * @category Client's method inputs
  */
-export interface QueryLoadingGraphInputs {
+export type QueryLoadingGraphInputs = {
     /**
      * See [[InstallInputs.modules]]
      */
@@ -750,7 +750,7 @@ export type CdnEventStatus = 'Pending' | 'Succeeded' | 'Failed' | 'None'
  *
  * @category Events
  */
-export interface CdnEvent {
+export type CdnEvent = {
     step: StepEventType
     id: string
     text: string
@@ -965,7 +965,7 @@ export class InstallDoneEvent implements CdnEvent {
     public readonly status = 'Succeeded'
 }
 
-export interface Library {
+export type Library = {
     /**
      * id of the library in the asset store
      */
@@ -1005,7 +1005,7 @@ export interface Library {
  * -    [[getLoadingGraph]]: return the loading graph from a list of package's name and version.
  * -    [[fetchBundles]]: directly fetch dependenceis from a list of package's name and version
  */
-export interface LoadingGraph {
+export type LoadingGraph = {
     /**
      *
      * List of javascript libraries to fetch by batch:
@@ -1031,7 +1031,7 @@ export interface LoadingGraph {
 /**
  * Output when a script has been fetched, see e.g. [[Client.fetchScript]] & [[fetchScript]]
  */
-export interface FetchedScript {
+export type FetchedScript = {
     /**
      * name: module name if the script correspond to a module,
      * can be defined by the user when using [[Client.fetchScript]] & [[fetchScript]]
