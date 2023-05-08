@@ -43,18 +43,6 @@ export type LightLibraryQueryString = string
 export type FullLibraryQueryString = string
 
 /**
- * Deprecated version, use LightModuleQueryString
- *
- * @deprecated
- * @category Deprecated
- */
-export interface ModuleQueryDeprecated {
-    name: string
-    version: string
-    sideEffects?: (Window) => void
-}
-
-/**
  * Specification of a module.
  */
 export type ModuleInput =
@@ -107,17 +95,6 @@ export interface InstallStyleSheetsInputs {
     /**
      * Window global in which css elements are added. If not provided, `window` is used.
      */
-    renderingWindow?: Window
-}
-
-/**
- * Deprecated, use [[InstallStyleSheetInputs]]
- *
- * @category Client's method inputs
- * @deprecated
- */
-export interface InstallStyleSheetInputsDeprecated {
-    css: { resource: string }[]
     renderingWindow?: Window
 }
 
@@ -197,7 +174,7 @@ export interface InstallInputs {
      * })
      * ```
      */
-    modules?: (LightLibraryQueryString | ModuleQueryDeprecated)[]
+    modules?: LightLibraryQueryString[]
 
     /**
      * Override the 'natural' version used for some libraries coming from the dependency graph when resolving
@@ -417,7 +394,7 @@ export interface InstallModulesInputs {
     /**
      * See [[InstallInputs.modules]]
      */
-    modules: (LightLibraryQueryString | ModuleQueryDeprecated)[]
+    modules: LightLibraryQueryString[]
 
     /**
      * See [[InstallInputs.modulesSideEffects]]
@@ -454,7 +431,7 @@ export interface InstallPythonModulesInputs {
     /**
      * See [[InstallInputs.modules]]
      */
-    pythonModules: (LightLibraryQueryString | ModuleQueryDeprecated)[]
+    pythonModules: LightLibraryQueryString[]
 
     /**
      * See [[InstallInputs.executingWindow]]
@@ -590,7 +567,7 @@ export interface QueryLoadingGraphInputs {
     /**
      * See [[InstallInputs.modules]]
      */
-    modules: (LightLibraryQueryString | ModuleQueryDeprecated)[]
+    modules: LightLibraryQueryString[]
 
     /**
      * See [[InstallInputs.usingDependencies]]

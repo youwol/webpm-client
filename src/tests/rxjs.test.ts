@@ -22,20 +22,16 @@ beforeEach(() => {
 test('install rxjs-test#latest', async () => {
     const events = []
     const packageName = 'rxjs-test'
-    const { rxjs, rxjs7 } = (await install(
-        {
-            modules: ['rxjs-test'],
-            aliases: {
-                rxjs: 'rxjs-test',
-                rxjs7: 'rxjs-test#7',
-            },
+    const { rxjs, rxjs7 } = (await install({
+        modules: ['rxjs-test'],
+        aliases: {
+            rxjs: 'rxjs-test',
+            rxjs7: 'rxjs-test#7',
         },
-        {
-            onEvent: (event) => {
-                events.push(event)
-            },
+        onEvent: (event) => {
+            events.push(event)
         },
-    )) as unknown as { rxjs: unknown; rxjs7: unknown }
+    })) as unknown as { rxjs: unknown; rxjs7: unknown }
 
     expect(document.scripts).toHaveLength(1)
     expect(rxjs).toBeTruthy()
@@ -51,28 +47,21 @@ test('install rxjs-test#6.5.5 + side-effects', async () => {
     const events = []
     const packageName = 'rxjs-test'
     const sideEffects: string[] = []
-    const { rxjs, rxjs6 } = (await install(
-        {
-            modules: [
-                {
-                    name: 'rxjs-test',
-                    version: '6.5.5',
-                    sideEffects: () => {
-                        sideEffects.push('rxjs-test#6.5.5')
-                    },
-                },
-            ],
-            aliases: {
-                rxjs: 'rxjs-test',
-                rxjs6: 'rxjs-test#6',
+    const { rxjs, rxjs6 } = (await install({
+        modules: [`rxjs-test#6.5.5`],
+        modulesSideEffects: {
+            'rxjs-test#*': () => {
+                sideEffects.push('rxjs-test#6.5.5')
             },
         },
-        {
-            onEvent: (event) => {
-                events.push(event)
-            },
+        aliases: {
+            rxjs: 'rxjs-test',
+            rxjs6: 'rxjs-test#6',
         },
-    )) as unknown as { rxjs: unknown; rxjs6: unknown }
+        onEvent: (event) => {
+            events.push(event)
+        },
+    })) as unknown as { rxjs: unknown; rxjs6: unknown }
 
     expect(document.scripts).toHaveLength(1)
     expect(sideEffects).toHaveLength(1)
@@ -88,40 +77,25 @@ test('install rxjs-test#6.5.5 + side-effects', async () => {
 test('install rxjs-test#6 & rxjs-test#7', async () => {
     const events = []
     const sideEffects: string[] = []
-    const { rxjs, rxjs6, rxjs7 } = (await install(
-        {
-            modules: [
-                {
-                    name: 'rxjs-test',
-                    version: '6.5.5',
-                    sideEffects: () => sideEffects.push('rxjs-test#6.5.5'),
-                },
-                {
-                    name: 'rxjs-test',
-                    version: '7.5.5',
-                    sideEffects: async () => {
-                        // Test async side-effects here
-                        await new Promise<void>((resolve) =>
-                            setTimeout(() => {
-                                sideEffects.push('rxjs-test#7.5.5')
-                                resolve()
-                            }, 200),
-                        )
-                    },
-                },
-            ],
-            aliases: {
-                rxjs: 'rxjs-test',
-                rxjs6: 'rxjs-test#6',
-                rxjs7: 'rxjs-test#7',
+    const { rxjs, rxjs6, rxjs7 } = (await install({
+        modules: ['rxjs-test#6.5.5', 'rxjs-test#7.5.5'],
+        modulesSideEffects: {
+            'rxjs-test#6.x': () => {
+                sideEffects.push('rxjs-test#6.5.5')
+            },
+            'rxjs-test#7.x': () => {
+                sideEffects.push('rxjs-test#7.5.5')
             },
         },
-        {
-            onEvent: (event) => {
-                events.push(event)
-            },
+        aliases: {
+            rxjs: 'rxjs-test',
+            rxjs6: 'rxjs-test#6',
+            rxjs7: 'rxjs-test#7',
         },
-    )) as unknown as { rxjs: unknown; rxjs6: unknown; rxjs7: unknown }
+        onEvent: (event) => {
+            events.push(event)
+        },
+    })) as unknown as { rxjs: unknown; rxjs6: unknown; rxjs7: unknown }
 
     expect(document.scripts).toHaveLength(2)
     expect(sideEffects).toHaveLength(2)
@@ -136,12 +110,7 @@ test('install rxjs-test#6 & rxjs-test#7', async () => {
 test('install rxjs-test#7 with pined dependencies @#6', async () => {
     State.pinDependencies(['rxjs-test#6.5.5'])
     const { rxjs, rxjs6, rxjs7 } = (await install({
-        modules: [
-            {
-                name: 'rxjs-test',
-                version: '7.5.5',
-            },
-        ],
+        modules: ['rxjs-test#7.5.5'],
         aliases: {
             rxjs: 'rxjs-test',
             rxjs6: 'rxjs-test#6',
@@ -165,12 +134,7 @@ test('install rxjs-test#7 with patched url', async () => {
         return url.replace('7.5.5', '6.5.5')
     })
     await install({
-        modules: [
-            {
-                name: 'rxjs-test',
-                version: '7.5.5',
-            },
-        ],
+        modules: ['rxjs-test#7.5.5'],
     })
 
     expect(window['rxjs-test_APIv6']).toBeTruthy()

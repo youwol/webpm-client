@@ -15,7 +15,6 @@ import {
     InstallInputs,
     CdnEvent,
     FetchedScript,
-    InstallStyleSheetInputsDeprecated,
     InstallDoneEvent,
 } from './models'
 import { State } from './state'
@@ -41,24 +40,6 @@ import {
  * @param inputs
  */
 export function install(inputs: InstallInputs): Promise<Window>
-
-/**
- *
- * Use default [[Client]] to install a set of resources, see [[Client.install]]
- *
- * @deprecated
- * @category Deprecated
- * @param inputs
- * @param options
- */
-export function install(
-    inputs: InstallInputs,
-    options?: {
-        executingWindow?: Window
-        onEvent?: (event: CdnEvent) => void
-        displayLoadingScreen?: boolean
-    },
-): Promise<Window>
 
 export function install(
     inputs: InstallInputs,
@@ -468,7 +449,7 @@ export class Client {
         ]
         const modules = sanitizeModules(inputs.modules || [])
         const body = {
-            modules: modules,
+            modules: inputs.modules,
             usingDependencies,
         }
         const modulesSideEffects = modules.reduce(
@@ -550,13 +531,10 @@ export class Client {
      * @param inputs
      */
     installStyleSheets(
-        inputs: InstallStyleSheetsInputs | InstallStyleSheetInputsDeprecated,
+        inputs: InstallStyleSheetsInputs,
     ): Promise<Array<HTMLLinkElement>> {
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- false error: map is available
-        // @ts-ignore
-        const css = inputs.css.map((stylesheet) =>
-            stylesheet.resource ? stylesheet.resource : stylesheet,
-        )
+        const css = inputs.css
+
         const renderingWindow = inputs.renderingWindow || window
 
         const getLinkElement = (url) => {

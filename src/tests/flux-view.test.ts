@@ -37,7 +37,7 @@ test('install flux-view-test#0', (done) => {
     const packageName = '@youwol/flux-view-test'
     from(
         install({
-            modules: [{ name: packageName, version: '0.x' }], // ['@youwol/flux-view-test#0'],
+            modules: [`${packageName}#0.x`], // ['@youwol/flux-view-test#0'],
             aliases: {
                 rxjs6: 'rxjs-test#6',
                 rxjs: 'rxjs-test',
@@ -91,7 +91,7 @@ test('install flux-view-test#1', (done) => {
     const packageName = '@youwol/flux-view-test'
     from(
         install({
-            modules: [{ name: packageName, version: '1.x' }],
+            modules: [`${packageName}#1.x`],
             aliases: {
                 rxjs7: 'rxjs-test#7',
                 rxjs: 'rxjs-test',
@@ -271,7 +271,7 @@ test('install flux-view-test#1 using rxjs#6.5.5 (failure expected)', (done) => {
     const packageName = '@youwol/flux-view-test'
     from(
         install({
-            modules: [{ name: packageName, version: '1.x' }],
+            modules: [`${packageName}#1.x`],
             usingDependencies: ['rxjs-test#6.5.5'],
             aliases: {
                 fv1: '@youwol/flux-view-test#1',
@@ -307,7 +307,7 @@ test('Sequential installation with version upgrade', (done) => {
 
     from(
         install({
-            modules: [{ name: packageName, version: '0.x' }],
+            modules: [`${packageName}#0.x`],
             usingDependencies: ['@youwol/flux-view-test#0.1.1'],
             aliases: {
                 fv0: '@youwol/flux-view-test#01',
@@ -334,7 +334,7 @@ test('Sequential installation with version upgrade', (done) => {
             mergeMap(() => {
                 return from(
                     install({
-                        modules: [{ name: packageName, version: '0.x' }],
+                        modules: [`${packageName}#0.x`],
                         aliases: {
                             fv0: '@youwol/flux-view-test#01',
                         },
@@ -360,7 +360,7 @@ test('Sequential installation with version downgrade', (done) => {
 
     from(
         install({
-            modules: [{ name: packageName, version: '0.x' }],
+            modules: [`${packageName}#0.x`],
             aliases: {
                 fv0: '@youwol/flux-view-test#01',
             },
@@ -386,7 +386,7 @@ test('Sequential installation with version downgrade', (done) => {
             mergeMap(() => {
                 return from(
                     install({
-                        modules: [{ name: packageName, version: '0.x' }],
+                        modules: [`${packageName}#0.x`],
                         usingDependencies: ['@youwol/flux-view-test#0.1.1'],
                         aliases: {
                             fv0: '@youwol/flux-view-test#01',

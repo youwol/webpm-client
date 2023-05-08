@@ -10,21 +10,10 @@ import {
     InstallDoneEvent,
     fetchScript,
     InstallInputs,
-    QueryLoadingGraphInputs,
-    getLoadingGraph,
-    LightLibraryQueryString,
-    installScripts,
-    InstallScriptsInputs,
-    fetchJavascriptAddOn,
     installLoadingGraph,
-    InstallLoadingGraphInputs,
-    fetchLoadingGraph,
-    FetchScriptInputs,
-    fetchSource,
     parseResourceId,
     installStyleSheets,
-    InstallStyleSheetsInputs,
-    fetchStyleSheets,
+    installScripts,
 } from '../lib'
 
 import { cleanDocument, expectEvents, installPackages$ } from './common'
@@ -46,123 +35,50 @@ beforeEach(() => {
     cleanDocument()
     State.clear()
 })
-function doFetchScript(
-    body: FetchScriptInputs,
-    version: 'deprecated' | 'regular',
-) {
-    return version == 'deprecated' ? fetchSource(body) : fetchScript(body)
-}
-
-function doInstallScripts(
-    body: InstallScriptsInputs,
-    version: 'deprecated' | 'regular',
-) {
-    return version == 'deprecated'
-        ? fetchJavascriptAddOn(
-              body.scripts as string[],
-              body.executingWindow,
-              body.onEvent,
-          )
-        : installScripts(body)
-}
 
 function doInstall(body: InstallInputs, version: 'deprecated' | 'regular') {
     return version == 'deprecated'
-        ? install(
-              {
-                  modules: body.modules,
-              },
-              {
-                  onEvent: body.onEvent,
-              },
-          )
+        ? install({
+              modules: body.modules,
+              onEvent: body.onEvent,
+          })
         : install({
               modules: body.modules,
               onEvent: body.onEvent,
           })
 }
 
-function doQueryLoadingGraph(
-    body: QueryLoadingGraphInputs,
-    version: 'deprecated' | 'regular',
-) {
-    return version == 'deprecated'
-        ? getLoadingGraph({
-              libraries: body.modules.reduce(
-                  (acc, e: LightLibraryQueryString) => ({
-                      ...acc,
-                      [e.split('#')[0]]: e.split('#')[1],
-                  }),
-                  {},
-              ),
-          })
-        : queryLoadingGraph(body)
-}
-
-function doInstallLoadingGraph(
-    body: InstallLoadingGraphInputs,
-    version: 'deprecated' | 'regular',
-) {
-    return version == 'deprecated'
-        ? fetchLoadingGraph(
-              body.loadingGraph,
-              body.executingWindow,
-              undefined,
-              body.onEvent,
-          )
-        : installLoadingGraph(body)
-}
-
-function doInstallStyleSheets(
-    body: InstallStyleSheetsInputs,
-    version: 'deprecated' | 'regular',
-) {
-    return version == 'deprecated'
-        ? fetchStyleSheets(body.css as string[], body.renderingWindow)
-        : installStyleSheets(body)
-}
-
 test('fetch script', async () => {
-    for (const mode of ['regular', 'deprecated']) {
-        cleanDocument()
-        State.resetCache()
-        // The script add-on.js suppose there is already the module 'a' installed
-        window['a'] = {}
-        const resource = parseResourceId('a#1.0.0~folder/add-on.js')
-        const resp = await doFetchScript(
-            resource,
-            mode as 'deprecated' | 'regular',
-        )
-        delete resp['progressEvent']
-        expect(resp).toEqual({
-            name: 'a',
-            version: '1.0.0',
-            assetId: 'YQ==',
-            url: '/api/assets-gateway/raw/package/YQ==/1.0.0/folder/add-on.js',
-            content:
-                "window.a.addOn = ['add-on']\n\n//# sourceURL=/api/assets-gateway/raw/package/YQ==/1.0.0/folder/",
-        })
-    }
+    cleanDocument()
+    State.resetCache()
+    // The script add-on.js suppose there is already the module 'a' installed
+    window['a'] = {}
+    const resource = parseResourceId('a#1.0.0~folder/add-on.js')
+    const resp = await fetchScript(resource)
+    delete resp['progressEvent']
+    expect(resp).toEqual({
+        name: 'a',
+        version: '1.0.0',
+        assetId: 'YQ==',
+        url: '/api/assets-gateway/raw/package/YQ==/1.0.0/folder/add-on.js',
+        content:
+            "window.a.addOn = ['add-on']\n\n//# sourceURL=/api/assets-gateway/raw/package/YQ==/1.0.0/folder/",
+    })
 })
 
 test('install scripts', async () => {
-    for (const mode of ['regular', 'deprecated']) {
-        const events = []
-        cleanDocument()
-        State.resetCache()
-        // The script add-on.js suppose there is already the module 'a' installed
-        window['a'] = {}
-        await doInstallScripts(
-            {
-                scripts: ['a#1.0.0~folder/add-on.js'],
-                onEvent: (event) => {
-                    events.push(event)
-                },
-            },
-            mode as 'deprecated' | 'regular',
-        )
-        expect(document.scripts).toHaveLength(1)
-    }
+    const events = []
+    cleanDocument()
+    State.resetCache()
+    // The script add-on.js suppose there is already the module 'a' installed
+    window['a'] = {}
+    await installScripts({
+        scripts: ['a#1.0.0~folder/add-on.js'],
+        onEvent: (event) => {
+            events.push(event)
+        },
+    })
+    expect(document.scripts).toHaveLength(1)
 })
 
 test('install loading graph', async () => {
@@ -195,23 +111,18 @@ test('install loading graph', async () => {
             [['YQ==', 'YQ==/1.0.0/a.js'] as [string, string]],
         ],
     }
-    for (const mode of ['regular', 'deprecated']) {
-        const events = []
-        cleanDocument()
-        State.resetCache()
-        // The script add-on.js suppose there is already the module 'a' installed
-        window['a'] = {}
-        await doInstallLoadingGraph(
-            {
-                loadingGraph,
-                onEvent: (event) => {
-                    events.push(event)
-                },
-            },
-            mode as 'deprecated' | 'regular',
-        )
-        expect(document.scripts).toHaveLength(2)
-    }
+    const events = []
+    cleanDocument()
+    State.resetCache()
+    // The script add-on.js suppose there is already the module 'a' installed
+    window['a'] = {}
+    await installLoadingGraph({
+        loadingGraph,
+        onEvent: (event) => {
+            events.push(event)
+        },
+    })
+    expect(document.scripts).toHaveLength(2)
 })
 
 test('install root', async () => {
@@ -238,78 +149,67 @@ test('install root', async () => {
 })
 
 test('loading graph a', async () => {
-    for (const mode of ['regular', 'deprecated']) {
-        cleanDocument()
-        State.resetCache()
-        const loadingGraph = await doQueryLoadingGraph(
+    cleanDocument()
+    State.resetCache()
+    const loadingGraph = await queryLoadingGraph({
+        modules: ['a#latest'],
+    })
+    expect(loadingGraph).toEqual({
+        graphType: 'sequential-v2',
+        lock: [
             {
-                modules: ['a#latest'],
+                name: 'a',
+                fingerprint: 'ff112efc2e5ca845654a11ef333e6f04',
+                version: '1.0.0',
+                id: 'YQ==',
+                namespace: '',
+                type: 'library',
+                exportedSymbol: 'a',
+                apiKey: '1',
             },
-            mode as 'deprecated' | 'regular',
-        )
-        expect(loadingGraph).toEqual({
-            graphType: 'sequential-v2',
-            lock: [
-                {
-                    name: 'a',
-                    fingerprint: 'ff112efc2e5ca845654a11ef333e6f04',
-                    version: '1.0.0',
-                    id: 'YQ==',
-                    namespace: '',
-                    type: 'library',
-                    exportedSymbol: 'a',
-                    apiKey: '1',
-                },
-                {
-                    name: 'root',
-                    fingerprint: '9f28cd4094d663c2989fa735f58a00fd',
-                    version: '1.0.0',
-                    id: 'cm9vdA==',
-                    namespace: '',
-                    type: 'library',
-                    exportedSymbol: 'root',
-                    apiKey: '1',
-                },
-            ],
-            definition: [
-                [['cm9vdA==', 'cm9vdA==/1.0.0/root.js']],
-                [['YQ==', 'YQ==/1.0.0/a.js']],
-            ],
-        })
-        const src = await fetchScript({ name: 'a', url: 'YQ==/1.0.0/a.js' })
-        expect(src.content).toBe(`window.a = {
+            {
+                name: 'root',
+                fingerprint: '9f28cd4094d663c2989fa735f58a00fd',
+                version: '1.0.0',
+                id: 'cm9vdA==',
+                namespace: '',
+                type: 'library',
+                exportedSymbol: 'root',
+                apiKey: '1',
+            },
+        ],
+        definition: [
+            [['cm9vdA==', 'cm9vdA==/1.0.0/root.js']],
+            [['YQ==', 'YQ==/1.0.0/a.js']],
+        ],
+    })
+    const src = await fetchScript({ name: 'a', url: 'YQ==/1.0.0/a.js' })
+    expect(src.content).toBe(`window.a = {
     rootName: window['root'].name,
     name: 'a',
     addOn: [],
 }
 
 //# sourceURL=/api/assets-gateway/raw/package/YQ==/1.0.0/`)
-    }
 })
 
 test('install a', async () => {
     const events = []
-    await install(
-        {
-            modules: ['a'],
+    await install({
+        modules: ['a'],
+        displayLoadingScreen: true,
+        onEvent: (event) => {
+            events.push(event)
+            if (event instanceof InstallDoneEvent) {
+                // eslint-disable-next-line jest/no-conditional-expect -- some comment
+                expect(document.getElementById('loading-screen')).toBeTruthy()
+                writeFileSync(
+                    `${__dirname}/.html-outputs/loading-view.html`,
+                    document.documentElement.innerHTML,
+                )
+            }
         },
-        {
-            displayLoadingScreen: true,
-            onEvent: (event) => {
-                events.push(event)
-                if (event instanceof InstallDoneEvent) {
-                    // eslint-disable-next-line jest/no-conditional-expect -- some comment
-                    expect(
-                        document.getElementById('loading-screen'),
-                    ).toBeTruthy()
-                    writeFileSync(
-                        `${__dirname}/.html-outputs/loading-view.html`,
-                        document.documentElement.innerHTML,
-                    )
-                }
-            },
-        },
-    )
+    })
     expect(document.scripts).toHaveLength(2)
     expect(window['a']).toEqual({
         __yw_set_from_version__: '1.0.0',
@@ -342,24 +242,16 @@ test('install a with add-on', async () => {
 test('double install a with add-on', async () => {
     const events1 = []
     const events2 = []
-    await install(
-        {
-            modules: ['a'],
-            scripts: ['a#1.0.0~folder/add-on.js'],
-        },
-        {
-            onEvent: (event) => events1.push(event),
-        },
-    )
-    await install(
-        {
-            modules: ['a'],
-            scripts: ['a#1.0.0~folder/add-on.js'],
-        },
-        {
-            onEvent: (event) => events2.push(event),
-        },
-    )
+    await install({
+        modules: ['a'],
+        scripts: ['a#1.0.0~folder/add-on.js'],
+        onEvent: (event) => events1.push(event),
+    })
+    await install({
+        modules: ['a'],
+        scripts: ['a#1.0.0~folder/add-on.js'],
+        onEvent: (event) => events2.push(event),
+    })
     expect(events1).toHaveLength(9)
     // events2 should contain the source loaded events for every scrip downloaded + InstallDoneEvent
     // even if the download was actually triggered from the first install
@@ -393,20 +285,13 @@ document['createElement'] = (tag) => {
 }
 
 test('install style sheet', async () => {
-    for (const mode of ['regular', 'deprecated']) {
-        cleanDocument()
-        await doInstallStyleSheets(
-            {
-                css: ['a#1.0.0~style.css'],
-            },
-            mode as 'regular' | 'deprecated',
-        )
-        const link = document.querySelector('link')
-        expect(link.id).toBe(
-            '/api/assets-gateway/raw/package/YQ==/1.0.0/style.css',
-        )
-        expect(link.classList.contains('cdn-client_a')).toBeTruthy()
-    }
+    cleanDocument()
+    await installStyleSheets({
+        css: ['a#1.0.0~style.css'],
+    })
+    const link = document.querySelector('link')
+    expect(link.id).toBe('/api/assets-gateway/raw/package/YQ==/1.0.0/style.css')
+    expect(link.classList.contains('cdn-client_a')).toBeTruthy()
 })
 
 test('install style sheet with side effects', async () => {

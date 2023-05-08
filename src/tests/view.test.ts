@@ -25,14 +25,10 @@ test('install success & custom message', async () => {
     const loadingScreen = new LoadingScreenView()
     loadingScreen.render()
 
-    await install(
-        {
-            modules: ['root'],
-        },
-        {
-            onEvent: (ev) => loadingScreen.next(ev),
-        },
-    )
+    await install({
+        modules: ['root'],
+        onEvent: (ev) => loadingScreen.next(ev),
+    })
     loadingScreen.next(
         new CdnMessageEvent('custom-message', 'A custom message'),
     )

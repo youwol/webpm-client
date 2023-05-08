@@ -65,19 +65,15 @@ beforeEach(() => {
 test('install unauthorized', async () => {
     const events = []
     try {
-        await install(
-            {
-                modules: ['a'],
+        await install({
+            modules: ['a'],
+            displayLoadingScreen: true,
+            onEvent: (ev) => {
+                if (ev instanceof UnauthorizedEvent) {
+                    events.push(ev)
+                }
             },
-            {
-                displayLoadingScreen: true,
-                onEvent: (ev) => {
-                    if (ev instanceof UnauthorizedEvent) {
-                        events.push(ev)
-                    }
-                },
-            },
-        )
+        })
     } catch (error) {
         // eslint-disable-next-line jest/no-conditional-expect -- more convenient that expect(fct).toThrow
         expect(events).toHaveLength(2)
@@ -95,19 +91,15 @@ test('install script error', async () => {
         /*no op*/
     }
     try {
-        await install(
-            {
-                modules: ['e'],
+        await install({
+            modules: ['e'],
+            displayLoadingScreen: true,
+            onEvent: (ev) => {
+                if (ev instanceof ParseErrorEvent) {
+                    events.push(ev)
+                }
             },
-            {
-                displayLoadingScreen: true,
-                onEvent: (ev) => {
-                    if (ev instanceof ParseErrorEvent) {
-                        events.push(ev)
-                    }
-                },
-            },
-        )
+        })
     } catch (error) {
         // eslint-disable-next-line jest/no-conditional-expect -- more convenient that expect(fct).toThrow
         expect(events).toHaveLength(1)

@@ -1,5 +1,4 @@
 export * from './client'
-export * from './deprecated'
 export * from './state'
 export * from './loader.view'
 export * from './models'
