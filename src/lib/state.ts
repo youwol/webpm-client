@@ -131,6 +131,27 @@ export class State {
         return compatibleVersion != undefined
     }
 
+    static installAliases(
+        aliases: { [key: string]: string | ((Window) => unknown) },
+        executingWindow: Window,
+    ) {
+        Object.entries(aliases).forEach(([alias, original]) => {
+            const pointed =
+                typeof original == 'string'
+                    ? executingWindow[original]
+                    : original(executingWindow)
+            if (!pointed) {
+                console.warn('can not create alias', { alias, original })
+                return
+            }
+            executingWindow[alias] = pointed
+            if (!pointed.__yw_aliases__) {
+                pointed.__yw_aliases__ = new Set()
+            }
+            pointed.__yw_aliases__.add(alias)
+        })
+    }
+
     /**
      * Reset the cache, but keep installed modules.
      */

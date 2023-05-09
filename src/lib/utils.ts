@@ -350,10 +350,5 @@ export function installAliases(
     aliases: { [key: string]: string | ((Window) => unknown) },
     executingWindow: Window,
 ) {
-    Object.entries(aliases).forEach(([alias, original]) => {
-        executingWindow[alias] =
-            typeof original == 'string'
-                ? executingWindow[original]
-                : original(executingWindow)
-    })
+    State.installAliases(aliases, executingWindow)
 }
