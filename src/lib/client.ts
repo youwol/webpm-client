@@ -13,7 +13,6 @@ import {
     FetchScriptInputs,
     QueryLoadingGraphInputs,
     InstallInputs,
-    CdnEvent,
     FetchedScript,
     InstallDoneEvent,
 } from './models'
