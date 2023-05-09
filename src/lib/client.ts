@@ -1,21 +1,22 @@
 import {
-    CdnLoadingGraphErrorEvent,
-    errorFactory,
-    FetchErrors,
     InstallModulesInputs,
     LoadingGraph,
     InstallScriptsInputs,
-    SourceLoadedEvent,
-    SourceLoadingEvent,
-    StartEvent,
     InstallStyleSheetsInputs,
     InstallLoadingGraphInputs,
     FetchScriptInputs,
     QueryLoadingGraphInputs,
     InstallInputs,
     FetchedScript,
+} from './inputs.models'
+import {
+    SourceLoadedEvent,
+    SourceLoadingEvent,
+    StartEvent,
+    CdnLoadingGraphErrorEvent,
     InstallDoneEvent,
-} from './models'
+} from './events.models'
+import { errorFactory, FetchErrors } from './errors.models'
 import { State } from './state'
 import { LoadingScreenView } from './loader.view'
 import { sanitizeCssId } from './utils.view'

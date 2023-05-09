@@ -1,4 +1,4 @@
-import { LoadingGraph, FetchedScript } from './models'
+import { LoadingGraph, FetchedScript } from './inputs.models'
 import { lt, gt } from 'semver'
 import { getFullExportedSymbol, getFullExportedSymbolAlias } from './utils'
 import { VirtualDOM } from '@youwol/flux-view'

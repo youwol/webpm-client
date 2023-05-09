@@ -1,19 +1,19 @@
 import {
-    CdnEvent,
-    ParseErrorEvent,
-    SourceLoadedEvent,
-    SourceParsedEvent,
-    SourceParsingFailed,
-    Unauthorized,
-    UnauthorizedEvent,
-    UrlNotFound,
-    UrlNotFoundEvent,
     ModuleSideEffectCallback,
     ModuleInput,
     FetchedScript,
     ScriptSideEffectCallback,
     CustomInstaller,
-} from './models'
+} from './inputs.models'
+import {
+    CdnEvent,
+    ParseErrorEvent,
+    SourceLoadedEvent,
+    SourceParsedEvent,
+    UnauthorizedEvent,
+    UrlNotFoundEvent,
+} from './events.models'
+import { UrlNotFound, SourceParsingFailed, Unauthorized } from './errors.models'
 import { State } from './state'
 import { sanitizeCssId } from './utils.view'
 import { Client, install } from './client'

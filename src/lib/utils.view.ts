@@ -1,14 +1,13 @@
 import {
     CdnEvent,
     CdnLoadingGraphErrorEvent,
-    CircularDependencies,
-    DependenciesError,
     ParseErrorEvent,
     SourceLoadedEvent,
     SourceLoadingEvent,
     StartEvent,
     UnauthorizedEvent,
-} from './models'
+} from './events.models'
+import { CircularDependencies, DependenciesError } from './errors.models'
 
 export function sanitizeCssId(id: string) {
     return (

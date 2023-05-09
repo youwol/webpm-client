@@ -1,4 +1,8 @@
-import { CdnEvent, CdnLoadingGraphErrorEvent, CdnMessageEvent } from './models'
+import {
+    CdnEvent,
+    CdnLoadingGraphErrorEvent,
+    CdnMessageEvent,
+} from './events.models'
 import {
     insertLoadingGraphError,
     sanitizeCssId,
