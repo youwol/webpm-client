@@ -682,8 +682,10 @@ export function errorFactory(error) {
         return errorFactory(error.detail)
     }
 }
-
-export type StepEventType =
+/**
+ * @category Events
+ */
+export type EventType =
     | 'CdnMessageEvent'
     | 'StartEvent'
     | 'SourceLoadingEvent'
@@ -695,24 +697,27 @@ export type StepEventType =
     | 'ParseErrorEvent'
     | 'CdnLoadingGraphErrorEvent'
 
-export type CdnEventStatus = 'Pending' | 'Succeeded' | 'Failed' | 'None'
+/**
+ * @category Events
+ */
+export type EventStatus = 'Pending' | 'Succeeded' | 'Failed' | 'None'
 /**
  * Base class of events.
  *
  * @category Events
  */
 export type CdnEvent = {
-    step: StepEventType
+    step: EventType
     id: string
     text: string
-    status: CdnEventStatus
+    status: EventStatus
 }
 
 /**
  * @category Events
  */
 export function isCdnEvent(event: unknown): event is CdnEvent {
-    const types: StepEventType[] = [
+    const types: EventType[] = [
         'CdnMessageEvent',
         'StartEvent',
         'SourceLoadingEvent',
@@ -737,7 +742,7 @@ export class CdnMessageEvent implements CdnEvent {
     constructor(
         public readonly id: string,
         public readonly text: string,
-        public readonly status: CdnEventStatus = 'None',
+        public readonly status: EventStatus = 'None',
     ) {}
 }
 
