@@ -340,31 +340,29 @@ export class Client {
     async installLoadingGraph(inputs: InstallLoadingGraphInputs) {
         const executingWindow = inputs.executingWindow || window
         const customInstallers = inputs.customInstallers || []
-        const libraries = inputs.loadingGraph.lock.reduce(
-            (acc, e) => ({ ...acc, ...{ [e.id]: e } }),
-            {},
-        )
         State.updateExportedSymbolsDict(inputs.loadingGraph.lock)
 
         const customInstallersFuture = customInstallers.map((installer) => {
             return resolveCustomInstaller(installer)
         })
-
         const packagesSelected = inputs.loadingGraph.definition
             .flat()
             .map(([assetId, cdn_url]) => {
+                const version = cdn_url.split('/')[1]
+                const asset = inputs.loadingGraph.lock.find(
+                    (asset) => asset.id == assetId && asset.version == version,
+                )
                 return {
                     assetId,
                     url: `/api/assets-gateway/raw/package/${cdn_url}`,
-                    name: libraries[assetId].name,
-                    version: libraries[assetId].version,
+                    name: asset.name,
+                    version: asset.version,
                 }
             })
             .filter(
                 ({ name, version }) =>
                     !State.isCompatibleVersionInstalled(name, version),
             )
-
         const errors = []
         const futures = packagesSelected.map(({ name, url }) => {
             return this.fetchScript({
