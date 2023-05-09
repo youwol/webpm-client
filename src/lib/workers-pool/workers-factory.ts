@@ -30,10 +30,18 @@ export class NoContext implements Context {
         /** no op*/
     }
 }
+
+/**
+ * Any {@link CdnEvent} emitted from a Worker ({@link WWorkerTrait}).
+ * @category Events
+ */
 export type CdnEventWorker = CdnEvent & {
     workerId: string
 }
 
+/**
+ * @category Events
+ */
 export function implementEventWithWorkerTrait(
     event: unknown,
 ): event is CdnEventWorker {
@@ -59,12 +67,18 @@ export function isCdnEventMessage(
     return undefined
 }
 
-interface WorkerFunction<T> {
+/**
+ * @category Worker
+ */
+export interface WorkerFunction<T> {
     id: string
     target: T
 }
 
-interface WorkerVariable<T> {
+/**
+ * @category Worker
+ */
+export interface WorkerVariable<T> {
     id: string
     value: T
 }
@@ -75,7 +89,10 @@ interface Task {
     args: unknown
 }
 
-interface WorkerEnvironment {
+/**
+ * @category Worker
+ */
+export interface WorkerEnvironment {
     cdnUrl: string
     hostName: string
     variables: WorkerVariable<unknown>[]
@@ -84,6 +101,9 @@ interface WorkerEnvironment {
     postInstallTasks?: Task[]
 }
 
+/**
+ * @category Worker
+ */
 export interface WorkerContext {
     info: (text: string, data?: unknown) => void
     sendData: (data: Record<string, unknown>) => void
@@ -134,6 +154,10 @@ export interface EntryPointArguments<TArgs> {
     workerScope
 }
 
+/**
+ * This function is exposed mostly because it is useful in terms of testing to bypass serialization in string.
+ * @category Worker
+ */
 export function entryPointWorker(messageEvent: MessageEvent) {
     // The following interface avoid the interpreter to interpret self as 'Window':
     // in a worker 'self' is of type DedicatedWorkerGlobalScope.
@@ -367,24 +391,60 @@ export class Process {
     }
 }
 
+/**
+ *
+ * @category Getting Started
+ * @category Entry Point
+ */
 export class WorkersPool {
     static webWorkersProxy: IWWorkerProxy = new WebWorkersBrowser()
 
-    public readonly pool: { startAt: number; stretchTo: number }
+    /**
+     * Constraints on workers' pool size.
+     * @group Immutable Constants
+     */
+    public readonly pool: {
+        /**
+         * Initial number of workers to get ready before {@link ready} is fulfilled.
+         */
+        startAt: number
+        /**
+         * Maximum number of workers.
+         */
+        stretchTo: number
+    }
     private requestedWorkersCount = 0
 
-    public readonly mergedChannel$ = new Subject<MessageEventData>()
+    /**
+     * @group Observables
+     */
+    public readonly mergedChannel$ = new Subject<Message>()
+    /**
+     * @group Observables
+     */
     public readonly startedWorkers$ = new BehaviorSubject<string[]>([])
+    /**
+     * @group Observables
+     */
     public readonly workers$ = new BehaviorSubject<{
         [p: string]: {
             worker: WWorkerTrait
             channel$: Observable<MessageEventData>
         }
     }>({})
+    /**
+     * @group Observables
+     */
     public readonly runningTasks$ = new BehaviorSubject<
         { workerId: string; taskId: string }[]
     >([])
+    /**
+     * @group Observables
+     */
     public readonly busyWorkers$ = new BehaviorSubject<string[]>([])
+    /**
+     * @group Observables
+     */
     public readonly workerReleased$ = new Subject<{
         workerId: WorkerId
         taskId: string
@@ -392,8 +452,14 @@ export class WorkersPool {
 
     public readonly backgroundContext: Context
 
+    /**
+     * @group Observables
+     */
     public readonly cdnEvent$: Subject<CdnEventWorker>
 
+    /**
+     * @group Immutable Constants
+     */
     public readonly environment: WorkerEnvironment
 
     private tasksQueue: Array<{

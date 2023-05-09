@@ -19,6 +19,9 @@ type EventData = {
     status: CdnEventStatus
 }
 
+/**
+ * @category View
+ */
 export class WorkersPoolViewState {
     /**
      * @group States

@@ -1,8 +1,35 @@
+import { EntryPointArguments } from './workers-factory'
+
+/**
+ * Trait for abstracting the concept of Web Worker; default implementation is based on
+ * the WebWorker API provided by the browser, see {@link WebWorkerBrowser}.
+ */
 export interface WWorkerTrait {
+    /**
+     * Worker's UID
+     */
     uid: string
-    execute(params: { taskId; entryPoint; args })
+
+    /**
+     *
+     * @param params.taskId task Id
+     * @param params.entryPoint function to execute
+     * @param params.args arguments to provide to the function     *
+     */
+    execute<T>(params: {
+        taskId: string
+        entryPoint: (args: EntryPointArguments<T>) => unknown
+        args: T
+    })
     terminate()
 }
+
+/**
+ * Proxy for WebWorkers creation.
+ *
+ * The default implementation used is the one provided by the browser ({@link WebWorkersBrowser}).
+ * Can be also overriden for example for testing contexts.
+ */
 export interface IWWorkerProxy {
     createWorker({
         onMessageWorker,
@@ -13,8 +40,17 @@ export interface IWWorkerProxy {
     }): WWorkerTrait
 }
 
+/**
+ * Implementation of {@link WWorkerTrait} for Web Workers provided by browsers.
+ */
 export class WebWorkerBrowser implements WWorkerTrait {
+    /**
+     * Immutable Constants
+     */
     public readonly uid: string
+    /**
+     * Immutable Constants
+     */
     public readonly worker: Worker
 
     constructor(params: { uid: string; worker: Worker }) {

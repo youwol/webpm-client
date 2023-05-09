@@ -84,7 +84,7 @@ export type ScriptInput =
  *
  * Resource are like: {libraryName}#{version}~{rest-of-path}
  *
- * @category Client's method inputs
+ * @category Entry Points
  */
 export type InstallStyleSheetsInputs = {
     /**
@@ -101,7 +101,7 @@ export type InstallStyleSheetsInputs = {
 /**
  * Inputs for the method [[Client.installLoadingGraph]]
  *
- * @category Client's method inputs
+ * @category Entry Points
  */
 export type InstallLoadingGraphInputs = {
     /**
@@ -142,7 +142,6 @@ export type InstallLoadingGraphInputs = {
  *
  * A custom installer is a module exporting a function 'async function install(inputs)'.
  *
- * @category Client's method inputs
  */
 export type CustomInstaller = {
     /**
@@ -157,45 +156,86 @@ export type CustomInstaller = {
 }
 
 /**
- * Inputs for the method [[Client.install]]
+ * Inputs for the method {@link Client.install}, here is a somewhat complete example:
  *
- * @category Client's method inputs
+ * <iframe id="iFrameExampleModules" src="" width="100%" height="600px"></iframe>
+ * <script>
+ *      const src = `return async ({cdnClient}) => {
+ *      const {FV, rx, rx6, rx7} = await cdnClient.install({
+ *          modules:['@youwol/flux-view#^1.1.0', 'rxjs#^7.5.6', 'lodash#*'],
+ *          modulesSideEffects: {
+ *              'rxjs#6.x': (d) => console.log("Rxjs 6 installed", d),
+ *              'rxjs#7.x': (d) => console.log("Rxjs 7 installed", d),
+ *              'rxjs#*': (d) => console.log("A version of Rxjs has been  installed", d)
+ *          },
+ *          aliases: {
+ *              // no API version -> implicitly latest installed
+ *              FV: '@youwol/flux-view',
+ *              // no API version -> implicitly latest installed (7.x)
+ *              rx: 'rxjs',
+ *              rx6: 'rxjs_APIv6',
+ *              rx7: 'rxjs_APIv7'
+ *          },
+ *          scripts: [
+ *              'codemirror#5.52.0~addons/lint/lint.js',
+ *              {
+ *                  location: 'codemirror#5.52.0~mode/python.min.js',
+ *                  sideEffects: ({origin, htmlScriptElement}) => {
+ *                      console.log("CodeMirror's python mode loaded")
+ *                  }
+ *              }
+ *          ],
+ *          css: [
+ *              'bootstrap#4.4.1~bootstrap.min.css',
+ *              {
+ *                  location: 'fontawesome#5.12.1~css/all.min.css',
+ *                  sideEffects: (d) => console.log("FontAwesome CSS imported", d)
+ *              }
+ *          ],
+ *          onEvent: (ev) => console.log("CDN event", ev)
+ *      })
+ *      console.log('🎉 installation done', {FV, rx, rx6, rx7})
+ *      return {
+ *          class:'fv-text-primary',
+ *          children:[
+ *              cdnClient.State.view()
+ *          ]
+ *      }
+ * }
+ * `
+ *     const url = '/applications/@youwol/js-playground/latest?content='+encodeURIComponent(src)
+ *     document.getElementById('iFrameExampleModules').setAttribute("src",url);
+ * </script>
+ *
+ * @category Entry Points
  */
 export type InstallInputs = {
     /**
-     * List of modules to install, see [[LightLibraryQueryString]] for specification.
+     * List of modules to install, see {@link LightLibraryQueryString} for specification.
      *
-     * A typical example:
-     * ```
-     * import {install} from `@youwol/cdn-client`
-     *
-     * await install({
-     *     modules: ['rxjs#6.x', 'lodash#*']
-     * })
-     * ```
      */
     modules?: LightLibraryQueryString[]
 
     /**
      * Override the 'natural' version used for some libraries coming from the dependency graph when resolving
-     * the installation. Items are provided in the form [[LightLibraryQueryString]].
+     * the installation. Items are provided in the form {@link LightLibraryQueryString}.
      *
      * Whenever a library is required in the dependency graph, the version(s) will be replaced by the (only) one
      * coming from the relevant element (if any).
      * This in turn disable multiple versions installation for the provided library
      *
-     * Here is a fictive example of installing a module `@youwol/flux-view` with 2 versions `0.x` & `1.x`:
+     * Here is a fictive example of installing a module `@youwol/fictive-package` with 2 versions `0.x` & `1.x`:
      * *  the version `0.x` linked to `rxjs#6.x`
      * *  the version `1.x` linked to `rxjs#7.x`
      *
-     * When executed, the snippet override the actual versions resolution of rxjs and always use `rxjs#6.5.5`
+     * When executed, the following snippet override the actual versions resolution of rxjs and always use `rxjs#6.5.5`
      * (which will probably break at installation of `@youwol/flux-view#1.x` as the two versions of RxJS are not
      * compatible).
      * ```
      * import {install} from `@youwol/cdn-client`
      *
      * await install({
-     *     modules: [`@youwol/flux-view#0.x`, `@youwol/flux-view#1.x`],
+     *     modules: [`@youwol/fictive-package#0.x`, `@youwol/fictive-package#1.x`],
      *     usingDependencies: ['rxjs#6.5.5']
      * })
      * ```
@@ -205,55 +245,25 @@ export type InstallInputs = {
     /**
      * Specify side effects to execute when modules are installed.
      *
-     * The key is in the form `{libraryName}#{semver}` (see [[FullLibraryQueryString]]):
+     * The key is in the form `{libraryName}#{semver}` (see {@link FullLibraryQueryString}):
      * any module installed matching some keys will trigger execution
      * of associated side effects.
      *
-     * Here is a fictive example of installing a module `@youwol/flux-view` with 2 versions `0.x` & `1.x`,
-     * the version `0.x` linked to `rxjs#6.x`, and the version `1.x` linked to `rxjs#7.x`
-     * ```
-     * import {install} from `@youwol/cdn-client`
-     *
-     * await install({
-     *     modules: [`@youwol/flux-view#0.x`, `@youwol/flux-view#1.x`],
-     *     modulesSideEffects: {
-     *         'rxjs#6.x': () => { console.log("Rxjs 6 installed")},
-     *         'rxjs#7.x': () => { console.log("Rxjs 7 installed")},
-     *         'rxjs#*': () => { console.log("A version of Rxjs has been  installed")}
-     *     }
-     * })
-     * ```
      */
     modulesSideEffects?: {
         [key: string]: ModuleSideEffectCallback
     }
 
     /**
-     * Specify a list of scripts to install, by opposition to module, a script is installed as a standalone element:
+     * Specify a list of scripts to install.
+     * By opposition to module, a script is installed as a standalone element:
      * there are no direct or indirect dependencies' installation triggered.
      *
-     * Installation of the script elements always happen after all provided [[InstallInputs.modules]]
+     * Installation of the script elements always happen after all provided {@link InstallInputs.modules}
      * have been installed.
      *
-     * See [[ScriptInput]] for format specification.
+     * See {@link ScriptInput} for format specification.
      *
-     * E.g.:
-     * ```
-     * import {install} from `@youwol/cdn-client`
-     *
-     * await install({
-     *     modules: ['codemirror#5'],
-     *     scripts: [
-     *         {
-     *             location: 'codemirror#5.52.0~mode/javascript.min.js',
-     *             sideEffects: ({origin, htmlScriptElement}) => {
-     *                 htmlScriptElement.id = origin.name
-     *             }
-     *         },
-     *         'codemirror#5.52.0~addons/lint/lint.js',
-     *     ]
-     *  })
-     *  ```
      */
     scripts?: ScriptInput[]
 
@@ -261,72 +271,13 @@ export type InstallInputs = {
      *
      * Specify a list of stylesheets to install.
      *
-     * Installation of the stylesheets elements always happen after both [[InstallInputs.modules]], and
-     * [[InstallInputs.scripts]] have been installed.
+     * See {@link CssInput} for format specification.
      *
-     * See [[CssInput]] for format specification.
-     * E.g.:
-     * ```
-     * import {install} from `@youwol/cdn-client`
-     *
-     * await install({
-     *     modules: ['codemirror#5'],
-     *     css: [
-     *          {
-     *          location:'codemirror#5.52.0~codemirror.min.css',
-     *          sideEffects: ({origin, htmlLinkElement}) => {
-     *              htmlLinkElement.id = `${origin.moduleName}_${origin.version}`
-     *          },
-     *         'codemirror#5.52.0~theme/blackboard.min.css',
-     *         'codemirror#5.52.0~addons/lint/lint.css',
-     *     ]
-     *  })
-     *```
      */
     css?: CssInput[]
 
     /**
      * Provide aliases to exported symbols name of module.
-     *
-     * e.g.:
-     * ```
-     * import {install} from `@youwol/cdn-client`
-     *
-     * const {fluxView} = await install({
-     *     modules: ['@youwol/flux-view#0.x'],
-     *     aliases: {
-     *         fluxView:'@youwol/flux-view'// '@youwol/flux-view' is the actual symbol defined in the library
-     *     }
-     * })
-     * ```
-     *
-     * In case multiple versions of a lib are installed, it is possible to suffix by the major of the version.
-     * > In any case, when a module is installed, two symbols are exported:
-     * > *  the original symbol name suffixed by `#{major-version}`: it is immutable and corresponds to the latest
-     * > version provided `major-version`
-     * > *  the original symbol name: it is mutable and corresponds to the latest version of the module installed
-     * ```
-     * import {install} from `@youwol/cdn-client`
-     *
-     * let {fluxView0, fluxViewLatest} = await install({
-     *     modules: ['@youwol/flux-view#0.x'],
-     *     aliases: {
-     *         fluxView0:'@youwol/flux-view#0',
-     *         fluxViewLatest:'@youwol/flux-view'
-     *     }
-     * })
-     * // fluxView0 === fluxViewLatest
-     * let {fluxView1, fluxViewLatest} = await install({
-     *     modules: ['@youwol/flux-view#1.x'],
-     *     aliases: {
-     *         fluxView1:'@youwol/flux-view#1',
-     *         fluxViewLatest:'@youwol/flux-view'
-     *     }
-     * })
-     * // fluxView1 !== fluxView0
-     * // fluxView1 === fluxViewLatest (the latest version available)
-     * ```
-     *
      */
     aliases?: { [key: string]: string | ((Window) => unknown) }
 
@@ -345,7 +296,7 @@ export type InstallInputs = {
     /**
      * If `true`: loading screen is displayed and cover the all screen
      *
-     * For a granular control of the loading screen display see [[LoadingScreenView]]
+     * For a granular control of the loading screen display see {@link LoadingScreenView}
      */
     displayLoadingScreen?: boolean
 
@@ -357,23 +308,23 @@ export type InstallInputs = {
 }
 
 /**
- * Inputs for the method [[Client.fetchScript]]
+ * Inputs for the method {@link Client.fetchScript}
  *
- * @category Client's method inputs
+ * @category Entry Points
  */
 export type FetchScriptInputs = {
     /**
-     * url of the script, see [[getUrlBase]].
+     * url of the script, see {@link getUrlBase}.
      */
     url: string
 
     /**
-     * Preferred displayed name when referencing the script (exposed in [[CdnFetchEvent]])
+     * Preferred displayed name when referencing the script (exposed in {@link CdnFetchEvent})
      */
     name?: string
 
     /**
-     * If provided, any [[CdnFetchEvent]] emitted are forwarded to this callback.
+     * If provided, any {@link CdnFetchEvent} emitted are forwarded to this callback.
      *
      * @param event event emitted
      */
@@ -388,7 +339,7 @@ export type FetchScriptInputs = {
 /**
  * Inputs for the method [[Client.installModules]]
  *
- * @category Client's method inputs
+ * @category Entry Points
  */
 export type InstallModulesInputs = {
     /**
@@ -425,7 +376,7 @@ export type InstallModulesInputs = {
 /**
  * Inputs for the method [[Client.installPythonModules]]
  *
- * @category Client's method inputs
+ * @category Entry Points
  */
 export type InstallPythonModulesInputs = {
     /**
@@ -447,7 +398,7 @@ export type InstallPythonModulesInputs = {
 /**
  * Inputs for the method [[Client.installScripts]]
  *
- * @category Client's method inputs
+ * @category Entry Points
  */
 export type InstallScriptsInputs = {
     /**
@@ -561,7 +512,7 @@ export type ScriptSideEffectCallback = (
 /**
  * Inputs for the method [[Client.queryLoadingGraph]]
  *
- * @category Client's method inputs
+ * @category Entry Points
  */
 export type QueryLoadingGraphInputs = {
     /**
@@ -757,6 +708,9 @@ export type CdnEvent = {
     status: CdnEventStatus
 }
 
+/**
+ * @category Events
+ */
 export function isCdnEvent(event: unknown): event is CdnEvent {
     const types: StepEventType[] = [
         'CdnMessageEvent',
@@ -998,21 +952,27 @@ export type Library = {
 }
 
 /**
- * Define a structure that allows to resolve dependencies fetching in the correct order.
- * This structure is defined by the CDN service, it is associated to *graphType=='sequential-v1'*.
+ * Provides necessary information to correctly install & link a set of resources.
+ * It serves a purpose similar to the usual [lockFiles](https://developerexperience.io/articles/lockfile)
+ * found in packages managers.
  *
- * See also:
- * -    [[getLoadingGraph]]: return the loading graph from a list of package's name and version.
- * -    [[fetchBundles]]: directly fetch dependenceis from a list of package's name and version
+ * Loading graphs can be:
+ *  *  retrieved ({@link queryLoadingGraph})
+ *  *  used to import runtimes ({@link installLoadingGraph})
+ *
+ *
+ * The structure is defined by the backend service - and mostly an implementation details here for the consumer.
+ * It will likely change in future release, but backward compatibility will be preserved.
+ *
  */
 export type LoadingGraph = {
     /**
      *
      * List of javascript libraries to fetch by batch:
-     * -    *definition[i]* defines a batch of libraries that can be fetched in any order (or at the same time), provided
-     * that all the libraries for the batches j<i have already be fetched
-     * -    *definition[i][j]* defines the j'th library for the batch i:
-     * a tuple of [*id*, *cdn-url*] where *id* is the asset id and *cdn-url* the CDN's URL
+     * -    `definition[i]` defines a batch of libraries that can be fetched in any order (or at the same time), provided
+     * that all the libraries for the batches `j<i` have already be fetched
+     * -    `definition[i][j]` defines the j'th library for the batch i:
+     * a tuple of [`id`, `cdn-url`] where `id` is the asset id and `cdn-url` the associated URL
      */
     definition: [string, string][][]
 

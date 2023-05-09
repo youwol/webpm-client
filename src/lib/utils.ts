@@ -293,9 +293,9 @@ export function getAssetId(name: string) {
  * Returns the base url to access a CDN asset from its name & version.
  * It does not imply that the asset exist.
  *
- * @param name name of the package (as defined in package.json)
- * @param version version of the package (as defined in package.json)
- * @returns base url to access the CDN resource (valid only if the asset is actually stored in the asset store)
+ * @param name name of the package (as defined in package.json).
+ * @param version version of the package (as defined in package.json).
+ * @returns base url to access the resource.
  * @category Helpers
  */
 export function getUrlBase(name: string, version: string) {

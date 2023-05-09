@@ -33,28 +33,20 @@ import {
 
 /**
  *
- * Use default [[Client]] to install a set of resources, see [[Client.install]]
+ * Use default {@link Client} to install resources; see documentation provided for {@link Client.install}.
  *
  * @category Getting Started
  * @category Entry Points
  * @param inputs
  */
-export function install(inputs: InstallInputs): Promise<Window>
-
-export function install(
-    inputs: InstallInputs,
-    options?: {
-        executingWindow?: Window
-        onEvent?: (event: CdnEvent) => void
-        displayLoadingScreen?: boolean
-    },
-): Promise<Window> {
-    return options
-        ? new Client().install({ ...inputs, ...options })
-        : new Client().install(inputs)
+export function install(inputs: InstallInputs): Promise<Window> {
+    return new Client().install(inputs)
 }
 
 /**
+ *
+ * Use default {@link Client} to install resources; see documentation provided for {@link Client.queryLoadingGraph}.
+ *
  * @param inputs
  * @category Entry Points
  */
@@ -63,6 +55,8 @@ export function queryLoadingGraph(inputs: QueryLoadingGraphInputs) {
 }
 
 /**
+ * Use default {@link Client} to fetch script; see documentation provided for {@link Client.fetchScript}.
+ *
  * @param inputs
  * @category Entry Points
  */
@@ -71,6 +65,8 @@ export function fetchScript(inputs: FetchScriptInputs): Promise<FetchedScript> {
 }
 
 /**
+ * Use default {@link Client} to install {@link LoadingGraph}; see documentation provided for {@link Client.installLoadingGraph}.
+ *
  * @category Entry Points
  * @param inputs
  */
@@ -79,6 +75,8 @@ export function installLoadingGraph(inputs: InstallLoadingGraphInputs) {
 }
 
 /**
+ * Use default {@link Client} to install modules; see documentation provided for {@link Client.installModules}.
+ *
  * @category Entry Points
  * @param inputs
  */
@@ -87,6 +85,8 @@ export function installModules(inputs: InstallModulesInputs) {
 }
 
 /**
+ * Use default {@link Client} to install scripts; see documentation provided for {@link Client.installScripts}.
+ *
  * @category Entry Points
  * @param inputs
  */
@@ -95,6 +95,8 @@ export function installScripts(inputs: InstallScriptsInputs) {
 }
 
 /**
+ * Use default {@link Client} to install style sheets; see documentation provided for {@link Client.installStyleSheets}.
+ *
  * @category Entry Points
  * @param inputs
  */
@@ -103,43 +105,41 @@ export function installStyleSheets(inputs: InstallStyleSheetsInputs) {
 }
 
 /**
- * Class gathering methods to dynamically install various set of resources (modules, scripts, stylesheets).
+ * Gathers configuration & methods to dynamically install various set of resources (modules, scripts, stylesheets).
  *
- * The usual method used in this class is [[Client.install]].
+ * For default client's configuration, the methods are also available as standalone functions:
+ * {@link install}, {@link queryLoadingGraph}, {@link fetchScript}, {@link installLoadingGraph}, {@link installModules},
+ * {@link installScripts},{@link installStyleSheets}.
  *
- * ## Versions management
- *
- * The client handle the case of installing multiple versions of a library.
- * The resolution of the loading graph is based on information provided at build time in the package.json.
- * See the section 'Package publication' in the
- * [youwol's user guide](https://platform.youwol.com/applications/@youwol/stories/latest?id=fa525fef-cb28-40fb-94d0-c45c2b464571)
- *
- * ## Difference between modules & scripts
- *
- * Installing a module will trigger installation of its direct and indirect dependencies,
- * while installing a script only install the provided target
- *
- * @category Getting Started
  * @category Entry Points
  */
 export class Client {
     static Headers: { [key: string]: string } = {}
-    static HostName = '' // By default, relative resolution is used. Otherwise, protocol + hostname
+    /**
+     * Default static hostname (if none provided at instance construction).
+     *
+     * Empty string leads to relative resolution.
+     */
+    static HostName = ''
 
     /**
-     * Headers used when doing HTTP requests, see [[Client.constructor]]
+     * Headers used when doing HTTP requests.
+     *
+     * `this.headers =  headers ? {...Client.Headers, ...headers } : Client.Headers`
      */
     public readonly headers: { [key: string]: string } = {}
 
     /**
-     * Hostname used when doing HTTP requests, see [[Client.constructor]]
+     * Hostname used when doing HTTP requests.
+     *
+     * `this.hostName = hostName ? hostName : Client.HostName`
      */
     public readonly hostName: string
 
     /**
-     * @param params specifies how to handle HTTP requests by setting [[Client.headers]] & [[Client.HostName]]
-     * @param params.headers `this.headers =  headers ? {...Client.Headers, ...headers } : Client.Headers`
-     * @param params.hostName `this.hostName = hostName ? hostName : Client.HostName`
+     * @param params options setting up HTTP requests regarding {@link Client.headers} & {@link Client.hostName}
+     * @param params.headers headers forwarded by every request, in addition to {@link Client.Headers}.
+     * @param params.hostName host name of the cdn server, if none provided use {@link Client.HostName}
      */
     constructor(
         params: {
@@ -152,9 +152,7 @@ export class Client {
     }
 
     /**
-     * Query a loading graph provided a list of modules.
-     *
-     * See description in [[QueryLoadingGraphInputs]].
+     * Query a loading graph provided a list of modules, see {@link QueryLoadingGraphInputs}.
      *
      * @param inputs
      */
@@ -195,9 +193,7 @@ export class Client {
     }
 
     /**
-     * Fetch a script.
-     *
-     * See description in [[FetchScriptInputs]].
+     * Fetch a script, see {@link FetchScriptInputs}.
      *
      * @param inputs
      */
@@ -278,9 +274,7 @@ export class Client {
     }
 
     /**
-     * Install a various set of modules, scripts & stylesheets.
-     *
-     * See description in [[InstallInputs]].
+     * Install a various set of modules, scripts & stylesheets; see {@link InstallInputs}.
      *
      * @param inputs
      */
@@ -336,11 +330,10 @@ export class Client {
     }
 
     /**
-     * Install a loading graph.
+     * Install a loading graph; see {@link InstallLoadingGraphInputs}.
      *
-     * See description in [[InstallLoadingGraphInputs]].
-     *
-     * See also [[Client.queryLoadingGraph]] & [[queryLoadingGraph]]
+     * Loading graph can be retrieved using {@link Client.queryLoadingGraph} or
+     * {@link queryLoadingGraph}.
      *
      * @param inputs
      */
@@ -436,9 +429,7 @@ export class Client {
     }
 
     /**
-     * Install a set of modules.
-     *
-     * See description in [[InstallModulesInputs]].
+     * Install a set of modules, see {@link InstallModulesInputs}.
      *
      * @param inputs
      */
@@ -478,9 +469,7 @@ export class Client {
     }
 
     /**
-     * Install a set of scripts.
-     *
-     * See description in [[InstallScriptsInputs]].
+     * Install a set of scripts, see {@link InstallScriptsInputs}.
      *
      * @param inputs
      */
@@ -524,9 +513,7 @@ export class Client {
     }
 
     /**
-     * Install a set of stylesheets.
-     *
-     * See description in [[InstallStyleSheetsInputs]].
+     * Install a set of stylesheets, see {@link InstallStyleSheetsInputs}.
      *
      * @param inputs
      */
