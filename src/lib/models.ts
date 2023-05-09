@@ -345,7 +345,7 @@ export type InstallModulesInputs = {
     /**
      * See [[InstallInputs.modules]]
      */
-    modules: LightLibraryQueryString[]
+    modules?: LightLibraryQueryString[]
 
     /**
      * See [[InstallInputs.modulesSideEffects]]

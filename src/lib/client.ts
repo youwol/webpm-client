@@ -438,7 +438,8 @@ export class Client {
             ...State.pinedDependencies,
             ...(inputs.usingDependencies || []),
         ]
-        const modules = sanitizeModules(inputs.modules || [])
+        inputs.modules = inputs.modules || []
+        const modules = sanitizeModules(inputs.modules)
         const body = {
             modules: inputs.modules,
             usingDependencies,
