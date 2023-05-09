@@ -1,6 +1,7 @@
 import { LoadingGraph, FetchedScript } from './models'
 import { lt, gt } from 'semver'
 import { getFullExportedSymbol, getFullExportedSymbolAlias } from './utils'
+import { VirtualDOM } from '@youwol/flux-view'
 
 export type LibraryName = string
 export type Version = string
@@ -255,5 +256,89 @@ export class State {
         patcher: ({ name, version, assetId, url }) => string,
     ) {
         State.urlPatcher = patcher
+    }
+
+    /**
+     * Create a VirtualDOM (see [fluxView](https://github.com/youwol/flux-view))
+     * representing the current state of installation (modules installed & available symbols).
+     */
+    static view() {
+        return {
+            class: 'StateView',
+            children: [
+                { tag: 'h3', innerText: 'Modules installed' },
+                { class: 'px-3 py-2 container', children: [new ModulesView()] },
+                { tag: 'h3', innerText: 'Available symbols' },
+                { class: 'px-3 py-2 container', children: [new SymbolsView()] },
+            ],
+        }
+    }
+}
+
+class ModulesView implements VirtualDOM {
+    public readonly children: VirtualDOM[]
+    constructor() {
+        this.children = Array.from(State.importedBundles.entries()).map(
+            ([k, versions]) => {
+                return {
+                    class: 'd-flex align-items-center my-1 row',
+                    children: [
+                        {
+                            class: 'col-sm',
+                            style: { fontWeight: 'bolder' },
+                            innerText: k,
+                        },
+                        {
+                            class: 'd-flex align-items-center col',
+                            children: versions.map((v) => ({
+                                class: 'border rounded p-1 mx-2 d-flex align-items-center',
+                                children: [
+                                    {
+                                        class: 'fas fa-tag mx-1',
+                                    },
+                                    { innerText: v },
+                                ],
+                            })),
+                        },
+                    ],
+                }
+            },
+        )
+    }
+}
+
+class SymbolsView implements VirtualDOM {
+    public readonly children: VirtualDOM[]
+    constructor() {
+        this.children = Array.from(
+            Object.entries(State.exportedSymbolsDict),
+        ).map(([k, symbol]) => {
+            const symbolKey = `${symbol.symbol}_APIv${symbol.apiKey}`
+            const aliases =
+                (window[symbolKey] && window[symbolKey].__yw_aliases__) ||
+                new Set()
+            return {
+                class: 'd-flex align-items-center my-1 row',
+                children: [
+                    {
+                        class: 'col-sm',
+                        style: { fontWeight: 'bolder' },
+                        innerText: k,
+                    },
+                    {
+                        class: 'd-flex align-items-center col',
+                        children: [symbolKey, ...aliases].map((v) => ({
+                            class: 'border rounded p-1 mx-2 d-flex align-items-center',
+                            children: [
+                                /*{
+                                    class: 'fas fa-tag mx-1',
+                                },*/
+                                { innerText: v },
+                            ],
+                        })),
+                    },
+                ],
+            }
+        })
     }
 }
