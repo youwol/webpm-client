@@ -329,11 +329,6 @@ export type FetchScriptInputs = {
      * @param event event emitted
      */
     onEvent?: (event: CdnFetchEvent) => void
-
-    /**
-     * If provided, the callback is called right after the HTMLScriptElement has been installed.
-     */
-    sideEffects?: ScriptSideEffectCallback
 }
 
 /**
