@@ -48,19 +48,21 @@ export function implementEventWithWorkerTrait(
     return isCdnEvent(event) && (event as CdnEventWorker).step != undefined
 }
 
-export interface MessageCdnEventData {
+/**
+ * A special type of {@link MessageData} for {@link CdnEvent}.
+ * @category Worker's Message
+ */
+export interface MessageCdnEvent {
     type: string
     workerId: string
     event: CdnEvent
 }
 
-export function isCdnEventMessage(
-    message: MessageEventData,
-): undefined | CdnEventWorker {
+function isCdnEventMessage(message: Message): undefined | CdnEventWorker {
     if (message.type != 'Data') {
         return undefined
     }
-    const data = message.data as unknown as MessageCdnEventData
+    const data = message.data as unknown as MessageCdnEvent
     if (data.type == 'CdnEvent') {
         return { ...data.event, workerId: data.workerId }
     }
@@ -109,33 +111,48 @@ export interface WorkerContext {
     sendData: (data: Record<string, unknown>) => void
 }
 
-interface MessageDataExecute {
+/**
+ * @category Worker's Message
+ */
+export interface MessageExecute {
     taskId: string
     workerId: string
     entryPoint: string
     args: unknown
 }
 
-export interface MessageDataExit {
+/**
+ * @category Worker's Message
+ */
+export interface MessageExit {
     taskId: string
     workerId: string
     error: boolean
     result: unknown
 }
 
-interface MessageDataLog {
+/**
+ * @category Worker's Message
+ */
+export interface MessageLog {
     taskId: string
     text: string
     json: unknown // Json
 }
 
-export interface MessageDataData {
+/**
+ * @category Worker's Message
+ */
+export interface MessageData {
     taskId: string
     workerId: string
     [k: string]: unknown
 }
 
-export interface MessageEventData {
+/**
+ * @category Worker's Message
+ */
+export interface Message {
     type:
         | 'Execute'
         | 'installScript'
@@ -144,7 +161,7 @@ export interface MessageEventData {
         | 'Log'
         | 'DependencyInstalled'
         | 'Data'
-    data: MessageDataExecute | MessageDataData | MessageDataExit
+    data: MessageExecute | MessageData | MessageExit
 }
 
 export interface EntryPointArguments<TArgs> {
@@ -170,14 +187,13 @@ export function entryPointWorker(messageEvent: MessageEvent) {
         postMessage: (message: unknown) => void
     }
 
-    const message: MessageEventData = messageEvent.data
+    const message: Message = messageEvent.data
     const workerScope = self as unknown as DedicatedWorkerGlobalScope
     // Following is a workaround: if not done, the @youwol/cdn-client will complain of undefined 'window' and
     // will fail installing dependencies. It is a bug in @youwol/cdn-client, see TG#488.
     workerScope['window'] = self
     if (message.type == 'Execute') {
-        const data: MessageDataExecute =
-            message.data as unknown as MessageDataExecute
+        const data: MessageExecute = message.data as unknown as MessageExecute
         const context: WorkerContext = {
             info: (text, json) => {
                 workerScope.postMessage({
@@ -273,7 +289,10 @@ export function entryPointWorker(messageEvent: MessageEvent) {
     }
 }
 
-export interface MessageDataInstall {
+/**
+ * @category Worker's Message
+ */
+export interface MessageInstall {
     cdnUrl: string
     hostName: string
     variables: WorkerVariable<unknown>[]
@@ -286,7 +305,7 @@ export interface MessageDataInstall {
     }[]
 }
 
-function entryPointInstall(input: EntryPointArguments<MessageDataInstall>) {
+function entryPointInstall(input: EntryPointArguments<MessageInstall>) {
     if (self['@youwol/cdn-client']) {
         // The environment is already installed
         return Promise.resolve()
@@ -429,7 +448,7 @@ export class WorkersPool {
     public readonly workers$ = new BehaviorSubject<{
         [p: string]: {
             worker: WWorkerTrait
-            channel$: Observable<MessageEventData>
+            channel$: Observable<Message>
         }
     }>({})
     /**
@@ -466,8 +485,8 @@ export class WorkersPool {
         taskId: string
         targetWorkerId?: string
         args: unknown
-        channel$: Observable<MessageEventData>
-        entryPoint: unknown
+        channel$: Observable<Message>
+        entryPoint: (d: EntryPointArguments<unknown>) => unknown
     }> = []
 
     constructor({
@@ -574,7 +593,7 @@ export class WorkersPool {
             targetWorkerId?: string
         },
         context = new NoContext(),
-    ): Observable<MessageEventData> {
+    ): Observable<Message> {
         return context.withChild('schedule thread', (ctx) => {
             const taskId = `t${Math.floor(Math.random() * 1e6)}`
             const p = new Process({
@@ -638,7 +657,7 @@ export class WorkersPool {
         exposedProcess: Process,
         taskId: string,
         context: Context = new NoContext(),
-    ): Observable<MessageEventData> {
+    ): Observable<Message> {
         const channel$ = this.mergedChannel$.pipe(
             filter((message) => message.data.taskId == taskId),
             takeWhile((message) => message.type != 'Exit', true),
@@ -660,7 +679,7 @@ export class WorkersPool {
                 take(1),
             )
             .subscribe((message) => {
-                const data = message.data as unknown as MessageDataExit
+                const data = message.data as unknown as MessageExit
                 if (data.error) {
                     context.info(
                         `worker exited abnormally on task ${taskId}`,
@@ -678,7 +697,7 @@ export class WorkersPool {
         channel$
             .pipe(filter((message) => message.type == 'Log'))
             .subscribe((message) => {
-                const data = message.data as unknown as MessageDataLog
+                const data = message.data as unknown as MessageLog
                 exposedProcess.log(data.text)
                 context.info(data.text, data.json)
             })
@@ -689,7 +708,7 @@ export class WorkersPool {
     getIdleWorkerOrCreate$(context: Context = new NoContext()): Observable<{
         workerId: string
         worker: Worker
-        channel$: Observable<MessageEventData>
+        channel$: Observable<Message>
     }> {
         return context.withChild('get worker', (ctx) => {
             const idleWorkerId = Object.keys(this.workers$.value).find(
@@ -714,11 +733,11 @@ export class WorkersPool {
     createWorker$(context: Context = new NoContext()): Observable<{
         workerId: string
         worker: Worker
-        channel$: Observable<MessageEventData>
+        channel$: Observable<Message>
     }> {
         return context.withChild('create worker', (ctx) => {
             this.requestedWorkersCount++
-            const workerChannel$ = new Subject<MessageEventData>()
+            const workerChannel$ = new Subject<Message>()
 
             const workerProxy = WorkersPool.webWorkersProxy.createWorker({
                 onMessageWorker: entryPointWorker,
@@ -738,7 +757,7 @@ export class WorkersPool {
             })
             p.schedule()
             const taskChannel$ = this.getTaskChannel$(p, taskId, context)
-            const argsInstall: MessageDataInstall = {
+            const argsInstall: MessageInstall = {
                 cdnUrl: this.environment.cdnUrl,
                 hostName: this.environment.hostName,
                 variables: this.environment.variables,
@@ -764,7 +783,7 @@ export class WorkersPool {
             })
 
             return workerChannel$.pipe(
-                tap((message: MessageEventData) => {
+                tap((message: Message) => {
                     const cdnEvent = isCdnEventMessage(message)
                     if (cdnEvent) {
                         this.cdnEvent$ && this.cdnEvent$.next(cdnEvent)
@@ -826,7 +845,7 @@ export class WorkersPool {
                     }),
                 )
                 .subscribe((message) => {
-                    const exitData = message.data as unknown as MessageDataExit
+                    const exitData = message.data as unknown as MessageExit
                     this.workerReleased$.next({
                         taskId: exitData.taskId,
                         workerId,

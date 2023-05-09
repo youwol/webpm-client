@@ -4,7 +4,7 @@ import {
     VirtualDOM,
     childrenFromStore$,
 } from '@youwol/flux-view'
-import { CdnEventStatus } from '..'
+import { EventStatus } from '..'
 import { filter, map } from 'rxjs/operators'
 import {
     CdnEventWorker,
@@ -16,7 +16,7 @@ import { BehaviorSubject, combineLatest, of } from 'rxjs'
 type EventData = {
     id: string
     text: string
-    status: CdnEventStatus
+    status: EventStatus
 }
 
 /**
@@ -177,7 +177,7 @@ export class CdnEventView implements VirtualDOM {
     public readonly children: VirtualDOM[]
 
     constructor(event: EventData) {
-        const icons: Record<CdnEventStatus, string> = {
+        const icons: Record<EventStatus, string> = {
             Succeeded: 'fas fa-check fv-text-success',
             Failed: 'fas fa-times fv-text-error',
             Pending: 'fas fa-spinner fa-spin',
