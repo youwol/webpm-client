@@ -368,28 +368,6 @@ export type InstallModulesInputs = {
 }
 
 /**
- * Inputs for the method [[Client.installPythonModules]]
- *
- * @category Entry Points
- */
-export type InstallPythonModulesInputs = {
-    /**
-     * See [[InstallInputs.modules]]
-     */
-    pythonModules: LightLibraryQueryString[]
-
-    /**
-     * See [[InstallInputs.executingWindow]]
-     */
-    executingWindow?: Window
-
-    /**
-     * See [[InstallInputs.onEvent]]
-     */
-    onEvent?: (event: CdnEvent) => void
-}
-
-/**
  * Inputs for the method [[Client.installScripts]]
  */
 export type InstallScriptsInputs = {
