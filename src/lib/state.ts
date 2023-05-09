@@ -161,6 +161,7 @@ export class State {
         State.importedLoadingGraphs = new Map<string, Promise<Window>>()
         State.importedScripts = new Map<string, Promise<FetchedScript>>()
         State.latestVersion = new Map<string, string>()
+        State.exportedSymbolsDict = {}
     }
 
     /**
