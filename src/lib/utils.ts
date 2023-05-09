@@ -100,11 +100,6 @@ export async function applyModuleSideEffects(
     userSideEffects: ModuleSideEffectCallback[],
     onEvent: (CdnEvent) => void,
 ) {
-    const versionsAvailable = State.importedBundles.get(origin.name) || []
-    State.importedBundles.set(origin.name, [
-        ...versionsAvailable,
-        origin.version,
-    ])
     const exportedName = getFullExportedSymbol(origin.name, origin.version)
     const symbolBase = State.getExportedSymbol(
         origin.name,
