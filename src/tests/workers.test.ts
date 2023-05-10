@@ -192,12 +192,12 @@ test('ready with variables, function, & postInstall tasks', async () => {
     expect(events.length).toBeGreaterThan(0)
 })
 
-function scheduleFunctionSync({ args, workerScope }) {
-    if (!workerScope.rxjs) {
-        throw Error('rxjs should be here')
-    }
-    return 2 * args.value
-}
+// function scheduleFunctionSync({ args, workerScope }) {
+//     if (!workerScope.rxjs) {
+//         throw Error('rxjs should be here')
+//     }
+//     return 2 * args.value
+// }
 function scheduleFunctionAsync({ args, workerScope }) {
     if (!workerScope.rxjs) {
         throw Error('rxjs should be here')
@@ -220,7 +220,7 @@ test('schedule', (done) => {
     console['ensureLog']('Trigger schedule')
     pool.schedule({
         title: 'test',
-        entryPoint: scheduleFunctionSync,
+        entryPoint: scheduleFunctionAsync,
         args: { value: 21 },
     })
         .pipe(
