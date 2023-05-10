@@ -207,6 +207,7 @@ function scheduleFunctionAsync({ args, workerScope }) {
 }
 
 test('schedule', (done) => {
+    console.log('Start test schedule')
     const pool = new WorkersPool({
         install: {
             modules: ['rxjs#^6.5.5'],
@@ -215,17 +216,20 @@ test('schedule', (done) => {
     const workers = pool.workers$.value
     expect(Object.keys(workers)).toHaveLength(0)
 
+    console.log('Trigger schedule')
     pool.schedule({
         title: 'test',
         entryPoint: scheduleFunctionSync,
         args: { value: 21 },
     })
         .pipe(
+            tap((d) => console.log('Got message from schedule', d)),
             takeWhile((m) => m.type != 'Exit', true),
             last(),
             // let the time to subscription (busy$ in particular) to be handled
             delay(1),
             tap((m) => {
+                console.log('Ensure expectations')
                 const workers = pool.workers$.value
                 const busy = pool.busyWorkers$.value
                 expect(Object.keys(workers)).toHaveLength(1)
