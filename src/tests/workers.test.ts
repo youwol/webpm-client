@@ -146,9 +146,11 @@ test('ready', async () => {
     expect(
         messages.filter((m) => m.type == 'Data' && m.data.type != 'CdnEvent'),
     ).toHaveLength(1)
-    expect(
-        messages.filter((m) => m.type == 'Data' && m.data.type == 'CdnEvent'),
-    ).toHaveLength(6)
+    const events = messages.filter(
+        (m) => m.type == 'Data' && m.data.type == 'CdnEvent',
+    )
+    // The number of 'SourceLoadingEvents' is not deterministic (depends on progress events emitted).
+    expect(events.length).toBeGreaterThan(5)
 })
 
 test('ready with variables, function, & postInstall tasks', async () => {
