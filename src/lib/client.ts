@@ -33,7 +33,7 @@ import {
 
 /**
  *
- * Use default {@link Client} to install resources; see documentation provided for {@link Client.install}.
+ * Use default {@link Client} to install resources; see documentation provided for {@link InstallInputs}.
  *
  * @category Getting Started
  * @category Entry Points
@@ -45,7 +45,7 @@ export function install(inputs: InstallInputs): Promise<Window> {
 
 /**
  *
- * Use default {@link Client} to install resources; see documentation provided for {@link Client.queryLoadingGraph}.
+ * Use default {@link Client} query a loading graph; see documentation provided for {@link QueryLoadingGraphInputs}.
  *
  * @param inputs
  * @category Entry Points
@@ -55,7 +55,7 @@ export function queryLoadingGraph(inputs: QueryLoadingGraphInputs) {
 }
 
 /**
- * Use default {@link Client} to fetch script; see documentation provided for {@link Client.fetchScript}.
+ * Use default {@link Client} to fetch content of a javascript file.
  *
  * @param inputs
  * @category Entry Points
@@ -65,7 +65,8 @@ export function fetchScript(inputs: FetchScriptInputs): Promise<FetchedScript> {
 }
 
 /**
- * Use default {@link Client} to install {@link LoadingGraph}; see documentation provided for {@link Client.installLoadingGraph}.
+ * Use default {@link Client} to install {@link LoadingGraph}; see documentation provided for
+ * {@link InstallLoadingGraphInputs}.
  *
  * @category Entry Points
  * @param inputs
@@ -175,7 +176,7 @@ export class Client {
     }
 
     /**
-     * Fetch a script, see {@link FetchScriptInputs}.
+     * Fetch content of a javascript file.
      *
      * @param inputs
      */
@@ -256,7 +257,7 @@ export class Client {
     }
 
     /**
-     * Install a various set of modules, scripts & stylesheets; see {@link InstallInputs}.
+     * Install a various set of modules, scripts & stylesheets; see documentation in {@link InstallInputs}.
      *
      * @param inputs
      */

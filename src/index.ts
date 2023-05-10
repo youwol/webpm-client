@@ -53,7 +53,7 @@
  *
  * A customizable loading screen can be used to display progress of resources installation (see {@link LoadingScreenView}).
  *
- * At any time, the actual state regarding resources installation can be retrieved using the singleton {@link State}.
+ * At any time, the actual state regarding resources installation can be retrieved using {@link monitoring}.
  *
  * ## Exported symbols
  *

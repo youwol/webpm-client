@@ -94,8 +94,31 @@ export type InstallStyleSheetsInputs = {
 }
 
 /**
- * Inputs for the method {@link Client.installLoadingGraph}
+ * Inputs for the method {@link Client.installLoadingGraph}.
  *
+ * <iframe id="iFrameExample" src="" width="100%" height="600px"></iframe>
+ * <script>
+ *      const src = `return async ({cdnClient}, event$) => {
+ *      // get a loading graph, this data could have been saved at some point in time
+ *      // to latter-on restore the same run-time.
+ *      event$.next('retrieve loading graph')
+ *      const loadingGraph = await cdnClient.queryLoadingGraph({
+ *          modules:['@youwol/flux-view#^1.1.0', 'rxjs#^7.5.6', 'lodash#*'],
+ *      })
+ *      event$.next('install loading graph')
+ *      await cdnClient.installLoadingGraph({loadingGraph})
+ *      event$.next('done')
+ *      return {
+ *          class:'fv-text-primary',
+ *          children:[
+ *              cdnClient.monitoring().view
+ *          ]
+ *      }
+ * }
+ * `
+ *     const url = '/applications/@youwol/js-playground/latest?content='+encodeURIComponent(src)
+ *     document.getElementById('iFrameExample').setAttribute("src",url);
+ * </script>
  */
 export type InstallLoadingGraphInputs = {
     /**
@@ -104,8 +127,7 @@ export type InstallLoadingGraphInputs = {
     loadingGraph: LoadingGraph
 
     /**
-     * Install resources using 'custom installers'.
-     *
+     * See `customInstallers` of {@link InstallInputs}.
      */
     customInstallers?: CustomInstaller[]
 
@@ -115,7 +137,7 @@ export type InstallLoadingGraphInputs = {
     modulesSideEffects?: { [key: string]: ModuleSideEffectCallback }
 
     /**
-     * Window global in which scripts elements are added. If not provided, `window` is used.
+     * See `executingWindow` from {@link InstallInputs}
      */
     executingWindow?: Window
 
@@ -125,9 +147,7 @@ export type InstallLoadingGraphInputs = {
     aliases?: { [key: string]: string | ((Window) => unknown) }
 
     /**
-     * If provided, any {@link CdnFetchEvent} emitted are forwarded to this callback.
-     *
-     * @param event event emitted
+     * See `onEvent` from {@link InstallInputs}
      */
     onEvent?: (event: CdnFetchEvent) => void
 }
@@ -191,7 +211,7 @@ export type CustomInstaller = {
  *      return {
  *          class:'fv-text-primary',
  *          children:[
- *              cdnClient.State.view()
+ *              cdnClient.monitoring().view
  *          ]
  *      }
  * }
@@ -463,8 +483,24 @@ export type ScriptSideEffectCallback = (
 ) => void | Promise<void>
 
 /**
- * Inputs for the method {@link Client.queryLoadingGraph}
+ * Inputs for the method {@link Client.queryLoadingGraph}.
  *
+ * <iframe id="iFrameExampleModules" src="" width="100%" height="600px"></iframe>
+ * <script>
+ *      const src = `return async ({cdnClient}) => {
+ *      const response = await cdnClient.queryLoadingGraph({
+ *          modules:['@youwol/flux-view#^1.1.0', 'rxjs#^7.5.6', 'lodash#*'],
+ *      })
+ *      return {
+ *          tag: 'pre',
+ *          class:'fv-text-primary',
+ *          innerText: JSON.stringify(response, null, 4)
+ *      }
+ * }
+ * `
+ *     const url = '/applications/@youwol/js-playground/latest?content='+encodeURIComponent(src)
+ *     document.getElementById('iFrameExampleModules').setAttribute("src",url);
+ * </script>
  */
 export type QueryLoadingGraphInputs = {
     /**
