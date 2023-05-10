@@ -54,7 +54,9 @@ shutil.copyfile(
     src=folder_path / '.template' / 'src' / 'auto-generated.ts',
     dst=folder_path / 'src' / 'auto-generated.ts'
 )
-for file in ['README.md', '.npmignore', 'LICENSE', 'package.json',
+# README.md is not copied here as the `userGuide: False` leads to prettier error (too much blank line).
+# the pipeline TS needs to be fixed before re-introducing README.md as auto-generated.
+for file in ['.npmignore', 'LICENSE', 'package.json',
              'tsconfig.json', 'webpack.config.ts']:
     shutil.copyfile(
         src=folder_path / '.template' / file,

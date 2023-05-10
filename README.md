@@ -7,8 +7,6 @@ This library is part of the hybrid cloud/local ecosystem
 
 ## Links
 
-
-
 [Developers documentation](https://platform.youwol.com/applications/@youwol/cdn-explorer/latest?package=@youwol/cdn-client)
 
 [Package on npm](https://www.npmjs.com/package/@youwol/cdn-client)
