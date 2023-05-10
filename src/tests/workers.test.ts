@@ -19,8 +19,9 @@ import { from, Subject } from 'rxjs'
 import * as cdnClient from '../../src/lib'
 import { render } from '@youwol/flux-view'
 import { StateImplementation } from '../lib/state'
-jest.setTimeout(100 * 1000)
+jest.setTimeout(20 * 1000)
 
+console['ensureLog'] = console.log
 console.log = () => {
     /*no-op*/
 }
@@ -207,7 +208,7 @@ function scheduleFunctionAsync({ args, workerScope }) {
 }
 
 test('schedule', (done) => {
-    console.log('Start test schedule')
+    console['ensureLog']('Start test schedule')
     const pool = new WorkersPool({
         install: {
             modules: ['rxjs#^6.5.5'],
@@ -216,20 +217,20 @@ test('schedule', (done) => {
     const workers = pool.workers$.value
     expect(Object.keys(workers)).toHaveLength(0)
 
-    console.log('Trigger schedule')
+    console['ensureLog']('Trigger schedule')
     pool.schedule({
         title: 'test',
         entryPoint: scheduleFunctionSync,
         args: { value: 21 },
     })
         .pipe(
-            tap((d) => console.log('Got message from schedule', d)),
+            tap((d) => console['ensureLog']('Got message from schedule', d)),
             takeWhile((m) => m.type != 'Exit', true),
             last(),
             // let the time to subscription (busy$ in particular) to be handled
             delay(1),
             tap((m) => {
-                console.log('Ensure expectations')
+                console['ensureLog']('Ensure expectations')
                 const workers = pool.workers$.value
                 const busy = pool.busyWorkers$.value
                 expect(Object.keys(workers)).toHaveLength(1)
