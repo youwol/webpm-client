@@ -103,8 +103,9 @@ WorkersPool.webWorkersProxy = new WebWorkersJest()
 
 beforeAll((done) => {
     installPackages$([
-        './.packages-test/rxjs#6/cdn.zip',
-        './.packages-test/flux-view#1/cdn.zip',
+        './.packages-test/rxjs#7.5.6/cdn.zip',
+        './.packages-test/rxjs#6.5.5/cdn.zip',
+        './.packages-test/flux-view#1.1.0/cdn.zip',
         // to fetch the module 'WorkersPool' the current version of cdn is needed
         '../../cdn.zip',
     ]).subscribe(() => {
