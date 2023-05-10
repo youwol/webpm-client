@@ -13,17 +13,40 @@ import {
     WorkersPool,
     IWWorkerProxy,
     WWorkerTrait,
+    ContextTrait,
 } from '../lib/workers-pool'
 import { delay, last, mergeMap, takeWhile, tap } from 'rxjs/operators'
 import { from, Subject } from 'rxjs'
 import * as cdnClient from '../../src/lib'
 import { render } from '@youwol/flux-view'
 import { StateImplementation } from '../lib/state'
+
 jest.setTimeout(20 * 1000)
 
 console['ensureLog'] = console.log
 console.log = () => {
     /*no-op*/
+}
+class Context implements ContextTrait {
+    public readonly prefix = ''
+    public readonly indent = 0
+    public readonly t0: number
+    constructor(params: { prefix?: string; t0?: number } = {}) {
+        Object.assign(this, params)
+        this.t0 = params.t0 || Date.now()
+    }
+    withChild<T>(name: string, cb: (ctx: ContextTrait) => T): T {
+        const context = new Context({
+            prefix: `\t${this.prefix}.${name}`,
+            t0: this.t0,
+        })
+        context.info('>Start')
+        return cb(context)
+    }
+    info(text: string) {
+        const delta = (Date.now() - this.t0) / 1000
+        console['ensureLog'](`${delta}: ${this.prefix}: ${text}`)
+    }
 }
 
 class WebWorkerJest implements WWorkerTrait {
@@ -208,8 +231,7 @@ function scheduleFunctionAsync({ args, workerScope }) {
 }
 
 test('schedule', (done) => {
-    console['ensureLog']('Start test schedule')
-    console.log = console['ensureLog']
+    const context = new Context({ prefix: 'jest-test-schedule' })
     const pool = new WorkersPool({
         install: {
             modules: ['rxjs#^6.5.5'],
@@ -218,21 +240,24 @@ test('schedule', (done) => {
     const workers = pool.workers$.value
     expect(Object.keys(workers)).toHaveLength(0)
 
-    console['ensureLog']('Trigger schedule')
+    context.info('Trigger schedule')
 
-    pool.schedule({
-        title: 'test',
-        entryPoint: scheduleFunctionAsync,
-        args: { value: 21 },
-    })
+    pool.schedule(
+        {
+            title: 'test',
+            entryPoint: scheduleFunctionAsync,
+            args: { value: 21 },
+        },
+        context,
+    )
         .pipe(
-            tap((d) => console['ensureLog']('Got message from schedule', d)),
+            tap((d) => context.info(`Got message ${d.type} from schedule`)),
             takeWhile((m) => m.type != 'Exit', true),
             last(),
             // let the time to subscription (busy$ in particular) to be handled
             delay(1),
             tap((m) => {
-                console['ensureLog']('Ensure expectations')
+                context.info('Ensure expectations')
                 const workers = pool.workers$.value
                 const busy = pool.busyWorkers$.value
                 expect(Object.keys(workers)).toHaveLength(1)
@@ -246,9 +271,6 @@ test('schedule', (done) => {
 })
 
 test('schedule async with ready', (done) => {
-    console.log = () => {
-        /*no-op*/
-    }
     const pool = new WorkersPool({
         install: {
             modules: ['rxjs#^6.5.5'],
