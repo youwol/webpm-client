@@ -67,7 +67,7 @@ export const setup = {
     developerDocumentation:'https://platform.youwol.com/applications/@youwol/cdn-explorer/latest?package=@youwol/cdn-client',
     npmPackage:'https://www.npmjs.com/package/@youwol/cdn-client',
     sourceGithub:'https://github.com/youwol/cdn-client',
-    userGuide:'https://l.youwol.com/doc/@youwol/cdn-client',
+    userGuide:'',
     apiVersion:'1',
     runTimeDependencies,
     externals,

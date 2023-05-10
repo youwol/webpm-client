@@ -33,7 +33,7 @@ template = Template(
             "@youwol/http-primitives": "^0.1.2"
         }),
     testConfig="https://github.com/youwol/integration-tests-conf",
-    userGuide=True,
+    userGuide=False,
     bundles=Bundles(
         mainModule=MainModule(
             entryFile="./index.ts"
