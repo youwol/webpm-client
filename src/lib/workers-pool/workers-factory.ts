@@ -506,7 +506,7 @@ export type PoolSize = {
     startAt?: number
     /**
      * Maximum number of workers.
-     * Set to `navigator.hardwareConcurrency - 2` by default.
+     * Set to `max(1, navigator.hardwareConcurrency - 2)` by default.
      */
     stretchTo?: number
 }
@@ -702,7 +702,8 @@ export class WorkersPool {
         this.pool = {
             startAt: params.pool?.startAt || 0,
             stretchTo:
-                params.pool?.stretchTo || navigator.hardwareConcurrency - 2,
+                params.pool?.stretchTo ||
+                Math.max(1, navigator.hardwareConcurrency - 2),
         }
         this.reserve({ workersCount: this.pool.startAt || 0 }).subscribe()
     }
