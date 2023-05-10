@@ -13,7 +13,7 @@ import {
     WorkersPool,
     IWWorkerProxy,
     WWorkerTrait,
-    ContextTrait,
+    NoContext,
 } from '../lib/workers-pool'
 import { delay, last, mergeMap, takeWhile, tap } from 'rxjs/operators'
 import { from, Subject } from 'rxjs'
@@ -194,12 +194,12 @@ test('ready with variables, function, & postInstall tasks', async () => {
     expect(events.length).toBeGreaterThan(0)
 })
 
-// function scheduleFunctionSync({ args, workerScope }) {
-//     if (!workerScope.rxjs) {
-//         throw Error('rxjs should be here')
-//     }
-//     return 2 * args.value
-// }
+function scheduleFunctionSync({ args, workerScope }) {
+    if (!workerScope.rxjs) {
+        throw Error('rxjs should be here')
+    }
+    return 2 * args.value
+}
 function scheduleFunctionAsync({ args, workerScope }) {
     if (!workerScope.rxjs) {
         throw Error('rxjs should be here')
@@ -210,7 +210,7 @@ function scheduleFunctionAsync({ args, workerScope }) {
 }
 
 test('schedule', (done) => {
-    const context = new Context({ prefix: 'jest-test-schedule' })
+    const context = new NoContext()
     const pool = new WorkersPool({
         install: {
             modules: ['rxjs#^6.5.5'],
@@ -224,7 +224,7 @@ test('schedule', (done) => {
     pool.schedule(
         {
             title: 'test',
-            entryPoint: scheduleFunctionAsync,
+            entryPoint: scheduleFunctionSync,
             args: { value: 21 },
         },
         context,
