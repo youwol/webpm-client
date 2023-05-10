@@ -19,7 +19,7 @@ import { from, Subject } from 'rxjs'
 import * as cdnClient from '../../src/lib'
 import { render } from '@youwol/flux-view'
 import { StateImplementation } from '../lib/state'
-jest.setTimeout(100 * 1000)
+jest.setTimeout(20 * 1000)
 
 console.log = () => {
     /*no-op*/
