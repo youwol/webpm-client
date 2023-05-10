@@ -217,17 +217,14 @@ test('schedule', (done) => {
     const workers = pool.workers$.value
     expect(Object.keys(workers)).toHaveLength(0)
 
-    console['ensureLog']('Wait ready')
-    from(pool.ready())
+    console['ensureLog']('Trigger schedule')
+
+    pool.schedule({
+        title: 'test',
+        entryPoint: scheduleFunctionAsync,
+        args: { value: 21 },
+    })
         .pipe(
-            mergeMap(() => {
-                console['ensureLog']('Trigger schedule')
-                return pool.schedule({
-                    title: 'test',
-                    entryPoint: scheduleFunctionAsync,
-                    args: { value: 21 },
-                })
-            }),
             tap((d) => console['ensureLog']('Got message from schedule', d)),
             takeWhile((m) => m.type != 'Exit', true),
             last(),
