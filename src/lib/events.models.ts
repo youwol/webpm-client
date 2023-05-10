@@ -203,7 +203,7 @@ export class UrlNotFoundEvent implements CdnFetchEvent {
  * @category Events
  */
 export class ParseErrorEvent implements CdnFetchEvent {
-    public readonly step = 'UrlNotFoundEvent'
+    public readonly step = 'ParseErrorEvent'
     public readonly id: string
     public readonly text: string
     public readonly status = 'Failed'
