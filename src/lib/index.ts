@@ -4,8 +4,9 @@ export {
     fetchScript,
     queryLoadingGraph,
     installLoadingGraph,
+    monitoring,
 } from './client'
-export * from './state'
+export { Monitoring, State } from './state'
 export * from './loader.view'
 export {
     FetchScriptInputs,

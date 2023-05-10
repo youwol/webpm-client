@@ -17,7 +17,7 @@ import {
     InstallDoneEvent,
 } from './events.models'
 import { errorFactory, FetchErrors } from './errors.models'
-import { State } from './state'
+import { Monitoring, StateImplementation } from './state'
 import { LoadingScreenView } from './loader.view'
 import { sanitizeCssId } from './utils.view'
 import { satisfies } from 'semver'
@@ -75,6 +75,16 @@ export function installLoadingGraph(inputs: InstallLoadingGraphInputs) {
 }
 
 /**
+ * Returns {@link Monitoring} object that encapsulates read-only access to the
+ * installation state at the time of call.
+ *
+ * @category Entry Points
+ */
+export function monitoring() {
+    return new Monitoring()
+}
+
+/**
  * Gathers configuration & methods to dynamically install various set of resources (modules, scripts, stylesheets).
  *
  * For default client's configuration, the methods are also available as standalone functions:
@@ -84,6 +94,8 @@ export function installLoadingGraph(inputs: InstallLoadingGraphInputs) {
  * @category Entry Points
  */
 export class Client {
+    private static state = StateImplementation
+
     static Headers: { [key: string]: string } = {}
     /**
      * Default static hostname (if none provided at instance construction).
@@ -141,13 +153,13 @@ export class Client {
             }, {}),
         }
         const finalize = async () => {
-            const content = await State.fetchedLoadingGraph[key]
+            const content = await Client.state.fetchedLoadingGraph[key]
             if (content.lock) {
                 return content
             }
             throw errorFactory(content)
         }
-        if (State.fetchedLoadingGraph[key]) {
+        if (Client.state.fetchedLoadingGraph[key]) {
             return finalize()
         }
         const url = `${Client.HostName}/api/assets-gateway/cdn-backend/queries/loading-graph`
@@ -156,7 +168,7 @@ export class Client {
             body: JSON.stringify(body),
             headers: { ...this.headers, 'content-type': 'application/json' },
         })
-        State.fetchedLoadingGraph[key] = fetch(request).then((resp) =>
+        Client.state.fetchedLoadingGraph[key] = fetch(request).then((resp) =>
             resp.json(),
         )
         return finalize()
@@ -179,19 +191,19 @@ export class Client {
         const assetId = parts[5]
         const version = parts[6]
         name = name || parts[parts.length - 1]
-        url = State.urlPatcher({
+        url = Client.state.getPatchedUrl({
             name,
             version,
             assetId,
             url,
         })
-        if (State.importedScripts[url]) {
-            const { progressEvent } = await State.importedScripts[url]
+        if (Client.state.importedScripts[url]) {
+            const { progressEvent } = await Client.state.importedScripts[url]
             onEvent &&
                 onEvent(
                     new SourceLoadedEvent(name, assetId, url, progressEvent),
                 )
-            return State.importedScripts[url]
+            return Client.state.importedScripts[url]
         }
         if (!window.document) {
             // In a web-worker the script will be imported using self.importScripts(url).
@@ -207,7 +219,7 @@ export class Client {
                 })
             })
         }
-        State.importedScripts[url] = new Promise((resolve, reject) => {
+        Client.state.importedScripts[url] = new Promise((resolve, reject) => {
             const req = new XMLHttpRequest()
             // report progress events
             req.addEventListener(
@@ -240,7 +252,7 @@ export class Client {
             req.send()
             onEvent && onEvent(new StartEvent(name, assetId, url))
         })
-        return State.importedScripts[url]
+        return Client.state.importedScripts[url]
     }
 
     /**
@@ -310,7 +322,7 @@ export class Client {
     async installLoadingGraph(inputs: InstallLoadingGraphInputs) {
         const executingWindow = inputs.executingWindow || window
         const customInstallers = inputs.customInstallers || []
-        State.updateExportedSymbolsDict(inputs.loadingGraph.lock)
+        Client.state.updateExportedSymbolsDict(inputs.loadingGraph.lock)
 
         const customInstallersFuture = customInstallers.map((installer) => {
             return resolveCustomInstaller(installer)
@@ -331,7 +343,7 @@ export class Client {
             })
             .filter(
                 ({ name, version }) =>
-                    !State.isCompatibleVersionInstalled(name, version),
+                    !Client.state.isCompatibleVersionInstalled(name, version),
             )
         const errors = []
         const futures = packagesSelected.map(({ name, url }) => {
@@ -400,7 +412,7 @@ export class Client {
         inputs: InstallModulesInputs,
     ): Promise<LoadingGraph> {
         const usingDependencies = [
-            ...State.pinedDependencies,
+            ...Client.state.getPinedDependencies(),
             ...(inputs.usingDependencies || []),
         ]
         inputs.modules = inputs.modules || []
@@ -495,7 +507,7 @@ export class Client {
             )
             .map((elem) => ({ ...elem, ...parseResourceId(elem.location) }))
             .map(({ assetId, version, name, url, sideEffects }) => {
-                url = State.urlPatcher({
+                url = Client.state.getPatchedUrl({
                     name,
                     version,
                     assetId,

@@ -14,7 +14,7 @@ import {
     UrlNotFoundEvent,
 } from './events.models'
 import { UrlNotFound, SourceParsingFailed, Unauthorized } from './errors.models'
-import { State } from './state'
+import { StateImplementation } from './state'
 import { sanitizeCssId } from './utils.view'
 import { Client, install } from './client'
 
@@ -101,7 +101,7 @@ export async function applyModuleSideEffects(
     onEvent: (CdnEvent) => void,
 ) {
     const exportedName = getFullExportedSymbol(origin.name, origin.version)
-    const symbolBase = State.getExportedSymbol(
+    const symbolBase = StateImplementation.getExportedSymbol(
         origin.name,
         origin.version,
     ).symbol
@@ -136,7 +136,7 @@ export async function applyModuleSideEffects(
     }
     executingWindow[exportedName]['__yw_set_from_version__'] = origin.version
 
-    State.updateLatestBundleVersion([origin], executingWindow)
+    StateImplementation.updateLatestBundleVersion([origin], executingWindow)
 
     for (const sideEffectFct of userSideEffects) {
         const args = {
@@ -305,7 +305,7 @@ export function getUrlBase(name: string, version: string) {
  * @param version version of the library
  */
 export function getFullExportedSymbol(name: string, version: string) {
-    const exported = State.getExportedSymbol(name, version)
+    const exported = StateImplementation.getExportedSymbol(name, version)
     return `${exported.symbol}_APIv${exported.apiKey}`
 }
 
@@ -345,5 +345,5 @@ export function installAliases(
     aliases: { [key: string]: string | ((Window) => unknown) },
     executingWindow: Window,
 ) {
-    State.installAliases(aliases, executingWindow)
+    StateImplementation.installAliases(aliases, executingWindow)
 }

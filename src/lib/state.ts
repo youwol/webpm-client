@@ -1,4 +1,8 @@
-import { LoadingGraph, FetchedScript } from './inputs.models'
+import {
+    LoadingGraph,
+    FetchedScript,
+    LightLibraryQueryString,
+} from './inputs.models'
 import { lt, gt } from 'semver'
 import { getFullExportedSymbol, getFullExportedSymbolAlias } from './utils'
 import { VirtualDOM } from '@youwol/flux-view'
@@ -7,16 +11,100 @@ export type LibraryName = string
 export type Version = string
 
 /**
- * Singleton object that gathers history of fetched modules, scripts & CSS.
- * It also acts as a cache store.
+ * Encapsulates installations data at the time of instance creation.
  *
- * > At any point in time, info about resources fetched can be retrieved from here.
+ *  @category State
+ */
+export class Monitoring {
+    /**
+     * Dictionary with key of form `${libName}#${libVersion}`
+     */
+    public readonly exportedSymbols: {
+        [k: string]: { symbol: string; apiKey: string }
+    }
+    /**
+     *  Dictionary `libName->versions`.
+     */
+    public readonly importedBundles: {
+        [k: string]: string[]
+    }
+    /**
+     * Dictionary `libName->latest version`.
+     */
+    public readonly latestVersion: {
+        [k: string]: string
+    }
+    /**
+     * Create a VirtualDOM (see [fluxView](https://github.com/youwol/flux-view))
+     * representing the current state of installation (modules installed & available symbols).
+     */
+    public readonly view: VirtualDOM
+
+    constructor() {
+        this.exportedSymbols = { ...StateImplementation.getExportedSymbol }
+        this.importedBundles = [
+            ...StateImplementation.importedBundles.entries(),
+        ].reduce(
+            (acc, [k, v]) => ({
+                ...acc,
+                [k]: v,
+            }),
+            {},
+        )
+        this.latestVersion = [
+            ...StateImplementation.latestVersion.entries(),
+        ].reduce(
+            (acc, [k, v]) => ({
+                ...acc,
+                [k]: v,
+            }),
+            {},
+        )
+        this.view = StateImplementation.view()
+    }
+}
+
+/**
+ * Provides extra-controls regarding dependencies and URL resolution.
  *
- * @category State
+ * None of the methods exposed should be used in regular scenario.
+ *
+ *  @category State
  */
 export class State {
     /**
+     * Pin some dependencies to use whenever a loading graph is resolved,
+     * it will over-ride natural resolution from packages description.
+     *
+     */
+    static pinDependencies(dependencies: LightLibraryQueryString[]) {
+        StateImplementation.pinDependencies(dependencies)
+    }
+
+    /**
+     * Register a 'patcher' for URLs to fetch resource: any time a request is done to the target resource,
+     * the URL is actually replaced by the registered patch.
+     *
+     * This is provided if somehow a saved loading graph reference resources that have been moved to other location.
+     * @param patcher function that takes `{ name, version, assetId, url }` as argument and return the patched URLs
+     * (which should be the original if no transformation is required).
+     */
+    static registerUrlPatcher(
+        patcher: ({ name, version, assetId, url }) => string,
+    ) {
+        StateImplementation.registerUrlPatcher(patcher)
+    }
+}
+/**
+ * Singleton object that gathers history of fetched modules, scripts & CSS.
+ * It also acts as a cache store.
+ *
+ * This is essentially a 'friend' class used by {@link Client} which should not be exposed.
+ */
+export class StateImplementation {
+    /**
      * Dictionary of `${libName}#${libVersion}` -> `{ symbol: string; apiKey: string }`
+     *
      */
     static exportedSymbolsDict: {
         [k: string]: { symbol: string; apiKey: string }
@@ -34,7 +122,7 @@ export class State {
         name: string,
         version: string,
     ): { symbol: string; apiKey: string } {
-        return State.exportedSymbolsDict[`${name}#${version}`]
+        return StateImplementation.exportedSymbolsDict[`${name}#${version}`]
     }
 
     static updateExportedSymbolsDict(
@@ -55,18 +143,19 @@ export class State {
             }),
             {},
         )
-        State.exportedSymbolsDict = {
-            ...State.exportedSymbolsDict,
+        StateImplementation.exportedSymbolsDict = {
+            ...StateImplementation.exportedSymbolsDict,
             ...newEntries,
         }
     }
     /**
-     * Imported modules: mapping between {@link LibraryName} and list of installed {@link Version}
+     * Imported modules: mapping between {@link LibraryName} and list of installed {@link Version}.
      */
     static importedBundles = new Map<LibraryName, Version[]>()
 
     /**
      * Fetched loading graph: mapping between a loading graph's body uid and corresponding computed loading graph.
+     * @hidden
      */
     static fetchedLoadingGraph = new Map<string, Promise<LoadingGraph>>()
 
@@ -77,6 +166,7 @@ export class State {
 
     /**
      * Installed script: mapping between a script's uid and a {@link FetchedScript}.
+     * @hidden
      */
     static importedScripts = new Map<string, Promise<FetchedScript>>()
 
@@ -99,20 +189,27 @@ export class State {
         if (libName == '@youwol/cdn-client') {
             return true
         }
-        if (!State.importedBundles.has(libName)) {
+        if (!StateImplementation.importedBundles.has(libName)) {
             return false
         }
 
-        if (State.importedBundles.get(libName).includes(version)) {
+        if (
+            StateImplementation.importedBundles.get(libName).includes(version)
+        ) {
             return true
         }
 
-        const installedVersions = State.importedBundles.get(libName)
+        const installedVersions =
+            StateImplementation.importedBundles.get(libName)
         const compatibleVersion = installedVersions
             .filter(
                 (installedVersion) =>
-                    State.getExportedSymbol(libName, installedVersion).apiKey ==
-                    State.getExportedSymbol(libName, version).apiKey,
+                    StateImplementation.getExportedSymbol(
+                        libName,
+                        installedVersion,
+                    ).apiKey ==
+                    StateImplementation.getExportedSymbol(libName, version)
+                        .apiKey,
             )
             .find((installedVersion) => {
                 return gt(installedVersion, version)
@@ -125,13 +222,21 @@ export class State {
                     libName,
                     queriedVersion: version,
                     compatibleVersion,
-                    apiKey: State.getExportedSymbol(libName, version).apiKey,
+                    apiKey: StateImplementation.getExportedSymbol(
+                        libName,
+                        version,
+                    ).apiKey,
                 },
             )
         }
         return compatibleVersion != undefined
     }
 
+    /**
+     * @param aliases
+     * @param executingWindow
+     * @hidden
+     */
     static installAliases(
         aliases: { [key: string]: string | ((Window) => unknown) },
         executingWindow: Window,
@@ -155,23 +260,31 @@ export class State {
 
     /**
      * Reset the cache, but keep installed modules.
+     * @hidden
      */
     static resetCache() {
-        State.importedBundles = new Map<LibraryName, Version[]>()
-        State.importedLoadingGraphs = new Map<string, Promise<Window>>()
-        State.importedScripts = new Map<string, Promise<FetchedScript>>()
-        State.latestVersion = new Map<string, string>()
-        State.exportedSymbolsDict = {}
+        StateImplementation.importedBundles = new Map<LibraryName, Version[]>()
+        StateImplementation.importedLoadingGraphs = new Map<
+            string,
+            Promise<Window>
+        >()
+        StateImplementation.importedScripts = new Map<
+            string,
+            Promise<FetchedScript>
+        >()
+        StateImplementation.latestVersion = new Map<string, string>()
+        StateImplementation.exportedSymbolsDict = {}
     }
 
     /**
      * Remove installed modules & reset the cache
      *
      * @param executingWindow where the resources have been installed
+     * @hidden
      */
     static clear(executingWindow?: Window) {
         executingWindow = executingWindow || window
-        Array.from(State.importedBundles.entries())
+        Array.from(StateImplementation.importedBundles.entries())
             .map(([lib, versions]) => {
                 return versions.map((version) => [lib, version])
             })
@@ -189,15 +302,16 @@ export class State {
                 executingWindow[toDelete] && delete executingWindow[toDelete]
             })
 
-        State.resetCache()
+        StateImplementation.resetCache()
     }
 
     /**
-     * Update {@link State.latestVersion} given a provided installed {@link LoadingGraph}.
+     * Update {@link StateImplementation.latestVersion} given a provided installed {@link LoadingGraph}.
      * It also exposes the latest version in `executingWindow` using original symbol name if need be.
      *
      * @param modules installed {@link LoadingGraph}
      * @param executingWindow where to expose the latest version if change need be
+     * @hidden
      */
     static updateLatestBundleVersion(
         modules: { name: string; version: string }[],
@@ -205,27 +319,30 @@ export class State {
     ) {
         const toConsiderForUpdate = modules.filter(({ name, version }) => {
             return !(
-                State.latestVersion.has(name) &&
-                State.latestVersion.get(name) == version
+                StateImplementation.latestVersion.has(name) &&
+                StateImplementation.latestVersion.get(name) == version
             )
         })
         toConsiderForUpdate.forEach(({ name, version }) => {
             if (
-                State.latestVersion.has(name) &&
-                lt(version, State.latestVersion.get(name))
+                StateImplementation.latestVersion.has(name) &&
+                lt(version, StateImplementation.latestVersion.get(name))
             ) {
                 return
             }
-            const symbol = State.getExportedSymbol(name, version).symbol
+            const symbol = StateImplementation.getExportedSymbol(
+                name,
+                version,
+            ).symbol
             const exportedName = getFullExportedSymbol(name, version)
 
             if (
                 executingWindow[exportedName] &&
-                !State.latestVersion.has(name)
+                !StateImplementation.latestVersion.has(name)
             ) {
                 executingWindow[symbol] = executingWindow[exportedName]
-                State.latestVersion.set(name, version)
-                State.importedBundles.set(name, [version])
+                StateImplementation.latestVersion.set(name, version)
+                StateImplementation.importedBundles.set(name, [version])
                 return
             }
 
@@ -235,42 +352,93 @@ export class State {
                     `Problem with package "${name}" & export symbol "${symbol}"`,
                 )
             }
-            State.latestVersion.set(name, version)
-            const existingVersions = State.importedBundles.has(name)
-                ? State.importedBundles.get(name)
+            StateImplementation.latestVersion.set(name, version)
+            const existingVersions = StateImplementation.importedBundles.has(
+                name,
+            )
+                ? StateImplementation.importedBundles.get(name)
                 : []
-            State.importedBundles.set(name, [...existingVersions, version])
+            StateImplementation.importedBundles.set(name, [
+                ...existingVersions,
+                version,
+            ])
         })
     }
 
-    static pinedDependencies: string[] = []
+    private static pinedDependencies: LightLibraryQueryString[] = []
 
-    static pinDependencies(dependencies: string[]) {
-        State.pinedDependencies = [...State.pinedDependencies, ...dependencies]
+    /**
+     * return the (static) list of pined dependencies.
+     */
+    static getPinedDependencies() {
+        return [...StateImplementation.pinedDependencies]
     }
-
-    static urlPatcher: ({ name, version, assetId, url }) => string = ({
-        url,
-    }) => url
-
-    static registerUrlPatcher(
-        patcher: ({ name, version, assetId, url }) => string,
-    ) {
-        State.urlPatcher = patcher
+    /**
+     * Pin some dependencies to use whenever a loading graph is resolved,
+     * it will over-ride natural resolution from packages description.
+     *
+     */
+    static pinDependencies(dependencies: LightLibraryQueryString[]) {
+        StateImplementation.pinedDependencies = [
+            ...StateImplementation.pinedDependencies,
+            ...dependencies,
+        ]
     }
 
     /**
-     * Create a VirtualDOM (see [fluxView](https://github.com/youwol/flux-view))
-     * representing the current state of installation (modules installed & available symbols).
+     *
+     * @hidden
      */
+    private static urlPatcher: ({ name, version, assetId, url }) => string = ({
+        url,
+    }) => url
+
+    /**
+     *
+     * @param name name of the asset
+     * @param version version of the asset
+     * @param assetId id of the asset
+     * @param url original URL
+     */
+    static getPatchedUrl({ name, version, assetId, url }) {
+        return StateImplementation.urlPatcher({ name, version, assetId, url })
+    }
+    /**
+     * Register a 'patcher' for URLs to fetch resource: any time a request is done to the target resource,
+     * the URL is actually replaced by the registered patch.
+     *
+     * This is provided if somehow a saved loading graph reference resources that have been moved to other location.
+     */
+    static registerUrlPatcher(
+        patcher: ({ name, version, assetId, url }) => string,
+    ) {
+        StateImplementation.urlPatcher = patcher
+    }
+
     static view(): VirtualDOM {
         return {
             class: 'StateView',
             children: [
                 { tag: 'h3', innerText: 'Modules installed' },
-                { class: 'px-3 py-2 container', children: [new ModulesView()] },
+                {
+                    class: 'px-3 py-2 container',
+                    children: [
+                        new ModulesView({
+                            importedBundles:
+                                StateImplementation.importedBundles,
+                        }),
+                    ],
+                },
                 { tag: 'h3', innerText: 'Available symbols' },
-                { class: 'px-3 py-2 container', children: [new SymbolsView()] },
+                {
+                    class: 'px-3 py-2 container',
+                    children: [
+                        new SymbolsView({
+                            exportedSymbolsDict:
+                                StateImplementation.exportedSymbolsDict,
+                        }),
+                    ],
+                },
             ],
         }
     }
@@ -278,8 +446,8 @@ export class State {
 
 class ModulesView implements VirtualDOM {
     public readonly children: VirtualDOM[]
-    constructor() {
-        this.children = Array.from(State.importedBundles.entries()).map(
+    constructor({ importedBundles }) {
+        this.children = Array.from(importedBundles.entries()).map(
             ([k, versions]) => {
                 return {
                     class: 'd-flex align-items-center my-1 row',
@@ -310,36 +478,42 @@ class ModulesView implements VirtualDOM {
 
 class SymbolsView implements VirtualDOM {
     public readonly children: VirtualDOM[]
-    constructor() {
-        this.children = Array.from(
-            Object.entries(State.exportedSymbolsDict),
-        ).map(([k, symbol]) => {
-            const symbolKey = `${symbol.symbol}_APIv${symbol.apiKey}`
-            const aliases =
-                (window[symbolKey] && window[symbolKey].__yw_aliases__) ||
-                new Set()
-            return {
-                class: 'd-flex align-items-center my-1 row',
-                children: [
-                    {
-                        class: 'col-sm',
-                        style: { fontWeight: 'bolder' },
-                        innerText: k,
-                    },
-                    {
-                        class: 'd-flex align-items-center col',
-                        children: [symbolKey, ...aliases].map((v) => ({
-                            class: 'border rounded p-1 mx-2 d-flex align-items-center',
-                            children: [
-                                /*{
+    constructor({
+        exportedSymbolsDict,
+    }: {
+        exportedSymbolsDict: {
+            [_k: string]: { symbol: string; apiKey: string }
+        }
+    }) {
+        this.children = Array.from(Object.entries(exportedSymbolsDict)).map(
+            ([k, symbol]) => {
+                const symbolKey = `${symbol.symbol}_APIv${symbol.apiKey}`
+                const aliases =
+                    (window[symbolKey] && window[symbolKey].__yw_aliases__) ||
+                    new Set()
+                return {
+                    class: 'd-flex align-items-center my-1 row',
+                    children: [
+                        {
+                            class: 'col-sm',
+                            style: { fontWeight: 'bolder' },
+                            innerText: k,
+                        },
+                        {
+                            class: 'd-flex align-items-center col',
+                            children: [symbolKey, ...aliases].map((v) => ({
+                                class: 'border rounded p-1 mx-2 d-flex align-items-center',
+                                children: [
+                                    /*{
                                     class: 'fas fa-tag mx-1',
                                 },*/
-                                { innerText: v },
-                            ],
-                        })),
-                    },
-                ],
-            }
-        })
+                                    { innerText: v },
+                                ],
+                            })),
+                        },
+                    ],
+                }
+            },
+        )
     }
 }
