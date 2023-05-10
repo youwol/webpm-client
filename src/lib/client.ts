@@ -75,36 +75,6 @@ export function installLoadingGraph(inputs: InstallLoadingGraphInputs) {
 }
 
 /**
- * Use default {@link Client} to install modules; see documentation provided for {@link Client.installModules}.
- *
- * @category Entry Points
- * @param inputs
- */
-export function installModules(inputs: InstallModulesInputs) {
-    return new Client().installModules(inputs)
-}
-
-/**
- * Use default {@link Client} to install scripts; see documentation provided for {@link Client.installScripts}.
- *
- * @category Entry Points
- * @param inputs
- */
-export function installScripts(inputs: InstallScriptsInputs) {
-    return new Client().installScripts(inputs)
-}
-
-/**
- * Use default {@link Client} to install style sheets; see documentation provided for {@link Client.installStyleSheets}.
- *
- * @category Entry Points
- * @param inputs
- */
-export function installStyleSheets(inputs: InstallStyleSheetsInputs) {
-    return new Client().installStyleSheets(inputs)
-}
-
-/**
  * Gathers configuration & methods to dynamically install various set of resources (modules, scripts, stylesheets).
  *
  * For default client's configuration, the methods are also available as standalone functions:
