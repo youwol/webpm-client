@@ -209,6 +209,7 @@ function scheduleFunctionAsync({ args, workerScope }) {
 
 test('schedule', (done) => {
     console['ensureLog']('Start test schedule')
+    console.log = console['ensureLog']
     const pool = new WorkersPool({
         install: {
             modules: ['rxjs#^6.5.5'],
@@ -245,6 +246,9 @@ test('schedule', (done) => {
 })
 
 test('schedule async with ready', (done) => {
+    console.log = () => {
+        /*no-op*/
+    }
     const pool = new WorkersPool({
         install: {
             modules: ['rxjs#^6.5.5'],
