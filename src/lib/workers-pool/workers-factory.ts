@@ -31,8 +31,9 @@ export class NoContext implements ContextTrait {
     }
 }
 
+// noinspection JSValidateJSDoc
 /**
- * Any {@link CdnEvent} emitted from a Worker ({@link WWorkerTrait}).
+ * Any {@link MainModule.CdnEvent} emitted from a Worker ({@link WWorkerTrait}).
  * @category Events
  */
 export type CdnEventWorker = CdnEvent & {
@@ -48,8 +49,9 @@ export function implementEventWithWorkerTrait(
     return isCdnEvent(event) && (event as CdnEventWorker).step != undefined
 }
 
+// noinspection JSValidateJSDoc
 /**
- * A special type of {@link MessageData} for {@link CdnEvent}.
+ * A special type of {@link MessageData} for {@link MainModule.CdnEvent}.
  * @category Worker's Message
  */
 export interface MessageCdnEvent {
@@ -70,7 +72,7 @@ function isCdnEventMessage(message: Message): undefined | CdnEventWorker {
 }
 
 /**
- * @category Worker
+ * @category Worker Environment
  */
 export interface WorkerFunction<T> {
     id: string
@@ -78,7 +80,7 @@ export interface WorkerFunction<T> {
 }
 
 /**
- * @category Worker
+ * @category Worker Environment
  */
 export interface WorkerVariable<T> {
     id: string
@@ -111,36 +113,88 @@ export interface Task<TArgs = unknown, TReturn = unknown> {
 }
 
 /**
- * @category Worker
+ * @category Worker Environment
  */
 export interface WorkerEnvironment {
-    cdnUrl: string
-    hostName: string
+    /**
+     * Global variables accessible in worker environment.
+     */
     variables: WorkerVariable<unknown>[]
+    /**
+     * Global functions  accessible in worker environment.
+     */
     functions: WorkerFunction<unknown>[]
+    /**
+     * Installation instruction to be executed in worker environment.
+     */
     cdnInstallation: InstallInputs | InstallLoadingGraphInputs
+    /**
+     * Tasks to realized after installation is done and before marking a worker as ready.
+     */
     postInstallTasks?: Task[]
 }
 
 /**
- * @category Worker
+ * Context available in {@link WWorkerTrait} to log info or send data.
+ * All data must follow
+ * [structured clone algo](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Structured_clone_algorithm).
+ * @category Worker Environment
  */
 export interface WorkerContext {
+    /**
+     * The info logged are send from the workers to the main thread as
+     * {@link MessageLog}.
+     *
+     * @param text title of the log
+     * @param data data associated.
+     */
     info: (text: string, data?: unknown) => void
+    /**
+     * The data logged are send from the workers to the main thread as
+     * {@link MessageData}.
+     *
+     * @param data data to send.
+     */
     sendData: (data: Record<string, unknown>) => void
 }
 
 /**
+ * Message send from the workers to the main thread when a task is started.
+ *
  * @category Worker's Message
  */
 export interface MessageExecute {
+    /**
+     * Id of the task
+     */
     taskId: string
+    /**
+     * Id of the worker
+     */
     workerId: string
+    /**
+     * Serialized entry point
+     */
     entryPoint: string
+    /**
+     * Arguments provided
+     */
     args: unknown
 }
 
 /**
+ * Message emitted from workers when a task is started.
+ *
+ * @category Worker's Message
+ */
+export interface MessageStart {
+    taskId: string
+    workerId: string
+}
+
+/**
+ * Message emitted from workers when a task is terminated.
+ *
  * @category Worker's Message
  */
 export interface MessageExit {
@@ -151,15 +205,20 @@ export interface MessageExit {
 }
 
 /**
+ * Message emitted from workers when a log is sent (see {@link WorkerContext}).
+ *
  * @category Worker's Message
  */
 export interface MessageLog {
+    workerId: string
     taskId: string
     text: string
     json: unknown // Json
 }
 
 /**
+ * Message emitted from workers when a data is sent (see {@link WorkerContext}).
+ *
  * @category Worker's Message
  */
 export interface MessageData {
@@ -169,6 +228,8 @@ export interface MessageData {
 }
 
 /**
+ * Messages exchanged between the main thread and the workers' thread.
+ *
  * @category Worker's Message
  */
 export interface Message {
@@ -176,6 +237,11 @@ export interface Message {
     data: MessageExecute | MessageData | MessageExit | MessageLog | MessageStart
 }
 
+/**
+ * Encapsulates arguments to be sent to a task's entry point (implementation function).
+ *
+ * @category Worker Environment
+ */
 export interface EntryPointArguments<TArgs> {
     args: TArgs
     taskId: string
@@ -185,7 +251,7 @@ export interface EntryPointArguments<TArgs> {
 
 /**
  * This function is exposed mostly because it is useful in terms of testing to bypass serialization in string.
- * @category Worker
+ * @category Worker Environment
  */
 export function entryPointWorker(messageEvent: MessageEvent) {
     // The following interface avoid the interpreter to interpret self as 'Window':
@@ -302,6 +368,8 @@ export function entryPointWorker(messageEvent: MessageEvent) {
 }
 
 /**
+ * Message sent from the main thread to the workers to request installation of the {@link WorkerEnvironment}.
+ *
  * @category Worker's Message
  */
 export interface MessageInstall {
@@ -378,8 +446,18 @@ function entryPointInstall(input: EntryPointArguments<MessageInstall>) {
         })
 }
 
+/**
+ * A process is an abstraction managing lifecycle of a particular task.
+ * Not doing much for now besides gathering callbacks to call at different stage of the task (logging into console).
+ */
 export class Process {
+    /**
+     * Task's id.
+     */
     public readonly taskId: string
+    /**
+     * Task's title.
+     */
     public readonly title: string
     /**
      * Associated context.
@@ -506,9 +584,9 @@ export type ScheduleInput<TArgs> = {
     targetWorkerId?: string
 }
 /**
+ * Entry point to create workers pool.
  *
  * @category Getting Started
- * @category Entry Point
  */
 export class WorkersPool {
     static webWorkersProxy: IWWorkerProxy = new WebWorkersBrowser()
@@ -522,14 +600,23 @@ export class WorkersPool {
     private requestedWorkersCount = 0
 
     /**
+     * All the {@link Message | messages } from all workers.
+     *
      * @group Observables
      */
     public readonly mergedChannel$ = new Subject<Message>()
     /**
+     * Observable that emit the list of started workers as soon as one or more is starting creation.
+     *
      * @group Observables
      */
     public readonly startedWorkers$ = new BehaviorSubject<string[]>([])
     /**
+     * Observable that emit a dictionary `workerId -> {worker, channel$}` each time new workers
+     * are ready to be used (installation & post-install tasks achieved).
+     *
+     * The `channel$` object is streaming all associated worker's {@link Message}.
+     *
      * @group Observables
      */
     public readonly workers$ = new BehaviorSubject<{
@@ -539,16 +626,23 @@ export class WorkersPool {
         }
     }>({})
     /**
+     * Observable that emit the list of running tasks each time one or more are created or stopped.
+     *
      * @group Observables
      */
     public readonly runningTasks$ = new BehaviorSubject<
         { workerId: string; taskId: string }[]
     >([])
     /**
+     * Observable that emits the id of workers that are currently running a tasks each time a task is started
+     * or stopped.
+     *
      * @group Observables
      */
     public readonly busyWorkers$ = new BehaviorSubject<string[]>([])
     /**
+     * Observable that emits `{taskId, workerId}` each time a worker finished processing a task.
+     *
      * @group Observables
      */
     public readonly workerReleased$ = new Subject<{
@@ -563,11 +657,15 @@ export class WorkersPool {
     public readonly backgroundContext: ContextTrait
 
     /**
+     * Observable that gathers all the {@link CdnEventWorker} emitted by the workers.
+     *
      * @group Observables
      */
     public readonly cdnEvent$: Subject<CdnEventWorker>
 
     /**
+     * Workers' environment.
+     *
      * @group Immutable Constants
      */
     public readonly environment: WorkerEnvironment
@@ -621,6 +719,11 @@ export class WorkersPool {
         this.reserve({ workersCount: this.pool.startAt || 0 }).subscribe()
     }
 
+    /**
+     * Reserve a particular amount of worker.
+     * No workers are deleted, and the number of worker can not exceed `pool.stretchTo` property.
+     * @param workersCount
+     */
     reserve({ workersCount }: { workersCount: number }) {
         return forkJoin(
             new Array(workersCount)
@@ -632,6 +735,11 @@ export class WorkersPool {
                 ),
         )
     }
+
+    /**
+     * When this method is awaited, it ensures that `pool.startAt` workers are ready to be used
+     * (installation & post-install tasks achieved).
+     */
     async ready() {
         return new Promise<void>((resolve) => {
             this.workers$
@@ -647,6 +755,14 @@ export class WorkersPool {
                 })
         })
     }
+
+    /**
+     * Schedule a task.
+     *
+     * @param input task description
+     * @param context context to log run-time info
+     * @typeParam TArgs type of the entry point's argument
+     */
     schedule<TArgs = unknown>(
         input: ScheduleInput<TArgs>,
         context = new NoContext(),
@@ -932,12 +1048,18 @@ export class WorkersPool {
         })
     }
 
+    /**
+     * Terminate all the workers.
+     */
     terminate() {
         Object.values(this.workers$.value).forEach(({ worker }) =>
             worker.terminate(),
         )
     }
 
+    /**
+     * Return a reactive view presenting the workers' state & information.
+     */
     view() {
         return new WorkersPoolView({ workersPool: this })
     }
