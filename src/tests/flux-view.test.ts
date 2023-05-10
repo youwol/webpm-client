@@ -3,6 +3,7 @@ import { cleanDocument, expectEvents, installPackages$ } from './common'
 import './mock-requests'
 import { of, from, ReplaySubject, combineLatest } from 'rxjs'
 import { tap, map, mergeMap } from 'rxjs/operators'
+import { StateImplementation } from '../lib/state'
 
 // eslint-disable-next-line eslint-comments/disable-enable-pair -- eslint-comment It is required because
 /* eslint-disable jest/no-done-callback -- eslint-comment 'done' useful with rxjs  */
@@ -21,7 +22,7 @@ beforeAll((done) => {
 
 beforeEach(() => {
     cleanDocument()
-    State.clear()
+    StateImplementation.clear()
 })
 
 function attr$ToSubject(fv, data, mapper) {

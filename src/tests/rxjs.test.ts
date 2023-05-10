@@ -6,6 +6,7 @@ import { getUrlBase, install, State } from '../lib'
 import { cleanDocument, expectEvents, installPackages$ } from './common'
 
 import './mock-requests'
+import { StateImplementation } from '../lib/state'
 
 beforeAll((done) => {
     installPackages$([
@@ -17,7 +18,7 @@ beforeAll((done) => {
 })
 beforeEach(() => {
     cleanDocument()
-    State.clear()
+    StateImplementation.clear()
 })
 test('install rxjs#latest', async () => {
     const events = []

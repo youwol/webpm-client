@@ -3,7 +3,6 @@
 
 import { writeFileSync } from 'fs'
 import {
-    State,
     queryLoadingGraph,
     getUrlBase,
     install,
@@ -12,12 +11,11 @@ import {
     InstallInputs,
     installLoadingGraph,
     parseResourceId,
-    installStyleSheets,
-    installScripts,
 } from '../lib'
-
+import '../lib/inputs.models'
 import { cleanDocument, expectEvents, installPackages$ } from './common'
 import './mock-requests'
+import { StateImplementation } from '../lib/state'
 
 beforeAll((done) => {
     installPackages$([
@@ -33,7 +31,7 @@ beforeAll((done) => {
 
 beforeEach(() => {
     cleanDocument()
-    State.clear()
+    StateImplementation.clear()
 })
 
 function doInstall(body: InstallInputs, version: 'deprecated' | 'regular') {
@@ -50,7 +48,7 @@ function doInstall(body: InstallInputs, version: 'deprecated' | 'regular') {
 
 test('fetch script', async () => {
     cleanDocument()
-    State.resetCache()
+    StateImplementation.resetCache()
     // The script add-on.js suppose there is already the module 'a' installed
     window['a'] = {}
     const resource = parseResourceId('a#1.0.0~folder/add-on.js')
@@ -69,10 +67,10 @@ test('fetch script', async () => {
 test('install scripts', async () => {
     const events = []
     cleanDocument()
-    State.resetCache()
+    StateImplementation.resetCache()
     // The script add-on.js suppose there is already the module 'a' installed
     window['a'] = {}
-    await installScripts({
+    await install({
         scripts: ['a#1.0.0~folder/add-on.js'],
         onEvent: (event) => {
             events.push(event)
@@ -113,7 +111,7 @@ test('install loading graph', async () => {
     }
     const events = []
     cleanDocument()
-    State.resetCache()
+    StateImplementation.resetCache()
     // The script add-on.js suppose there is already the module 'a' installed
     window['a'] = {}
     await installLoadingGraph({
@@ -129,7 +127,7 @@ test('install root', async () => {
     for (const mode of ['regular', 'deprecated']) {
         const events = []
         cleanDocument()
-        State.resetCache()
+        StateImplementation.resetCache()
         await doInstall(
             {
                 modules: ['root'],
@@ -150,7 +148,7 @@ test('install root', async () => {
 
 test('loading graph a', async () => {
     cleanDocument()
-    State.resetCache()
+    StateImplementation.resetCache()
     const loadingGraph = await queryLoadingGraph({
         modules: ['a#latest'],
     })
@@ -286,7 +284,7 @@ document['createElement'] = (tag) => {
 
 test('install style sheet', async () => {
     cleanDocument()
-    await installStyleSheets({
+    await install({
         css: ['a#1.0.0~style.css'],
     })
     const link = document.querySelector('link')
@@ -295,7 +293,7 @@ test('install style sheet', async () => {
 })
 
 test('install style sheet with side effects', async () => {
-    await installStyleSheets({
+    await install({
         css: [
             {
                 location: 'a#1.0.0~style.css',

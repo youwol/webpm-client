@@ -11,12 +11,12 @@ import {
     install,
     ParseErrorEvent,
     SourceParsingFailed,
-    State,
     UnauthorizedEvent,
 } from '../lib'
 import { cleanDocument, installPackages$, saveScreen } from './common'
 import './mock-requests'
 import { LocalYouwol, raiseHTTPErrors } from '@youwol/http-primitives'
+import { StateImplementation } from '../lib/state'
 
 beforeAll((done) => {
     const assetsGtw = new AssetsGateway.AssetsGatewayClient()
@@ -59,7 +59,7 @@ beforeAll((done) => {
 
 beforeEach(() => {
     cleanDocument()
-    State.clear()
+    StateImplementation.clear()
 })
 
 test('install unauthorized', async () => {

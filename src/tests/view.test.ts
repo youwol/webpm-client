@@ -1,9 +1,10 @@
 // eslint-disable-next-line eslint-comments/disable-enable-pair -- to not have problem
 /* eslint-disable jest/no-done-callback -- eslint-comment Find a good way to work with rxjs in jest */
 
-import { CdnMessageEvent, install, LoadingScreenView } from '../lib'
+import { CdnMessageEvent, install, LoadingScreenView, monitoring } from '../lib'
 import { cleanDocument, installPackages$ } from './common'
 import './mock-requests'
+import { render } from '@youwol/flux-view'
 
 beforeAll((done) => {
     installPackages$([
@@ -35,4 +36,13 @@ test('install success & custom message', async () => {
     const elem = document.getElementById('cdn-client_custom-message')
     expect(elem).toBeTruthy()
     expect(elem.textContent).toBe('> A custom message')
+})
+
+test('state.view()', async () => {
+    await install({
+        modules: ['root'],
+    })
+    document.body.append(render(monitoring().view))
+    const elem = document.querySelector('.StateView')
+    expect(elem).toBeTruthy()
 })

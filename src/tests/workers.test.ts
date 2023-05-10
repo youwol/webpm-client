@@ -2,7 +2,7 @@
 // eslint-disable-next-line eslint-comments/disable-enable-pair -- to not have problem
 /* eslint-disable jest/no-done-callback -- eslint-comment Find a good way to work with rxjs in jest */
 
-import { installWorkersPoolModule, State } from '../lib'
+import { installWorkersPoolModule } from '../lib'
 import { cleanDocument, installPackages$ } from './common'
 import './mock-requests'
 import {
@@ -11,15 +11,14 @@ import {
     entryPointWorker,
     WorkerCard,
     WorkersPool,
+    IWWorkerProxy,
+    WWorkerTrait,
 } from '../lib/workers-pool'
 import { delay, last, mergeMap, takeWhile, tap } from 'rxjs/operators'
 import { from, Subject } from 'rxjs'
-import {
-    IWWorkerProxy,
-    WWorkerTrait,
-} from '../lib/workers-pool/web-worker.proxy'
 import * as cdnClient from '../../src/lib'
 import { render } from '@youwol/flux-view'
+import { StateImplementation } from '../lib/state'
 jest.setTimeout(100 * 1000)
 
 console.log = () => {
@@ -51,7 +50,9 @@ class WebWorkerJest implements WWorkerTrait {
             },
         }
         setTimeout(() => {
-            entryPointWorker({ data: message } as any)
+            // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- testing workaround
+            // @ts-ignore
+            entryPointWorker({ data: message })
         }, 0)
     }
 
@@ -115,7 +116,7 @@ beforeAll((done) => {
 beforeEach(() => {
     cleanDocument()
     window['@youwol/cdn-client'] = undefined
-    State.clear()
+    StateImplementation.clear()
 })
 
 test('installWorkersPoolModule', async () => {
