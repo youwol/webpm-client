@@ -56,7 +56,7 @@ export class WorkersPoolViewState {
             })
     }
 
-    add(event: CdnEventWorker) {
+    private add(event: CdnEventWorker) {
         const workerId = event['workerId']
         const elem = {
             id: event.id,

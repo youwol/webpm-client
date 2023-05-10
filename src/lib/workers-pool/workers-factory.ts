@@ -9,21 +9,21 @@ import {
     InstallLoadingGraphInputs,
     isCdnEvent,
 } from '..'
-import { setup } from '../../auto-generated'
 import { WorkersPoolView } from './views'
 import {
     IWWorkerProxy,
     WebWorkersBrowser,
     WWorkerTrait,
 } from './web-worker.proxy'
+import { setup } from '../../auto-generated'
 type WorkerId = string
 
-export interface Context {
+export interface ContextTrait {
     withChild
     info
 }
-export class NoContext implements Context {
-    withChild<T>(name: string, cb: (ctx: Context) => T): T {
+export class NoContext implements ContextTrait {
+    withChild<T>(name: string, cb: (ctx: ContextTrait) => T): T {
         return cb(this)
     }
     info(_text: string) {
@@ -53,7 +53,7 @@ export function implementEventWithWorkerTrait(
  * @category Worker's Message
  */
 export interface MessageCdnEvent {
-    type: string
+    type: 'CdnEvent'
     workerId: string
     event: CdnEvent
 }
@@ -85,10 +85,29 @@ export interface WorkerVariable<T> {
     value: T
 }
 
-interface Task {
+/**
+ * Task specification.
+ *
+ * @typeParam TArgs Type of the entry point's arguments
+ * @typeParam TReturn Type of the entry point's return
+ * (emitted afterward using {@link MessageExit.result | MessageExit.result}).
+ */
+export interface Task<TArgs = unknown, TReturn = unknown> {
+    /**
+     * Title of the task.
+     */
     title: string
-    entryPoint: (args: unknown) => unknown | Promise<unknown>
-    args: unknown
+    /**
+     * Entry point implementation, the value returned must follow
+     * [structured clone algo](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Structured_clone_algorithm)
+     * @param args arguments of the entrypoint,  must follow
+     * [structured clone algo](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Structured_clone_algorithm)
+     */
+    entryPoint: (args: TArgs) => TReturn | Promise<TReturn>
+    /**
+     * Arguments to forward to the entry point upon execution.
+     */
+    args: TArgs
 }
 
 /**
@@ -153,15 +172,8 @@ export interface MessageData {
  * @category Worker's Message
  */
 export interface Message {
-    type:
-        | 'Execute'
-        | 'installScript'
-        | 'Exit'
-        | 'Start'
-        | 'Log'
-        | 'DependencyInstalled'
-        | 'Data'
-    data: MessageExecute | MessageData | MessageExit
+    type: 'Execute' | 'Exit' | 'Start' | 'Log' | 'Data'
+    data: MessageExecute | MessageData | MessageExit | MessageLog | MessageStart
 }
 
 export interface EntryPointArguments<TArgs> {
@@ -369,9 +381,16 @@ function entryPointInstall(input: EntryPointArguments<MessageInstall>) {
 export class Process {
     public readonly taskId: string
     public readonly title: string
-    public readonly context: Context
+    /**
+     * Associated context.
+     */
+    public readonly context: ContextTrait
 
-    constructor(params: { taskId: string; title: string; context: Context }) {
+    constructor(params: {
+        taskId: string
+        title: string
+        context: ContextTrait
+    }) {
         Object.assign(this, params)
     }
 
@@ -411,6 +430,82 @@ export class Process {
 }
 
 /**
+ * Pool size specification.
+ */
+export type PoolSize = {
+    /**
+     * Initial number of workers to get ready before {@link WorkersPool.ready} is fulfilled.
+     * Set to `1` by default.
+     */
+    startAt?: number
+    /**
+     * Maximum number of workers.
+     * Set to `navigator.hardwareConcurrency - 2` by default.
+     */
+    stretchTo?: number
+}
+/**
+ * Input for {@link WorkersPool.constructor}.
+ *
+ */
+export type WorkersPoolInput = {
+    /**
+     * If provided, all events regarding installation are forwarded here.
+     * Otherwise {@link WorkersPool.cdnEvent$ | WorkersPool.cdnEvent$} is initialized and used.
+     */
+    cdnEvent$?: Subject<CdnEventWorker>
+    /**
+     * Globals to be copied in workers' environment.
+     */
+    globals?: { [_k: string]: unknown }
+    /**
+     * Installation to proceed in the workers.
+     */
+    install?: InstallInputs | InstallLoadingGraphInputs
+    /**
+     * A list of tasks to execute in workers after installation is completed.
+     */
+    postInstallTasks?: Task[]
+    /**
+     * A factory that create a `Context` objects used for logging purposes.
+     * It serves as dependency injection; the `Context` class from the library
+     * [@youwol/logging](https://github.com/youwol/logging) is appropriate for that purpose.
+     *
+     * @param name name of the root node of the context
+     * @return a `Context` object implementing {@link ContextTrait}
+     */
+    ctxFactory?: (name: string) => ContextTrait
+
+    /**
+     * Constraints on the workers pool size.
+     */
+    pool?: PoolSize
+}
+
+/**
+ * Input for {@link WorkersPool.schedule}.
+ *
+ * @typeParam TArgs type of the entry point's argument.
+ */
+export type ScheduleInput<TArgs> = {
+    /**
+     * Title of the task
+     */
+    title: string
+    /**
+     * Entry point of the task
+     */
+    entryPoint: (input: EntryPointArguments<TArgs>) => void
+    /**
+     * Arguments to forward to the entry point when executed
+     */
+    args: TArgs
+    /**
+     * If provided, schedule the task on this particular worker.
+     */
+    targetWorkerId?: string
+}
+/**
  *
  * @category Getting Started
  * @category Entry Point
@@ -422,16 +517,8 @@ export class WorkersPool {
      * Constraints on workers' pool size.
      * @group Immutable Constants
      */
-    public readonly pool: {
-        /**
-         * Initial number of workers to get ready before {@link ready} is fulfilled.
-         */
-        startAt: number
-        /**
-         * Maximum number of workers.
-         */
-        stretchTo: number
-    }
+    public readonly pool: PoolSize
+
     private requestedWorkersCount = 0
 
     /**
@@ -469,7 +556,11 @@ export class WorkersPool {
         taskId: string
     }>()
 
-    public readonly backgroundContext: Context
+    /**
+     * If `CtxFactory` is provided in constructor's argument ({@link WorkersPoolInput}),
+     * main thread logging information is available here.
+     */
+    public readonly backgroundContext: ContextTrait
 
     /**
      * @group Observables
@@ -489,33 +580,10 @@ export class WorkersPool {
         entryPoint: (d: EntryPointArguments<unknown>) => unknown
     }> = []
 
-    constructor({
-        cdnEvent$,
-        globals,
-        install,
-        postInstallTasks,
-        ctxFactory,
-        pool,
-    }: {
-        cdnEvent$?: Subject<CdnEventWorker>
-        globals?: { [_k: string]: unknown }
-        install?: InstallInputs | InstallLoadingGraphInputs
-        postInstallTasks?: Task[]
-        ctxFactory?: (name: string) => Context
-        pool?: { startAt?: number; stretchTo?: number }
-    }) {
-        const hostName =
-            window.location.origin != 'null'
-                ? window.location.origin
-                : window.location.ancestorOrigins[0]
-        const cdnPackage = '@youwol/cdn-client'
-        const cdnUrl = `${getUrlBase(
-            cdnPackage,
-            setup.version,
-        )}/dist/${cdnPackage}.js`
+    constructor(params: WorkersPoolInput) {
         this.backgroundContext =
-            ctxFactory && ctxFactory('background management')
-        this.cdnEvent$ = cdnEvent$ || new Subject<CdnEventWorker>()
+            params.ctxFactory && params.ctxFactory('background management')
+        this.cdnEvent$ = params.cdnEvent$ || new Subject<CdnEventWorker>()
         // Need to manage lifecycle of following subscription
         this.workerReleased$.subscribe(({ workerId, taskId }) => {
             this.busyWorkers$.next(
@@ -530,26 +598,25 @@ export class WorkersPool {
             this.pickTask(workerId, this.backgroundContext)
         })
         this.environment = {
-            cdnUrl,
-            hostName,
-            variables: Object.entries(globals || {})
+            variables: Object.entries(params.globals || {})
                 .filter(([_, value]) => typeof value != 'function')
                 .map(([id, value]) => ({
                     id,
                     value,
                 })),
-            functions: Object.entries(globals || {})
+            functions: Object.entries(params.globals || {})
                 .filter(([_, value]) => typeof value == 'function')
                 .map(([id, target]) => ({
                     id,
                     target,
                 })),
-            cdnInstallation: install,
-            postInstallTasks: postInstallTasks || [],
+            cdnInstallation: params.install,
+            postInstallTasks: params.postInstallTasks || [],
         }
         this.pool = {
-            startAt: pool?.startAt || 0,
-            stretchTo: pool?.stretchTo || navigator.hardwareConcurrency - 2,
+            startAt: params.pool?.startAt || 0,
+            stretchTo:
+                params.pool?.stretchTo || navigator.hardwareConcurrency - 2,
         }
         this.reserve({ workersCount: this.pool.startAt || 0 }).subscribe()
     }
@@ -581,19 +648,10 @@ export class WorkersPool {
         })
     }
     schedule<TArgs = unknown>(
-        {
-            title,
-            entryPoint,
-            args,
-            targetWorkerId,
-        }: {
-            title: string
-            entryPoint: (input: EntryPointArguments<TArgs>) => void
-            args: TArgs
-            targetWorkerId?: string
-        },
+        input: ScheduleInput<TArgs>,
         context = new NoContext(),
     ): Observable<Message> {
+        const { title, entryPoint, args, targetWorkerId } = input
         return context.withChild('schedule thread', (ctx) => {
             const taskId = `t${Math.floor(Math.random() * 1e6)}`
             const p = new Process({
@@ -653,10 +711,10 @@ export class WorkersPool {
         })
     }
 
-    getTaskChannel$(
+    private getTaskChannel$(
         exposedProcess: Process,
         taskId: string,
-        context: Context = new NoContext(),
+        context: ContextTrait = new NoContext(),
     ): Observable<Message> {
         const channel$ = this.mergedChannel$.pipe(
             filter((message) => message.data.taskId == taskId),
@@ -705,7 +763,9 @@ export class WorkersPool {
         return channel$
     }
 
-    getIdleWorkerOrCreate$(context: Context = new NoContext()): Observable<{
+    private getIdleWorkerOrCreate$(
+        context: ContextTrait = new NoContext(),
+    ): Observable<{
         workerId: string
         worker: Worker
         channel$: Observable<Message>
@@ -730,7 +790,7 @@ export class WorkersPool {
         })
     }
 
-    createWorker$(context: Context = new NoContext()): Observable<{
+    private createWorker$(context: ContextTrait = new NoContext()): Observable<{
         workerId: string
         worker: Worker
         channel$: Observable<Message>
@@ -757,9 +817,17 @@ export class WorkersPool {
             })
             p.schedule()
             const taskChannel$ = this.getTaskChannel$(p, taskId, context)
+            const hostName =
+                window.location.origin != 'null'
+                    ? window.location.origin
+                    : window.location.ancestorOrigins[0]
+            const cdnPackage = '@youwol/cdn-client'
             const argsInstall: MessageInstall = {
-                cdnUrl: this.environment.cdnUrl,
-                hostName: this.environment.hostName,
+                cdnUrl: `${getUrlBase(
+                    cdnPackage,
+                    setup.version,
+                )}/dist/${cdnPackage}.js`,
+                hostName: hostName,
                 variables: this.environment.variables,
                 functions: this.environment.functions.map(({ id, target }) => ({
                     id,
@@ -813,7 +881,10 @@ export class WorkersPool {
     /**
      * Start a worker with first task in its queue
      */
-    pickTask(workerId: string, context: Context = new NoContext()) {
+    private pickTask(
+        workerId: string,
+        context: ContextTrait = new NoContext(),
+    ) {
         context.withChild('pickTask', (ctx) => {
             if (
                 this.tasksQueue.filter(
