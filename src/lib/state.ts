@@ -291,10 +291,12 @@ export class StateImplementation {
             .flat()
             .map(([lib, version]) => {
                 const symbolName = this.getExportedSymbol(lib, version).symbol
+                const aliases = executingWindow[symbolName].__yw_aliases__ || []
                 return [
                     symbolName,
                     getFullExportedSymbol(lib, version),
                     getFullExportedSymbolAlias(lib, version),
+                    ...aliases,
                 ]
             })
             .flat()
