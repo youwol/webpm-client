@@ -12,8 +12,10 @@ export {
     InstallInputs,
     InstallLoadingGraphInputs,
     QueryLoadingGraphInputs,
+    FullLibraryQueryString,
     LightLibraryQueryString,
     ModuleSideEffectCallback,
+    ModuleSideEffectCallbackArgument,
     ScriptInput,
     CssInput,
     CustomInstaller,
@@ -22,7 +24,11 @@ export {
     CssSideEffectCallback,
     ScriptSideEffectCallback,
     ScriptSideEffectCallbackArgument,
+    LoadingGraph,
+    Library,
+    FileLocationString,
 } from './inputs.models'
+
 export * from './errors.models'
 export * from './events.models'
 export { getAssetId, getUrlBase, parseResourceId } from './utils'
