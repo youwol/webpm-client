@@ -4,7 +4,7 @@
  * Main module of the library, it handles resources installation in the main thread of the browser.
  *
  * For instance:
- * <iframe id="iFrameExample" src="" width="100%" height="400px"></iframe>
+ * <iframe id="iFrameExample" src="" width="100%" height="450px"></iframe>
  * <script>
  *      const src = `
  *   return async ({cdnClient}) => {
@@ -40,9 +40,11 @@
  *
  * ## Resources installation
  *
- * This library takes care of installing modules, scripts, and stylesheets.
- * The generic function {@link install} allows to install the various resources in one call;
- * other more specific functions exist (e.g. {@link installScripts}, {@link installLoadingGraph}, *etc*).
+ * This library handles the installation of modules, scripts, and stylesheets, with the primary entry point being the
+ * generic function {@link install}.
+ * Additionally, it offers the capability to pin dependencies, allowing for the exact same state to be restored at
+ * a later time using the functions {@link queryLoadingGraph} and {@link installLoadingGraph}.
+ *
  * When added to the DOM document, modules and scripts are processed by the browser as JavaScript (or WASM) files.
  * Modules may have dependencies, while scripts are self-contained; also, modules are imported before scripts,
  * and stylesheets are imported in parallel.
