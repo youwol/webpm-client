@@ -6,7 +6,7 @@
 export class CdnError extends Error {}
 
 /**
- * Base class of errors related to loading graph resolution. See also [[CdnLoadingGraphErrorEvent]].
+ * Base class of errors related to loading graph resolution. See also {@link CdnLoadingGraphErrorEvent}.
  *
  * @category Errors
  */
@@ -18,7 +18,7 @@ export class LoadingGraphError extends CdnError {
 }
 
 /**
- * Error related to 401 response. See also [[UnauthorizedEvent]].
+ * Error related to 401 response. See also {@link UnauthorizedEvent}.
  *
  * @category Errors
  */
@@ -35,7 +35,7 @@ export class Unauthorized extends CdnError {
 }
 
 /**
- * Error related to 404 response. See also [[UrlNotFoundEvent]].
+ * Error related to 404 response. See also {@link UrlNotFoundEvent}.
  *
  * @category Errors
  */
@@ -52,7 +52,7 @@ export class UrlNotFound extends CdnError {
 }
 
 /**
- * Error happening while fetching a source file. See also [[FetchErrorEvent]].
+ * Error happening while fetching a source file.
  *
  * @category Errors
  */
@@ -69,7 +69,7 @@ export class FetchErrors extends CdnError {
 }
 
 /**
- * Error occurring while parsing a source content of a script. See also [[ParseErrorEvent]].
+ * Error occurring while parsing a source content of a script. See also {@link ParseErrorEvent}.
  *
  * @category Errors
  */
@@ -87,7 +87,7 @@ export class SourceParsingFailed extends CdnError {
 
 /**
  * Error occurred trying to resolve a direct or indirect dependency while resolving a loading graph.
- * See also [[CdnLoadingGraphErrorEvent]].
+ * See also {@link CdnLoadingGraphErrorEvent}.
  *
  * @category Errors
  */
@@ -114,7 +114,7 @@ export class DependenciesError extends LoadingGraphError {
 
 /**
  * Dependencies resolution while resolving a loading graph lead to a circular dependency problem.
- * See also [[CdnLoadingGraphErrorEvent]].
+ * See also {@link CdnLoadingGraphErrorEvent}.
  *
  * @category Errors
  */

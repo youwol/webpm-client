@@ -61,7 +61,7 @@ export type ModuleInput =
  * *  an object with
  *     *  'location': reference of the location
  *     *  'sideEffects': the sideEffects to execute after the HTMLLinkElement has been loaded,
- *     see [[CssSideEffectCallback]]
+ *     see {@link CssSideEffectCallback}
  *
  */
 export type CssInput =
@@ -74,23 +74,16 @@ export type CssInput =
  * *  an object with
  *     *  'location': reference of the location
  *     *  'sideEffects': the sideEffects to execute after the HTMLScriptElement has been loaded,
- *     see [[ScriptSideEffectCallback]]
+ *     see {@link ScriptSideEffectCallback}
  *
  */
 export type ScriptInput =
     | FileLocationString
     | { location: FileLocationString; sideEffects: ScriptSideEffectCallback }
 
-/**
- * Inputs for the method [[Client.installStyleSheets]]
- *
- * Resource are like: {libraryName}#{version}~{rest-of-path}
- *
- * @category Entry Points
- */
 export type InstallStyleSheetsInputs = {
     /**
-     * See [[InstallInputs.css]]
+     * See {@link InstallInputs.css}
      */
     css: CssInput[]
 
@@ -101,13 +94,12 @@ export type InstallStyleSheetsInputs = {
 }
 
 /**
- * Inputs for the method [[Client.installLoadingGraph]]
+ * Inputs for the method {@link Client.installLoadingGraph}
  *
- * @category Entry Points
  */
 export type InstallLoadingGraphInputs = {
     /**
-     * Specification of the loading graph (e.g. retrieved using [[queryLoadingGraph]]).
+     * Specification of the loading graph, usually retrieved from {@link queryLoadingGraph}.
      */
     loadingGraph: LoadingGraph
 
@@ -118,7 +110,7 @@ export type InstallLoadingGraphInputs = {
     customInstallers?: CustomInstaller[]
 
     /**
-     * See [[InstallInputs.modulesSideEffects]]
+     * See `modulesSideEffects` of {@link InstallInputs}
      */
     modulesSideEffects?: { [key: string]: ModuleSideEffectCallback }
 
@@ -128,18 +120,17 @@ export type InstallLoadingGraphInputs = {
     executingWindow?: Window
 
     /**
-     * See [[InstallInputs.aliases]]
+     * See `aliases` from {@link InstallInputs}
      */
     aliases?: { [key: string]: string | ((Window) => unknown) }
 
     /**
-     * If provided, any [[CdnFetchEvent]] emitted are forwarded to this callback.
+     * If provided, any {@link CdnFetchEvent} emitted are forwarded to this callback.
      *
      * @param event event emitted
      */
     onEvent?: (event: CdnFetchEvent) => void
 }
-
 /**
  *
  * A custom installer is a module exporting a function 'async function install(inputs)'.
@@ -260,8 +251,7 @@ export type InstallInputs = {
      * By opposition to module, a script is installed as a standalone element:
      * there are no direct or indirect dependencies' installation triggered.
      *
-     * Installation of the script elements always happen after all provided {@link InstallInputs.modules}
-     * have been installed.
+     * Installation of the script elements always happen after all modules have been installed.
      *
      * See {@link ScriptInput} for format specification.
      *
@@ -288,7 +278,7 @@ export type InstallInputs = {
     executingWindow?: Window
 
     /**
-     * If provided, any [[CdnEvent]] emitted are forwarded to this callback.
+     * If provided, any {@link CdnEvent} emitted are forwarded to this callback.
      *
      * @param event event emitted
      */
@@ -331,67 +321,60 @@ export type FetchScriptInputs = {
     onEvent?: (event: CdnFetchEvent) => void
 }
 
-/**
- * Inputs for the method [[Client.installModules]]
- *
- */
 export type InstallModulesInputs = {
     /**
-     * See [[InstallInputs.modules]]
+     * See {@link InstallInputs.modules}
      */
     modules?: LightLibraryQueryString[]
 
     /**
-     * See [[InstallInputs.modulesSideEffects]]
+     * See {@link InstallInputs.modulesSideEffects}
      */
     modulesSideEffects?: { [_key: string]: ModuleSideEffectCallback }
 
     /**
-     * See [[InstallInputs.usingDependencies]]
+     * See {@link InstallInputs.usingDependencies}
      */
     usingDependencies?: LightLibraryQueryString[]
 
     /**
-     * See [[InstallInputs.aliases]]
+     * See {@link InstallInputs.aliases}
      */
     aliases?: { [key: string]: string | ((Window) => unknown) }
 
     /**
-     * See [[InstallInputs.executingWindow]]
+     * See {@link InstallInputs.executingWindow}
      */
     executingWindow?: Window
 
     /**
-     * See [[InstallInputs.onEvent]]
+     * See {@link InstallInputs.onEvent}
      */
     onEvent?: (event: CdnEvent) => void
 }
 
-/**
- * Inputs for the method [[Client.installScripts]]
- */
 export type InstallScriptsInputs = {
     /**
-     * See [[InstallInputs.scripts]]
+     * See {@link InstallInputs.scripts}
      */
     scripts: ScriptInput[]
     /**
-     * See [[InstallInputs.executingWindow]]
+     * See {@link InstallInputs.executingWindow}
      */
     executingWindow?: Window
     /**
-     * See [[InstallInputs.onEvent]]
+     * See {@link InstallInputs.onEvent}
      */
     onEvent?: (CdnEvent) => void
 
     /**
-     * See [[InstallInputs.aliases]]
+     * See {@link InstallInputs.aliases}
      */
     aliases?: { [key: string]: string | ((Window) => unknown) }
 }
 
 /**
- * Argument type for [[ModuleSideEffectCallback]]
+ * Argument type for {@link ModuleSideEffectCallback}
  */
 export type ModuleSideEffectCallbackArgument = {
     /**
@@ -413,14 +396,14 @@ export type ModuleSideEffectCallbackArgument = {
 }
 /**
  * Type definition of a module installation side effects:
- * a callback taking an instance of [[ModuleSideEffectCallbackArgument]] as argument.
+ * a callback taking an instance of {@link ModuleSideEffectCallbackArgument} as argument.
  */
 export type ModuleSideEffectCallback = (
     argument: ModuleSideEffectCallbackArgument,
 ) => void | Promise<void>
 
 /**
- * Argument type for [[CssSideEffectCallback]]
+ * Argument type for {@link CssSideEffectCallback}
  */
 export type CssSideEffectCallbackArgument = {
     /**
@@ -445,14 +428,14 @@ export type CssSideEffectCallbackArgument = {
 
 /**
  * Type definition of a css installation side effects:
- * a callback taking an instance of [[CssSideEffectCallbackArgument]] as argument.
+ * a callback taking an instance of {@link CssSideEffectCallbackArgument} as argument.
  */
 export type CssSideEffectCallback = (
     argument: CssSideEffectCallbackArgument,
 ) => void | Promise<void>
 
 /**
- * Argument type for [[CssSideEffectCallback]]
+ * Argument type for {@link CssSideEffectCallback}
  */
 export type ScriptSideEffectCallbackArgument = {
     /**
@@ -473,25 +456,24 @@ export type ScriptSideEffectCallbackArgument = {
 
 /**
  * Type definition of a script installation side effects:
- * a callback taking an instance of [[ScriptSideEffectCallbackArgument]] as argument.
+ * a callback taking an instance of {@link ScriptSideEffectCallbackArgument} as argument.
  */
 export type ScriptSideEffectCallback = (
     argument: ScriptSideEffectCallbackArgument,
 ) => void | Promise<void>
 
 /**
- * Inputs for the method [[Client.queryLoadingGraph]]
+ * Inputs for the method {@link Client.queryLoadingGraph}
  *
- * @category Entry Points
  */
 export type QueryLoadingGraphInputs = {
     /**
-     * See [[InstallInputs.modules]]
+     * See `modules` of {@link InstallInputs}
      */
     modules: LightLibraryQueryString[]
 
     /**
-     * See [[InstallInputs.usingDependencies]]
+     * See `usingDependencies` of {@link InstallInputs}
      */
     usingDependencies?: LightLibraryQueryString[]
 }
@@ -566,12 +548,12 @@ export type LoadingGraph = {
 }
 
 /**
- * Output when a script has been fetched, see e.g. [[Client.fetchScript]] & [[fetchScript]]
+ * Output when a script has been fetched, see e.g. {@link Client.fetchScript}.
  */
 export type FetchedScript = {
     /**
      * name: module name if the script correspond to a module,
-     * can be defined by the user when using [[Client.fetchScript]] & [[fetchScript]]
+     * can be defined by the user when using {@link Client.fetchScript}.
      */
     name: string
 

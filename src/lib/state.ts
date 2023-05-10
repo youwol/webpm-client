@@ -16,7 +16,7 @@ export type Version = string
  */
 export class State {
     /**
-     * Dictionary of `${libName}#${libVersion}` -> { symbol: string; apiKey: string }
+     * Dictionary of `${libName}#${libVersion}` -> `{ symbol: string; apiKey: string }`
      */
     static exportedSymbolsDict: {
         [k: string]: { symbol: string; apiKey: string }
@@ -61,7 +61,7 @@ export class State {
         }
     }
     /**
-     * Imported modules: mapping between [[LibraryName]] and list of installed [[Version]]
+     * Imported modules: mapping between {@link LibraryName} and list of installed {@link Version}
      */
     static importedBundles = new Map<LibraryName, Version[]>()
 
@@ -76,7 +76,7 @@ export class State {
     static importedLoadingGraphs = new Map<string, Promise<Window>>()
 
     /**
-     * Installed script: mapping between a script's uid and a [[FetchedScript]]
+     * Installed script: mapping between a script's uid and a {@link FetchedScript}.
      */
     static importedScripts = new Map<string, Promise<FetchedScript>>()
 
@@ -193,10 +193,10 @@ export class State {
     }
 
     /**
-     * Update [[State.latestVersion]] given a provided installed [[LoadingGraph]].
+     * Update {@link State.latestVersion} given a provided installed {@link LoadingGraph}.
      * It also exposes the latest version in `executingWindow` using original symbol name if need be.
      *
-     * @param modules installed [[LoadingGraph]]
+     * @param modules installed {@link LoadingGraph}
      * @param executingWindow where to expose the latest version if change need be
      */
     static updateLatestBundleVersion(
@@ -263,7 +263,7 @@ export class State {
      * Create a VirtualDOM (see [fluxView](https://github.com/youwol/flux-view))
      * representing the current state of installation (modules installed & available symbols).
      */
-    static view() {
+    static view(): VirtualDOM {
         return {
             class: 'StateView',
             children: [

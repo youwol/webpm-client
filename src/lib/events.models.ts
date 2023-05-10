@@ -158,7 +158,7 @@ export class SourceParsedEvent implements CdnFetchEvent {
 }
 
 /**
- * Event emitted when an [[Unauthorized]] error occurred.
+ * Event emitted when an {@link Unauthorized} error occurred.
  *
  * @category Events
  */
@@ -178,7 +178,7 @@ export class UnauthorizedEvent implements CdnFetchEvent {
 }
 
 /**
- * Event emitted when an [[UrlNotFound]] error occurred.
+ * Event emitted when an {@link UrlNotFound} error occurred.
  *
  * @category Events
  */
@@ -198,7 +198,7 @@ export class UrlNotFoundEvent implements CdnFetchEvent {
 }
 
 /**
- * Event emitted when an [[SourceParsingFailed]] error occurred.
+ * Event emitted when an {@link SourceParsingFailed} error occurred.
  *
  * @category Events
  */
@@ -218,7 +218,7 @@ export class ParseErrorEvent implements CdnFetchEvent {
 }
 
 /**
- * Event emitted when an [[LoadingGraphError]] error occurred.
+ * Event emitted when an {@link LoadingGraphError} error occurred.
  *
  * @category Events
  */
@@ -231,7 +231,7 @@ export class CdnLoadingGraphErrorEvent implements CdnEvent {
 }
 
 /**
- * Event emitted when an installation is done, see [[install]] & [[Client.install]].
+ * Event emitted when an installation is done ({@link install}, {@link Client.install}).
  *
  * @category Events
  */

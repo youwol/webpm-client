@@ -13,13 +13,18 @@ import {
 } from './workers-factory'
 import { BehaviorSubject, combineLatest, of } from 'rxjs'
 
-type EventData = {
+/**
+ * @category View
+ */
+export type EventData = {
     id: string
     text: string
     status: EventStatus
 }
 
 /**
+ * Presents the data (mostly in terms of observables) to be used by the views.
+ *
  * @category View
  */
 export class WorkersPoolViewState {
@@ -66,6 +71,8 @@ export class WorkersPoolViewState {
     }
 }
 /**
+ * Root component of the {@link WorkersPool} view.
+ *
  * @category View
  */
 export class WorkersPoolView implements VirtualDOM {
@@ -110,6 +117,8 @@ export class WorkersPoolView implements VirtualDOM {
 }
 
 /**
+ * Component representing a particular worker.
+ *
  * @category View
  */
 export class WorkerCard implements VirtualDOM {
@@ -163,6 +172,8 @@ export class WorkerCard implements VirtualDOM {
     }
 }
 /**
+ * Component representing a {@link CdnEventWorker}.
+ *
  * @category View
  */
 export class CdnEventView implements VirtualDOM {
@@ -194,6 +205,8 @@ export class CdnEventView implements VirtualDOM {
 
 type WorkerStatus = 'Pending' | 'Created' | 'Busy'
 /**
+ * Component representing the title of a {@link WorkerCard}.
+ *
  * @category View
  */
 export class WorkerCardTitleView implements VirtualDOM {

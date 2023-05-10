@@ -70,12 +70,12 @@ export function sanitizeModules(
 }
 
 /**
- * Parse a resource id in the form *{libraryName}#{version}~{rest-of-path}* where:
+ * Parse a resource id in the form `{libraryName}#{version}~{rest-of-path}` where:
  * -    libraryName is the name of the library
  * -    version is the target version
  * -    rest-of-path is the partial url from the package's directory to the target CSS
  *
- * @param resourceId resource id in the form *{libraryName}#{version}~{rest-of-path}*
+ * @param resourceId resource id in the form `{libraryName}#{version}~{rest-of-path}`
  * @category Helpers
  */
 export function parseResourceId(resourceId: string): {
