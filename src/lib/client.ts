@@ -396,12 +396,9 @@ export class Client {
         }
     }
 
-    /**
-     * Install a set of modules, see {@link InstallModulesInputs}.
-     *
-     * @param inputs
-     */
-    async installModules(inputs: InstallModulesInputs): Promise<LoadingGraph> {
+    private async installModules(
+        inputs: InstallModulesInputs,
+    ): Promise<LoadingGraph> {
         const usingDependencies = [
             ...State.pinedDependencies,
             ...(inputs.usingDependencies || []),
@@ -437,12 +434,7 @@ export class Client {
         }
     }
 
-    /**
-     * Install a set of scripts, see {@link InstallScriptsInputs}.
-     *
-     * @param inputs
-     */
-    async installScripts(
+    private async installScripts(
         inputs: InstallScriptsInputs,
     ): Promise<{ assetName; assetId; url; src }[]> {
         const client = new Client()
@@ -481,12 +473,7 @@ export class Client {
         })
     }
 
-    /**
-     * Install a set of stylesheets, see {@link InstallStyleSheetsInputs}.
-     *
-     * @param inputs
-     */
-    installStyleSheets(
+    private installStyleSheets(
         inputs: InstallStyleSheetsInputs,
     ): Promise<Array<HTMLLinkElement>> {
         const css = inputs.css
