@@ -27,6 +27,7 @@
         "@youwol/http-clients": "^2.0.0",
         "@youwol/http-primitives": "^0.1.2",
         "util": "^0.12.5",
+        "@jest/test-sequencer": "^29.5.0",
         "@types/node": "^18.14.2",
         "typescript": "^4.7.4",
         "ts-lib": "^0.0.5",

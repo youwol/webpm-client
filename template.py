@@ -31,7 +31,8 @@ template = Template(
             "rxjs": "^6.5.5",
             "@youwol/http-clients": "^2.0.0",
             "@youwol/http-primitives": "^0.1.2",
-            "util": "^0.12.5"
+            "util": "^0.12.5",
+            "@jest/test-sequencer": "^29.5.0"
         }),
     testConfig="https://github.com/youwol/integration-tests-conf",
     userGuide=False,
