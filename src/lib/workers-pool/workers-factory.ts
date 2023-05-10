@@ -473,37 +473,25 @@ export class Process {
     }
 
     schedule() {
-        console.log('Schedule Process', {
-            taskId: this.taskId,
-            title: this.title,
-        })
+        this.context.info(`Schedule task  ${this.title} (${this.taskId})`)
     }
 
     start() {
-        console.log('Start Process', { taskId: this.taskId, title: this.title })
+        this.context.info(`Start task  ${this.title} (${this.taskId})`)
     }
 
     fail(error: unknown) {
-        console.log('Failed Process', {
-            taskId: this.taskId,
-            title: this.title,
+        this.context.info(`Task failed  ${this.title} (${this.taskId})`, {
             error,
         })
     }
 
     succeed() {
-        console.log('Succeeded Process', {
-            taskId: this.taskId,
-            title: this.title,
-        })
+        this.context.info(`Task succeeded  ${this.title} (${this.taskId})`)
     }
 
     log(text: string) {
-        console.log('Process Log', {
-            taskId: this.taskId,
-            title: this.title,
-            text,
-        })
+        this.context.info(`${this.title} (${this.taskId}): ${text}`)
     }
 }
 
@@ -768,21 +756,21 @@ export class WorkersPool {
         context = new NoContext(),
     ): Observable<Message> {
         const { title, entryPoint, args, targetWorkerId } = input
-        return context.withChild('schedule thread', (ctx) => {
+        return context.withChild('schedule', (ctx) => {
             const taskId = `t${Math.floor(Math.random() * 1e6)}`
             const p = new Process({
                 taskId,
                 title,
                 context: ctx,
             })
-            p.schedule()
-
-            const taskChannel$ = this.getTaskChannel$(p, taskId, context)
+            const taskChannel$ = this.getTaskChannel$(p, taskId, ctx)
 
             if (targetWorkerId && !this.workers$.value[targetWorkerId]) {
                 throw Error('Provided workerId not known')
             }
             if (targetWorkerId && this.workers$.value[targetWorkerId]) {
+                ctx.info('Target worker already created, enqueue task')
+                p.schedule()
                 this.tasksQueue.push({
                     entryPoint,
                     args,
@@ -792,6 +780,7 @@ export class WorkersPool {
                 })
 
                 if (!this.busyWorkers$.value.includes(targetWorkerId)) {
+                    ctx.info('Target worker IDLE, pick task')
                     this.pickTask(targetWorkerId, ctx)
                 }
 
@@ -799,6 +788,8 @@ export class WorkersPool {
             }
             const worker$ = this.getIdleWorkerOrCreate$(ctx)
             if (!worker$) {
+                ctx.info('No worker available & max worker count reached')
+                p.schedule()
                 this.tasksQueue.push({
                     entryPoint,
                     args,
@@ -811,6 +802,7 @@ export class WorkersPool {
                 .pipe(
                     map(({ workerId }) => {
                         ctx.info(`Got a worker ready ${workerId}`)
+                        p.schedule()
                         this.tasksQueue.push({
                             entryPoint,
                             args,
@@ -832,51 +824,53 @@ export class WorkersPool {
         taskId: string,
         context: ContextTrait = new NoContext(),
     ): Observable<Message> {
-        const channel$ = this.mergedChannel$.pipe(
-            filter((message) => message.data.taskId == taskId),
-            takeWhile((message) => message.type != 'Exit', true),
-        )
-
-        channel$
-            .pipe(
-                filter((message) => message.type == 'Start'),
-                take(1),
+        return context.withChild('getTaskChannel$', (ctx) => {
+            const channel$ = this.mergedChannel$.pipe(
+                filter((message) => message.data.taskId == taskId),
+                takeWhile((message) => message.type != 'Exit', true),
             )
-            .subscribe((message) => {
-                context.info(`worker started on task ${taskId}`, message)
-                exposedProcess.start()
-            })
 
-        channel$
-            .pipe(
-                filter((message) => message.type == 'Exit'),
-                take(1),
-            )
-            .subscribe((message) => {
-                const data = message.data as unknown as MessageExit
-                if (data.error) {
-                    context.info(
-                        `worker exited abnormally on task ${taskId}`,
+            channel$
+                .pipe(
+                    filter((message) => message.type == 'Start'),
+                    take(1),
+                )
+                .subscribe((message) => {
+                    ctx.info(`worker started on task ${taskId}`, message)
+                    exposedProcess.start()
+                })
+
+            channel$
+                .pipe(
+                    filter((message) => message.type == 'Exit'),
+                    take(1),
+                )
+                .subscribe((message) => {
+                    const data = message.data as unknown as MessageExit
+                    if (data.error) {
+                        ctx.info(
+                            `worker exited abnormally on task ${taskId}`,
+                            message,
+                        )
+                        exposedProcess.fail(data.result)
+                        return
+                    }
+                    exposedProcess.succeed()
+                    ctx.info(
+                        `worker exited normally on task ${taskId}`,
                         message,
                     )
-                    exposedProcess.fail(data.result)
-                    return
-                }
-                exposedProcess.succeed()
-                context.info(
-                    `worker exited normally on task ${taskId}`,
-                    message,
-                )
-            })
-        channel$
-            .pipe(filter((message) => message.type == 'Log'))
-            .subscribe((message) => {
-                const data = message.data as unknown as MessageLog
-                exposedProcess.log(data.text)
-                context.info(data.text, data.json)
-            })
+                })
+            channel$
+                .pipe(filter((message) => message.type == 'Log'))
+                .subscribe((message) => {
+                    const data = message.data as unknown as MessageLog
+                    exposedProcess.log(data.text)
+                    ctx.info(data.text, data.json)
+                })
 
-        return channel$
+            return channel$
+        })
     }
 
     private getIdleWorkerOrCreate$(
@@ -886,7 +880,7 @@ export class WorkersPool {
         worker: Worker
         channel$: Observable<Message>
     }> {
-        return context.withChild('get worker', (ctx) => {
+        return context.withChild('getIdleWorkerOrCreate$', (ctx) => {
             const idleWorkerId = Object.keys(this.workers$.value).find(
                 (workerId) => !this.busyWorkers$.value.includes(workerId),
             )
@@ -911,7 +905,7 @@ export class WorkersPool {
         worker: Worker
         channel$: Observable<Message>
     }> {
-        return context.withChild('create worker', (ctx) => {
+        return context.withChild('createWorker$', (ctx) => {
             this.requestedWorkersCount++
             const workerChannel$ = new Subject<Message>()
 
@@ -923,6 +917,7 @@ export class WorkersPool {
                 },
             })
             const workerId = workerProxy.uid
+            ctx.info(`New raw worker ${workerId} created`)
             this.startedWorkers$.next([...this.startedWorkers$.value, workerId])
             const taskId = `t${Math.floor(Math.random() * 1e6)}`
             const title = 'Install environment'
@@ -931,7 +926,6 @@ export class WorkersPool {
                 title,
                 context: ctx,
             })
-            p.schedule()
             const taskChannel$ = this.getTaskChannel$(p, taskId, context)
             const hostName =
                 window.location.origin != 'null'
@@ -960,6 +954,8 @@ export class WorkersPool {
                     },
                 ),
             }
+
+            p.schedule()
             workerProxy.execute({
                 taskId,
                 entryPoint: entryPointInstall,
@@ -976,6 +972,7 @@ export class WorkersPool {
                 filter((message) => message.type == 'Exit'),
                 take(1),
                 tap(() => {
+                    ctx.info(`New worker ready (${workerId}), pick task if any`)
                     this.workers$.next({
                         ...this.workers$.value,
                         [workerId]: {
@@ -1002,6 +999,10 @@ export class WorkersPool {
         context: ContextTrait = new NoContext(),
     ) {
         context.withChild('pickTask', (ctx) => {
+            if (this.tasksQueue.length == 0) {
+                ctx.info(`No tasks in queue`)
+                return
+            }
             if (
                 this.tasksQueue.filter(
                     (task) =>
@@ -1009,6 +1010,9 @@ export class WorkersPool {
                         task.targetWorkerId == workerId,
                 ).length == 0
             ) {
+                ctx.info(
+                    `No tasks in queue match fo target worker (${workerId})`,
+                )
                 return
             }
             this.busyWorkers$.next([...this.busyWorkers$.value, workerId])
@@ -1016,7 +1020,7 @@ export class WorkersPool {
                 (t) =>
                     t.targetWorkerId ? t.targetWorkerId === workerId : true,
             )
-
+            ctx.info(`Pick task ${taskId} by ${workerId}`)
             this.tasksQueue = this.tasksQueue.filter((t) => t.taskId != taskId)
 
             this.runningTasks$.next([
@@ -1038,12 +1042,6 @@ export class WorkersPool {
                         workerId,
                     })
                 })
-
-            ctx.info('picked task', {
-                taskId,
-                worker,
-                entryPoint: String(entryPoint),
-            })
             worker.execute({ taskId, entryPoint, args })
         })
     }
