@@ -46,7 +46,7 @@ export type CdnEventWorker = CdnEvent & {
 export function implementEventWithWorkerTrait(
     event: unknown,
 ): event is CdnEventWorker {
-    return isCdnEvent(event) && (event as CdnEventWorker).step != undefined
+    return isCdnEvent(event) && (event as CdnEventWorker).workerId != undefined
 }
 
 // noinspection JSValidateJSDoc
