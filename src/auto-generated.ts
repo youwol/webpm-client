@@ -62,13 +62,13 @@ const entries = {
 export const setup = {
     name:'@youwol/cdn-client',
         assetId:'QHlvdXdvbC9jZG4tY2xpZW50',
-    version:'1.0.11-wip',
+    version:'2.0.0',
     shortDescription:"Library for dynamic npm's libraries installation from YouWol's CDN.",
     developerDocumentation:'https://platform.youwol.com/applications/@youwol/cdn-explorer/latest?package=@youwol/cdn-client',
     npmPackage:'https://www.npmjs.com/package/@youwol/cdn-client',
     sourceGithub:'https://github.com/youwol/cdn-client',
     userGuide:'',
-    apiVersion:'1',
+    apiVersion:'2',
     runTimeDependencies,
     externals,
     exportedSymbols,
@@ -93,7 +93,7 @@ export const setup = {
             modules,
             scripts,
         }).then(() => {
-            return window[`@youwol/cdn-client_APIv1`]
+            return window[`@youwol/cdn-client_APIv2`]
         })
     },
     installAuxiliaryModule: ({name, cdnClient, installParameters}:{
@@ -108,7 +108,7 @@ export const setup = {
         const parameters = installParameters || {}
         const scripts = [
             ...(parameters.scripts || []),
-            `@youwol/cdn-client#1.0.11-wip~dist/@youwol/cdn-client/${entry.name}.js`
+            `@youwol/cdn-client#2.0.0~dist/@youwol/cdn-client/${entry.name}.js`
         ]
         const modules = [
             ...(parameters.modules || []),
@@ -119,7 +119,7 @@ export const setup = {
             modules,
             scripts,
         }).then(() => {
-            return window[`@youwol/cdn-client/${entry.name}_APIv1`]
+            return window[`@youwol/cdn-client/${entry.name}_APIv2`]
         })
     },
     getCdnDependencies(name?: string){
