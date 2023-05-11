@@ -499,13 +499,19 @@ export class Client {
             ).find((e) => e.href == this.hostName + url)
         }
         const futures = css
-            .map((elem) =>
-                typeof elem == 'string'
+            .map((elem) => {
+                /**
+                 * The following 'hack' is a remaining left over regarding backward compatibility.
+                 */
+                if (elem['resource']) {
+                    elem = elem['resource'] as string
+                }
+                return typeof elem == 'string'
                     ? {
                           location: elem,
                       }
-                    : elem,
-            )
+                    : elem
+            })
             .map((elem) => ({ ...elem, ...parseResourceId(elem.location) }))
             .map(({ assetId, version, name, url, sideEffects }) => {
                 url = Client.state.getPatchedUrl({
