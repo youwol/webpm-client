@@ -1,20 +1,20 @@
 import {
-    CdnEvent,
-    ParseErrorEvent,
-    SourceLoadedEvent,
-    SourceParsedEvent,
-    SourceParsingFailed,
-    Unauthorized,
-    UnauthorizedEvent,
-    UrlNotFound,
-    UrlNotFoundEvent,
     ModuleSideEffectCallback,
     ModuleInput,
     FetchedScript,
     ScriptSideEffectCallback,
     CustomInstaller,
-} from './models'
-import { State } from './state'
+} from './inputs.models'
+import {
+    CdnEvent,
+    ParseErrorEvent,
+    SourceLoadedEvent,
+    SourceParsedEvent,
+    UnauthorizedEvent,
+    UrlNotFoundEvent,
+} from './events.models'
+import { UrlNotFound, SourceParsingFailed, Unauthorized } from './errors.models'
+import { StateImplementation } from './state'
 import { sanitizeCssId } from './utils.view'
 import { Client, install } from './client'
 
@@ -70,12 +70,12 @@ export function sanitizeModules(
 }
 
 /**
- * Parse a resource id in the form *{libraryName}#{version}~{rest-of-path}* where:
+ * Parse a resource id in the form `{libraryName}#{version}~{rest-of-path}` where:
  * -    libraryName is the name of the library
  * -    version is the target version
  * -    rest-of-path is the partial url from the package's directory to the target CSS
  *
- * @param resourceId resource id in the form *{libraryName}#{version}~{rest-of-path}*
+ * @param resourceId resource id in the form `{libraryName}#{version}~{rest-of-path}`
  * @category Helpers
  */
 export function parseResourceId(resourceId: string): {
@@ -100,13 +100,8 @@ export async function applyModuleSideEffects(
     userSideEffects: ModuleSideEffectCallback[],
     onEvent: (CdnEvent) => void,
 ) {
-    const versionsAvailable = State.importedBundles.get(origin.name) || []
-    State.importedBundles.set(origin.name, [
-        ...versionsAvailable,
-        origin.version,
-    ])
     const exportedName = getFullExportedSymbol(origin.name, origin.version)
-    const symbolBase = State.getExportedSymbol(
+    const symbolBase = StateImplementation.getExportedSymbol(
         origin.name,
         origin.version,
     ).symbol
@@ -141,7 +136,7 @@ export async function applyModuleSideEffects(
     }
     executingWindow[exportedName]['__yw_set_from_version__'] = origin.version
 
-    State.updateLatestBundleVersion([origin], executingWindow)
+    StateImplementation.updateLatestBundleVersion([origin], executingWindow)
 
     for (const sideEffectFct of userSideEffects) {
         const args = {
@@ -293,9 +288,9 @@ export function getAssetId(name: string) {
  * Returns the base url to access a CDN asset from its name & version.
  * It does not imply that the asset exist.
  *
- * @param name name of the package (as defined in package.json)
- * @param version version of the package (as defined in package.json)
- * @returns base url to access the CDN resource (valid only if the asset is actually stored in the asset store)
+ * @param name name of the package (as defined in package.json).
+ * @param version version of the package (as defined in package.json).
+ * @returns base url to access the resource.
  * @category Helpers
  */
 export function getUrlBase(name: string, version: string) {
@@ -310,7 +305,7 @@ export function getUrlBase(name: string, version: string) {
  * @param version version of the library
  */
 export function getFullExportedSymbol(name: string, version: string) {
-    const exported = State.getExportedSymbol(name, version)
+    const exported = StateImplementation.getExportedSymbol(name, version)
     return `${exported.symbol}_APIv${exported.apiKey}`
 }
 
@@ -350,10 +345,5 @@ export function installAliases(
     aliases: { [key: string]: string | ((Window) => unknown) },
     executingWindow: Window,
 ) {
-    Object.entries(aliases).forEach(([alias, original]) => {
-        executingWindow[alias] =
-            typeof original == 'string'
-                ? executingWindow[original]
-                : original(executingWindow)
-    })
+    StateImplementation.installAliases(aliases, executingWindow)
 }

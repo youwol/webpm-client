@@ -1,14 +1,13 @@
 import {
-    CdnFetchEvent,
+    CdnEvent,
     CdnLoadingGraphErrorEvent,
-    CircularDependencies,
-    DependenciesError,
     ParseErrorEvent,
     SourceLoadedEvent,
     SourceLoadingEvent,
     StartEvent,
     UnauthorizedEvent,
-} from './models'
+} from './events.models'
+import { CircularDependencies, DependenciesError } from './errors.models'
 
 export function sanitizeCssId(id: string) {
     return (
@@ -70,7 +69,7 @@ export function circularDependenciesView(error: CircularDependencies) {
 export function updateLibStatusView(
     libraryName: string,
     divLib: HTMLDivElement,
-    event: CdnFetchEvent,
+    event: CdnEvent,
 ) {
     if (event instanceof StartEvent) {
         divLib.style.setProperty('color', 'lightgray')

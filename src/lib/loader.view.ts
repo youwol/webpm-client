@@ -1,9 +1,8 @@
 import {
     CdnEvent,
-    CdnFetchEvent,
     CdnLoadingGraphErrorEvent,
     CdnMessageEvent,
-} from './models'
+} from './events.models'
 import {
     insertLoadingGraphError,
     sanitizeCssId,
@@ -12,13 +11,14 @@ import {
 } from './utils.view'
 
 /**
- * Specify loading screen options, see [[LoadingScreenView]].
+ * Specify loading screen options, see {@link LoadingScreenView}.
  *
  * @category Loading screen
  */
 export interface LoadingScreenOptions {
     /**
-     * container in which the loading screen's HTMLDivElement is appended (when calling [[LoadingScreenView.render]]).
+     * container in which the loading screen's HTMLDivElement is appended
+     * (when calling {@link LoadingScreenView.render}).
      */
     container?: HTMLElement
 
@@ -44,33 +44,33 @@ export interface LoadingScreenOptions {
 }
 
 /**
- * Default values of [[LoadingScreenOptions]].
+ * Default values of {@link LoadingScreenOptions}.
  *
  * @category Loading screen
  */
 export class DefaultLoadingScreenOptions implements LoadingScreenOptions {
     /**
-     * Default [[LoadingScreenOptions.id]]
+     * Default {@link LoadingScreenOptions.id}
      */
     public readonly id: string = 'loading-screen'
 
     /**
-     * Default [[LoadingScreenOptions.logo]], see [[youwolSvgLogo]].
+     * Default {@link LoadingScreenOptions.logo}, see {@link youwolSvgLogo}.
      */
     public readonly logo: string = youwolSvgLogo()
 
     /**
-     * Default [[LoadingScreenOptions.fadingTimeout]].
+     * Default {@link LoadingScreenOptions.fadingTimeout}.
      */
     public readonly fadingTimeout: number = 500
 
     /**
-     * Default [[LoadingScreenOptions.container]]
+     * Default {@link LoadingScreenOptions.container}
      */
     public readonly container: HTMLElement
 
     /**
-     * Default [[LoadingScreenOptions.wrapperStyle]]:
+     * Default {@link LoadingScreenOptions.wrapperStyle}:
      * ```
      * {
      *    position: 'absolute',
@@ -95,8 +95,8 @@ export class DefaultLoadingScreenOptions implements LoadingScreenOptions {
 }
 
 /**
- * Class providing granular controls on how loading screen is displayed when using [[Client.install]]
- * or [[install]].
+ * Class providing granular controls on how loading screen is displayed when using {@link Client.install}
+ * or {@link install}.
  *
  * Here is an example:
  * ```
@@ -122,7 +122,7 @@ export class DefaultLoadingScreenOptions implements LoadingScreenOptions {
  * loadingScreen.done()
  * ```
  *
- * Default values of the display options are defined in [[DefaultLoadingScreenOptions]], it can be controlled by e.g.:
+ * Default values of the display options are defined in {@link DefaultLoadingScreenOptions}, it can be controlled by e.g.:
  * ```
  * import {LoadingScreenView, DefaultLoadingScreenOptions} from '@youwol/cdn-client'
  * // for all LoadingScreenView instances:
@@ -136,14 +136,14 @@ export class DefaultLoadingScreenOptions implements LoadingScreenOptions {
  * })
  * ```
  *
- * > For default display, setting [[InstallInputs.displayLoadingScreen]] to `true` is enough:
- * > creation and management of [[LoadingScreenView]] will be automatic.
+ * > For default display, setting `displayLoadingScreen: true` from {@link InstallInputs} is enough:
+ * > creation and management of {@link LoadingScreenView} will be automatic.
  *
  * @category Loading screen
  */
 export class LoadingScreenView {
     /**
-     * Can be used to control default display options for all [[LoadingScreenView]] instances
+     * Can be used to control default display options for all {@link LoadingScreenView} instances
      */
     static DefaultOptions = new DefaultLoadingScreenOptions()
 
@@ -167,8 +167,8 @@ export class LoadingScreenView {
 
     /**
      *
-     * @param options see [[LoadingScreenOptions]], final display options object is obtained by merging
-     * `options` with [[DefaultLoadingScreenOptions]] : `Object.assign(LoadingScreenView.DefaultOptions, options)`
+     * @param options see {@link LoadingScreenOptions}, final display options object is obtained by merging
+     * `options` with {@link DefaultLoadingScreenOptions} : `Object.assign(LoadingScreenView.DefaultOptions, options)`
      */
     constructor(options: LoadingScreenOptions = {}) {
         this.options = Object.assign(LoadingScreenView.DefaultOptions, options)
@@ -206,7 +206,8 @@ export class LoadingScreenView {
     }
 
     /**
-     * Actualize the view given a new [[CdnEvent]] (provided that [[LoadingScreenView.render]] has been called before).
+     * Actualize the view given a new {@link CdnEvent} (provided that {@link LoadingScreenView.render}
+     * has been called before).
      *
      * @param event event to account for
      */
@@ -227,24 +228,21 @@ export class LoadingScreenView {
                 divLib.textContent = '> ' + event.text
                 this.contentDiv.appendChild(divLib)
             }
+            return
         }
-        if (event instanceof CdnFetchEvent) {
-            const libraryName = event.targetName
-            const cssId = sanitizeCssId(libraryName)
-            let divLib: HTMLDivElement = this.wrapperDiv.querySelector(
-                `#${cssId}`,
-            )
-            if (!divLib) {
-                divLib = document.createElement('div')
-                divLib.id = cssId
-                this.contentDiv.appendChild(divLib)
-            }
-            updateLibStatusView(libraryName, divLib, event)
+        const libraryName = event.id
+        const cssId = sanitizeCssId(libraryName)
+        let divLib: HTMLDivElement = this.wrapperDiv.querySelector(`#${cssId}`)
+        if (!divLib) {
+            divLib = document.createElement('div')
+            divLib.id = cssId
+            this.contentDiv.appendChild(divLib)
         }
+        updateLibStatusView(libraryName, divLib, event)
     }
 
     /**
-     * Render the loading screen view, should be called before any call to [[LoadingScreenView.next]]
+     * Render the loading screen view, should be called before any call to {@link LoadingScreenView.next}
      * to actually see the updates.
      */
     render() {
@@ -255,7 +253,7 @@ export class LoadingScreenView {
     }
 
     /**
-     * Remove the loading screen (see [[LoadingScreenOptions.fadingTimeout]])
+     * Remove the loading screen (see {@link LoadingScreenOptions.fadingTimeout}).
      */
     done() {
         this.wrapperDiv.style.setProperty(

@@ -26,7 +26,7 @@ class PipelineFactory(IPipelineFactory):
     async def get(self, env: YouwolEnvironment, context: Context):
         config = PipelineConfig(
             target=JsBundle(links=[
-                Link(name="doc", url="dist/docs/index.html"),
+                Link(name="doc", url="dist/docs/modules/MainModule.html"),
                 Link(name="coverage", url="coverage/lcov-report/index.html"),
                 Link(name="bundle-analysis", url="dist/bundle-analysis.html")
             ]),

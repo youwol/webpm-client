@@ -18,6 +18,7 @@ import {
     StartEvent,
     DefaultLoadingScreenOptions,
 } from '../lib'
+import { ContextTrait } from '../lib/workers-pool'
 
 RootRouter.HostName = getPyYouwolBasePath()
 RootRouter.Headers = { 'py-youwol-local-only': 'true' }
@@ -123,4 +124,26 @@ export function expectEvents(events: CdnEvent[], names: string[]) {
             .map((e: SourceParsedEvent) => e.targetName)
             .sort(),
     ).toEqual(names)
+}
+
+export class TestContext implements ContextTrait {
+    public readonly prefix = ''
+    public readonly indent = 0
+    public readonly t0: number
+    constructor(params: { prefix?: string; t0?: number } = {}) {
+        Object.assign(this, params)
+        this.t0 = params.t0 || Date.now()
+    }
+    withChild<T>(name: string, cb: (ctx: ContextTrait) => T): T {
+        const context = new TestContext({
+            prefix: `\t${this.prefix}.${name}`,
+            t0: this.t0,
+        })
+        context.info('>Start')
+        return cb(context)
+    }
+    info(text: string) {
+        const delta = (Date.now() - this.t0) / 1000
+        console['ensureLog'](`${delta}: ${this.prefix}: ${text}`)
+    }
 }

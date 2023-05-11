@@ -24,20 +24,16 @@ beforeEach(() => {
 
 test('indirect dependencies not found', async () => {
     try {
-        await install(
-            {
-                modules: ['b'],
+        await install({
+            modules: ['b'],
+            displayLoadingScreen: true,
+            onEvent: (event) => {
+                expect(event).toBeInstanceOf(CdnLoadingGraphErrorEvent)
+                const castedEvent = event as CdnLoadingGraphErrorEvent
+                expect(castedEvent.error).toBeInstanceOf(LoadingGraphError)
+                saveScreen('indirect_not_found.html')
             },
-            {
-                displayLoadingScreen: true,
-                onEvent: (event) => {
-                    expect(event).toBeInstanceOf(CdnLoadingGraphErrorEvent)
-                    const castedEvent = event as CdnLoadingGraphErrorEvent
-                    expect(castedEvent.error).toBeInstanceOf(LoadingGraphError)
-                    saveScreen('indirect_not_found.html')
-                },
-            },
-        )
+        })
     } catch (error) {
         // eslint-disable-next-line jest/no-conditional-expect -- more convenient that expect(fct).toThrow
         expect(error).toBeInstanceOf(LoadingGraphError)
@@ -54,15 +50,11 @@ test('indirect dependencies not found', async () => {
 
 test('packages not found', async () => {
     try {
-        await install(
-            {
-                modules: ['unknown'],
-            },
-            {
-                displayLoadingScreen: true,
-                onEvent: () => saveScreen('packages_not_found.html'),
-            },
-        )
+        await install({
+            modules: ['unknown'],
+            displayLoadingScreen: true,
+            onEvent: () => saveScreen('packages_not_found.html'),
+        })
         expect(true).toBeFalsy()
     } catch (error) {
         // eslint-disable-next-line jest/no-conditional-expect -- more convenient that expect(fct).toThrow
@@ -74,15 +66,11 @@ test('packages not found', async () => {
 
 test('cyclic dependencies', async () => {
     try {
-        await install(
-            {
-                modules: ['d'],
-            },
-            {
-                displayLoadingScreen: true,
-                onEvent: () => saveScreen('circular_dependencies.html'),
-            },
-        )
+        await install({
+            modules: ['d'],
+            displayLoadingScreen: true,
+            onEvent: () => saveScreen('circular_dependencies.html'),
+        })
     } catch (error) {
         // eslint-disable-next-line jest/no-conditional-expect -- more convenient that expect(fct).toThrow
         expect(error).toBeInstanceOf(LoadingGraphError)
