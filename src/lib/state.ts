@@ -336,7 +336,7 @@ export class StateImplementation {
                 name,
                 version,
             ).symbol
-            const exportedName = getFullExportedSymbol(name, version)
+            const exportedName = getInstalledFullExportedSymbol(name, version)
 
             if (
                 executingWindow[exportedName] &&

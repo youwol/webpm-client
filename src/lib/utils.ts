@@ -17,6 +17,7 @@ import { UrlNotFound, SourceParsingFailed, Unauthorized } from './errors.models'
 import { StateImplementation } from './state'
 import { sanitizeCssId } from './utils.view'
 import { Client, install } from './client'
+import { parse } from 'semver'
 
 export function onHttpRequestLoad(
     req: XMLHttpRequest,
@@ -100,7 +101,10 @@ export async function applyModuleSideEffects(
     userSideEffects: ModuleSideEffectCallback[],
     onEvent: (CdnEvent) => void,
 ) {
-    const exportedName = getFullExportedSymbol(origin.name, origin.version)
+    const exportedName = getInstalledFullExportedSymbol(
+        origin.name,
+        origin.version,
+    )
     const symbolBase = StateImplementation.getExportedSymbol(
         origin.name,
         origin.version,
@@ -299,12 +303,13 @@ export function getUrlBase(name: string, version: string) {
 }
 
 /**
- * Return the full exported symbol name of a library (including API version)
+ * Return the full exported symbol name of a library (including API version).
+ * Warning: Valid only for already installed package.
  *
  * @param name name of the library
  * @param version version of the library
  */
-export function getFullExportedSymbol(name: string, version: string) {
+export function getInstalledFullExportedSymbol(name: string, version: string) {
     const exported = StateImplementation.getExportedSymbol(name, version)
     return `${exported.symbol}_APIv${exported.apiKey}`
 }
@@ -316,7 +321,7 @@ export function getFullExportedSymbol(name: string, version: string) {
  * @param version version of the library
  */
 export function getFullExportedSymbolAlias(name: string, version: string) {
-    return getFullExportedSymbol(name, version).replace('_APIv', '#')
+    return getInstalledFullExportedSymbol(name, version).replace('_APIv', '#')
 }
 
 /**
