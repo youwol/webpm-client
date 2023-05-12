@@ -481,6 +481,7 @@ export class Process {
     }
 
     fail(error: unknown) {
+        console.error('An error occurred in a worker', error)
         this.context.info(`Task failed  ${this.title} (${this.taskId})`, {
             error,
         })

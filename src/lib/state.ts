@@ -3,9 +3,14 @@ import {
     FetchedScript,
     LightLibraryQueryString,
 } from './inputs.models'
-import { lt, gt } from 'semver'
-import { getFullExportedSymbol, getFullExportedSymbolAlias } from './utils'
+import { lt, gt, gte } from 'semver'
+import {
+    getInstalledFullExportedSymbol,
+    getFullExportedSymbolAlias,
+    getExpectedFullExportedSymbol,
+} from './utils'
 import { VirtualDOM } from '@youwol/flux-view'
+import { setup } from '../auto-generated'
 
 export type LibraryName = string
 export type Version = string
@@ -108,7 +113,12 @@ export class StateImplementation {
      */
     static exportedSymbolsDict: {
         [k: string]: { symbol: string; apiKey: string }
-    } = {}
+    } = {
+        [`${setup.name}#${setup.version}`]: {
+            symbol: setup.name,
+            apiKey: setup.apiVersion,
+        },
+    }
 
     /**
      * Return the exported symbol name of a library.
@@ -151,7 +161,9 @@ export class StateImplementation {
     /**
      * Imported modules: mapping between {@link LibraryName} and list of installed {@link Version}.
      */
-    static importedBundles = new Map<LibraryName, Version[]>()
+    static importedBundles = new Map<LibraryName, Version[]>([
+        [setup.name, [setup.version]],
+    ])
 
     /**
      * Fetched loading graph: mapping between a loading graph's body uid and corresponding computed loading graph.
@@ -173,7 +185,9 @@ export class StateImplementation {
     /**
      * Latest version of modules installed: mapping between library name and latest version
      */
-    static latestVersion = new Map<string, Version>()
+    static latestVersion = new Map<string, Version>([
+        [setup.name, setup.version],
+    ])
 
     /**
      * Return whether a library at particular version hase been already installed with a compatible version.
@@ -187,7 +201,13 @@ export class StateImplementation {
         version: string,
     ): boolean {
         if (libName == '@youwol/cdn-client') {
-            return true
+            const symbol = getExpectedFullExportedSymbol(libName, version)
+            const alreadyHere = window[symbol]
+            const compatibleInstalled =
+                alreadyHere && gte(alreadyHere.setup.version, version)
+            return compatibleInstalled == undefined
+                ? false
+                : compatibleInstalled
         }
         if (!StateImplementation.importedBundles.has(libName)) {
             return false
@@ -277,7 +297,9 @@ export class StateImplementation {
     }
 
     /**
-     * Remove installed modules & reset the cache
+     * Remove installed modules & reset the cache.
+     * It makes its best to clear modules & associated side effects, but it is not perfect.
+     * It is not expose anyway and serves at helping tests mostly.
      *
      * @param executingWindow where the resources have been installed
      * @hidden
@@ -291,10 +313,11 @@ export class StateImplementation {
             .flat()
             .map(([lib, version]) => {
                 const symbolName = this.getExportedSymbol(lib, version).symbol
-                const aliases = executingWindow[symbolName].__yw_aliases__ || []
+                const aliases =
+                    executingWindow[symbolName]?.__yw_aliases__ || []
                 return [
                     symbolName,
-                    getFullExportedSymbol(lib, version),
+                    getInstalledFullExportedSymbol(lib, version),
                     getFullExportedSymbolAlias(lib, version),
                     ...aliases,
                 ]
@@ -308,6 +331,30 @@ export class StateImplementation {
     }
 
     /**
+     * Update the various properties after new modules have been imported.
+     *
+     * @param modules modules installed
+     * @param executingWindow the executing window (where to expose the latest version if change need be).
+     * @hidden
+     */
+    static registerImportedModules(
+        modules: { name: string; version: string }[],
+        executingWindow: Window,
+    ) {
+        modules.forEach(({ name, version }) => {
+            const existingVersions = StateImplementation.importedBundles.has(
+                name,
+            )
+                ? StateImplementation.importedBundles.get(name)
+                : []
+            StateImplementation.importedBundles.set(name, [
+                ...existingVersions,
+                version,
+            ])
+        })
+        StateImplementation.updateLatestBundleVersion(modules, executingWindow)
+    }
+    /**
      * Update {@link StateImplementation.latestVersion} given a provided installed {@link LoadingGraph}.
      * It also exposes the latest version in `executingWindow` using original symbol name if need be.
      *
@@ -315,7 +362,7 @@ export class StateImplementation {
      * @param executingWindow where to expose the latest version if change need be
      * @hidden
      */
-    static updateLatestBundleVersion(
+    private static updateLatestBundleVersion(
         modules: { name: string; version: string }[],
         executingWindow: Window,
     ) {
@@ -336,7 +383,7 @@ export class StateImplementation {
                 name,
                 version,
             ).symbol
-            const exportedName = getFullExportedSymbol(name, version)
+            const exportedName = getInstalledFullExportedSymbol(name, version)
 
             if (
                 executingWindow[exportedName] &&
@@ -344,7 +391,6 @@ export class StateImplementation {
             ) {
                 executingWindow[symbol] = executingWindow[exportedName]
                 StateImplementation.latestVersion.set(name, version)
-                StateImplementation.importedBundles.set(name, [version])
                 return
             }
 
@@ -355,15 +401,6 @@ export class StateImplementation {
                 )
             }
             StateImplementation.latestVersion.set(name, version)
-            const existingVersions = StateImplementation.importedBundles.has(
-                name,
-            )
-                ? StateImplementation.importedBundles.get(name)
-                : []
-            StateImplementation.importedBundles.set(name, [
-                ...existingVersions,
-                version,
-            ])
         })
     }
 
@@ -421,6 +458,7 @@ export class StateImplementation {
         return {
             class: 'StateView',
             children: [
+                { tag: 'h5', innerText: `I'm ${setup.name}#${setup.version}` },
                 { tag: 'h3', innerText: 'Modules installed' },
                 {
                     class: 'px-3 py-2 container',

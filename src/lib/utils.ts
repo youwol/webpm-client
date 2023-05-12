@@ -17,6 +17,7 @@ import { UrlNotFound, SourceParsingFailed, Unauthorized } from './errors.models'
 import { StateImplementation } from './state'
 import { sanitizeCssId } from './utils.view'
 import { Client, install } from './client'
+import { parse } from 'semver'
 
 export function onHttpRequestLoad(
     req: XMLHttpRequest,
@@ -100,7 +101,10 @@ export async function applyModuleSideEffects(
     userSideEffects: ModuleSideEffectCallback[],
     onEvent: (CdnEvent) => void,
 ) {
-    const exportedName = getFullExportedSymbol(origin.name, origin.version)
+    const exportedName = getInstalledFullExportedSymbol(
+        origin.name,
+        origin.version,
+    )
     const symbolBase = StateImplementation.getExportedSymbol(
         origin.name,
         origin.version,
@@ -136,7 +140,7 @@ export async function applyModuleSideEffects(
     }
     executingWindow[exportedName]['__yw_set_from_version__'] = origin.version
 
-    StateImplementation.updateLatestBundleVersion([origin], executingWindow)
+    StateImplementation.registerImportedModules([origin], executingWindow)
 
     for (const sideEffectFct of userSideEffects) {
         const args = {
@@ -299,14 +303,40 @@ export function getUrlBase(name: string, version: string) {
 }
 
 /**
- * Return the full exported symbol name of a library (including API version)
+ * Return the full exported symbol name of a library (including API version).
+ * Warning: Valid only for already installed package.
  *
  * @param name name of the library
  * @param version version of the library
  */
-export function getFullExportedSymbol(name: string, version: string) {
+export function getInstalledFullExportedSymbol(name: string, version: string) {
     const exported = StateImplementation.getExportedSymbol(name, version)
     return `${exported.symbol}_APIv${exported.apiKey}`
+}
+
+/**
+ * Return the full (expected) exported symbol name of a library (including API version)
+ *
+ * @param name name of the library
+ * @param version version of the library
+ */
+export function getExpectedFullExportedSymbol(name: string, version: string) {
+    const parsed = parse(version)
+    return `${name}_APIv${parsed.major}${
+        parsed.major == 0 ? parsed.minor : ''
+    }${parsed.major == 0 && parsed.minor == 0 ? parsed.patch : ''}`
+}
+
+/**
+ * Return the API key from a version.
+ *
+ * @param version version (conform to semver)
+ */
+export function getApiKey(version: string) {
+    const parsed = parse(version)
+    return `${parsed.major}${parsed.major == 0 ? parsed.minor : ''}${
+        parsed.major == 0 && parsed.minor == 0 ? parsed.patch : ''
+    }`
 }
 
 /**
@@ -316,7 +346,7 @@ export function getFullExportedSymbol(name: string, version: string) {
  * @param version version of the library
  */
 export function getFullExportedSymbolAlias(name: string, version: string) {
-    return getFullExportedSymbol(name, version).replace('_APIv', '#')
+    return getInstalledFullExportedSymbol(name, version).replace('_APIv', '#')
 }
 
 /**
