@@ -458,6 +458,7 @@ export class StateImplementation {
         return {
             class: 'StateView',
             children: [
+                { tag: 'h5', innerText: `I'm ${setup.name}#${setup.version}` },
                 { tag: 'h3', innerText: 'Modules installed' },
                 {
                     class: 'px-3 py-2 container',
