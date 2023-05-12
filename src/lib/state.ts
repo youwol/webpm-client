@@ -328,6 +328,30 @@ export class StateImplementation {
     }
 
     /**
+     * Update the various properties after new modules have been imported.
+     *
+     * @param modules modules installed
+     * @param executingWindow the executing window (where to expose the latest version if change need be).
+     * @hidden
+     */
+    static registerImportedModules(
+        modules: { name: string; version: string }[],
+        executingWindow: Window,
+    ) {
+        modules.forEach(({ name, version }) => {
+            const existingVersions = StateImplementation.importedBundles.has(
+                name,
+            )
+                ? StateImplementation.importedBundles.get(name)
+                : []
+            StateImplementation.importedBundles.set(name, [
+                ...existingVersions,
+                version,
+            ])
+        })
+        StateImplementation.updateLatestBundleVersion(modules, executingWindow)
+    }
+    /**
      * Update {@link StateImplementation.latestVersion} given a provided installed {@link LoadingGraph}.
      * It also exposes the latest version in `executingWindow` using original symbol name if need be.
      *
@@ -335,7 +359,7 @@ export class StateImplementation {
      * @param executingWindow where to expose the latest version if change need be
      * @hidden
      */
-    static updateLatestBundleVersion(
+    private static updateLatestBundleVersion(
         modules: { name: string; version: string }[],
         executingWindow: Window,
     ) {
@@ -364,7 +388,6 @@ export class StateImplementation {
             ) {
                 executingWindow[symbol] = executingWindow[exportedName]
                 StateImplementation.latestVersion.set(name, version)
-                StateImplementation.importedBundles.set(name, [version])
                 return
             }
 
@@ -375,15 +398,6 @@ export class StateImplementation {
                 )
             }
             StateImplementation.latestVersion.set(name, version)
-            const existingVersions = StateImplementation.importedBundles.has(
-                name,
-            )
-                ? StateImplementation.importedBundles.get(name)
-                : []
-            StateImplementation.importedBundles.set(name, [
-                ...existingVersions,
-                version,
-            ])
         })
     }
 

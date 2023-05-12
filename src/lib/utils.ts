@@ -140,7 +140,7 @@ export async function applyModuleSideEffects(
     }
     executingWindow[exportedName]['__yw_set_from_version__'] = origin.version
 
-    StateImplementation.updateLatestBundleVersion([origin], executingWindow)
+    StateImplementation.registerImportedModules([origin], executingWindow)
 
     for (const sideEffectFct of userSideEffects) {
         const args = {
