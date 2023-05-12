@@ -297,7 +297,9 @@ export class StateImplementation {
     }
 
     /**
-     * Remove installed modules & reset the cache
+     * Remove installed modules & reset the cache.
+     * It makes its best to clear modules & associated side effects, but it is not perfect.
+     * It is not expose anyway and serves at helping tests mostly.
      *
      * @param executingWindow where the resources have been installed
      * @hidden
@@ -311,10 +313,11 @@ export class StateImplementation {
             .flat()
             .map(([lib, version]) => {
                 const symbolName = this.getExportedSymbol(lib, version).symbol
-                const aliases = executingWindow[symbolName].__yw_aliases__ || []
+                const aliases =
+                    executingWindow[symbolName]?.__yw_aliases__ || []
                 return [
                     symbolName,
-                    getFullExportedSymbol(lib, version),
+                    getInstalledFullExportedSymbol(lib, version),
                     getFullExportedSymbolAlias(lib, version),
                     ...aliases,
                 ]
