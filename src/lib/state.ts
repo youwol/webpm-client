@@ -3,9 +3,14 @@ import {
     FetchedScript,
     LightLibraryQueryString,
 } from './inputs.models'
-import { lt, gt } from 'semver'
-import { getFullExportedSymbol, getFullExportedSymbolAlias } from './utils'
+import { lt, gt, gte } from 'semver'
+import {
+    getInstalledFullExportedSymbol,
+    getFullExportedSymbolAlias,
+    getExpectedFullExportedSymbol,
+} from './utils'
 import { VirtualDOM } from '@youwol/flux-view'
+import { setup } from '../auto-generated'
 
 export type LibraryName = string
 export type Version = string
@@ -108,7 +113,12 @@ export class StateImplementation {
      */
     static exportedSymbolsDict: {
         [k: string]: { symbol: string; apiKey: string }
-    } = {}
+    } = {
+        [`${setup.name}#${setup.version}`]: {
+            symbol: setup.name,
+            apiKey: setup.apiVersion,
+        },
+    }
 
     /**
      * Return the exported symbol name of a library.
@@ -151,7 +161,9 @@ export class StateImplementation {
     /**
      * Imported modules: mapping between {@link LibraryName} and list of installed {@link Version}.
      */
-    static importedBundles = new Map<LibraryName, Version[]>()
+    static importedBundles = new Map<LibraryName, Version[]>([
+        [setup.name, [setup.version]],
+    ])
 
     /**
      * Fetched loading graph: mapping between a loading graph's body uid and corresponding computed loading graph.
@@ -173,7 +185,9 @@ export class StateImplementation {
     /**
      * Latest version of modules installed: mapping between library name and latest version
      */
-    static latestVersion = new Map<string, Version>()
+    static latestVersion = new Map<string, Version>([
+        [setup.name, setup.version],
+    ])
 
     /**
      * Return whether a library at particular version hase been already installed with a compatible version.
@@ -187,7 +201,13 @@ export class StateImplementation {
         version: string,
     ): boolean {
         if (libName == '@youwol/cdn-client') {
-            return true
+            const symbol = getExpectedFullExportedSymbol(libName, version)
+            const alreadyHere = window[symbol]
+            const compatibleInstalled =
+                alreadyHere && gte(alreadyHere.setup.version, version)
+            return compatibleInstalled == undefined
+                ? false
+                : compatibleInstalled
         }
         if (!StateImplementation.importedBundles.has(libName)) {
             return false

@@ -315,6 +315,31 @@ export function getInstalledFullExportedSymbol(name: string, version: string) {
 }
 
 /**
+ * Return the full (expected) exported symbol name of a library (including API version)
+ *
+ * @param name name of the library
+ * @param version version of the library
+ */
+export function getExpectedFullExportedSymbol(name: string, version: string) {
+    const parsed = parse(version)
+    return `${name}_APIv${parsed.major}${
+        parsed.major == 0 ? parsed.minor : ''
+    }${parsed.major == 0 && parsed.minor == 0 ? parsed.patch : ''}`
+}
+
+/**
+ * Return the API key from a version.
+ *
+ * @param version version (conform to semver)
+ */
+export function getApiKey(version: string) {
+    const parsed = parse(version)
+    return `${parsed.major}${parsed.major == 0 ? parsed.minor : ''}${
+        parsed.major == 0 && parsed.minor == 0 ? parsed.patch : ''
+    }`
+}
+
+/**
  * Return the alias (using '#') of full exported symbol name of a library (including API version)
  *
  * @param name name of the library
