@@ -97,7 +97,7 @@ export function parseResourceId(resourceId: string): {
 export async function applyModuleSideEffects(
     origin: FetchedScript,
     htmlScriptElement: HTMLScriptElement,
-    executingWindow: Window,
+    executingWindow: WindowOrWorkerGlobalScope,
     userSideEffects: ModuleSideEffectCallback[],
     onEvent: (CdnEvent) => void,
 ) {
@@ -209,7 +209,7 @@ export function importScriptWebWorker({ url }): undefined | Error {
 
 export async function addScriptElements(
     sources: (FetchedScript & { sideEffect?: ScriptSideEffectCallback })[],
-    executingWindow?: Window,
+    executingWindow?: WindowOrWorkerGlobalScope,
     onEvent?: (event: CdnEvent) => void,
 ) {
     if (sources.length == 0) {
@@ -227,14 +227,14 @@ export async function addScriptElements(
                 progressEvent,
                 sideEffect,
             }) => {
-                const scriptOrError = executingWindow.document
+                const scriptOrError = isInstanceOfWindow(executingWindow)
                     ? importScriptMainWindow({
                           url,
                           assetId,
                           version,
                           name,
                           content,
-                          executingWindow,
+                          executingWindow: executingWindow,
                       })
                     : importScriptWebWorker({ url })
 
@@ -373,7 +373,13 @@ export function resolveCustomInstaller(installer: CustomInstaller) {
 
 export function installAliases(
     aliases: { [key: string]: string | ((Window) => unknown) },
-    executingWindow: Window,
+    executingWindow: WindowOrWorkerGlobalScope,
 ) {
     StateImplementation.installAliases(aliases, executingWindow)
+}
+
+export function isInstanceOfWindow(
+    scope: WindowOrWorkerGlobalScope,
+): scope is Window {
+    return (scope as Window).document != undefined
 }

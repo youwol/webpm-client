@@ -259,7 +259,7 @@ export class StateImplementation {
      */
     static installAliases(
         aliases: { [key: string]: string | ((Window) => unknown) },
-        executingWindow: Window,
+        executingWindow: WindowOrWorkerGlobalScope,
     ) {
         Object.entries(aliases).forEach(([alias, original]) => {
             const pointed =
@@ -339,7 +339,7 @@ export class StateImplementation {
      */
     static registerImportedModules(
         modules: { name: string; version: string }[],
-        executingWindow: Window,
+        executingWindow: WindowOrWorkerGlobalScope,
     ) {
         modules.forEach(({ name, version }) => {
             const existingVersions = StateImplementation.importedBundles.has(
@@ -364,7 +364,7 @@ export class StateImplementation {
      */
     private static updateLatestBundleVersion(
         modules: { name: string; version: string }[],
-        executingWindow: Window,
+        executingWindow: WindowOrWorkerGlobalScope,
     ) {
         const toConsiderForUpdate = modules.filter(({ name, version }) => {
             return !(
