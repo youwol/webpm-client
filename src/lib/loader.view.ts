@@ -1,7 +1,7 @@
 import {
     CdnEvent,
     CdnLoadingGraphErrorEvent,
-    CdnMessageEvent,
+    isCdnEvent,
 } from './events.models'
 import {
     insertLoadingGraphError,
@@ -212,10 +212,13 @@ export class LoadingScreenView {
      * @param event event to account for
      */
     next(event: CdnEvent) {
-        if (event instanceof CdnLoadingGraphErrorEvent) {
-            insertLoadingGraphError(this.contentDiv, event)
+        if (isCdnEvent(event) && event.step == 'CdnLoadingGraphErrorEvent') {
+            insertLoadingGraphError(
+                this.contentDiv,
+                event as CdnLoadingGraphErrorEvent,
+            )
         }
-        if (event instanceof CdnMessageEvent) {
+        if (isCdnEvent(event) && event.step == 'CdnMessageEvent') {
             let divLib: HTMLDivElement = this.wrapperDiv.querySelector(
                 `#${sanitizeCssId(event.id)}`,
             )

@@ -139,12 +139,14 @@ export type InstallLoadingGraphInputs = {
     /**
      * See `executingWindow` from {@link InstallInputs}
      */
-    executingWindow?: Window
+    executingWindow?: WindowOrWorkerGlobalScope
 
     /**
      * See `aliases` from {@link InstallInputs}
      */
-    aliases?: { [key: string]: string | ((Window) => unknown) }
+    aliases?: {
+        [key: string]: string | ((WindowOrWorkerGlobalScope) => unknown)
+    }
 
     /**
      * See `onEvent` from {@link InstallInputs}
@@ -295,7 +297,7 @@ export type InstallInputs = {
     /**
      * Window global in which installation occurs. If not provided, `window` is used.
      */
-    executingWindow?: Window
+    executingWindow?: WindowOrWorkerGlobalScope
 
     /**
      * If provided, any {@link CdnEvent} emitted are forwarded to this callback.
@@ -365,7 +367,7 @@ export type InstallModulesInputs = {
     /**
      * See {@link InstallInputs.executingWindow}
      */
-    executingWindow?: Window
+    executingWindow?: WindowOrWorkerGlobalScope
 
     /**
      * See {@link InstallInputs.onEvent}
@@ -381,7 +383,7 @@ export type InstallScriptsInputs = {
     /**
      * See {@link InstallInputs.executingWindow}
      */
-    executingWindow?: Window
+    executingWindow?: WindowOrWorkerGlobalScope
     /**
      * See {@link InstallInputs.onEvent}
      */
@@ -390,7 +392,9 @@ export type InstallScriptsInputs = {
     /**
      * See {@link InstallInputs.aliases}
      */
-    aliases?: { [key: string]: string | ((Window) => unknown) }
+    aliases?: {
+        [key: string]: string | ((WindowOrWorkerGlobalScope) => unknown)
+    }
 }
 
 /**
@@ -412,7 +416,7 @@ export type ModuleSideEffectCallbackArgument = {
     /**
      * Window instance in which the HTML script element has been added
      */
-    executingWindow: Window
+    executingWindow: WindowOrWorkerGlobalScope
 }
 /**
  * Type definition of a module installation side effects:
@@ -471,7 +475,7 @@ export type ScriptSideEffectCallbackArgument = {
     /**
      * Window instance in which the HTML script element has been added
      */
-    executingWindow: Window
+    executingWindow: WindowOrWorkerGlobalScope
 }
 
 /**

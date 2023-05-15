@@ -29,6 +29,7 @@ import {
     parseResourceId,
     resolveCustomInstaller,
     installAliases,
+    isInstanceOfWindow,
 } from './utils'
 
 /**
@@ -39,7 +40,9 @@ import {
  * @category Entry Points
  * @param inputs
  */
-export function install(inputs: InstallInputs): Promise<Window> {
+export function install(
+    inputs: InstallInputs,
+): Promise<WindowOrWorkerGlobalScope> {
     return new Client().install(inputs)
 }
 
@@ -206,7 +209,7 @@ export class Client {
                 )
             return Client.state.importedScripts[url]
         }
-        if (!window.document) {
+        if (!isInstanceOfWindow(globalThis)) {
             // In a web-worker the script will be imported using self.importScripts(url).
             // No need to pre-fetch the source file in this case.
             return new Promise((resolve) => {
@@ -261,9 +264,9 @@ export class Client {
      *
      * @param inputs
      */
-    install(inputs: InstallInputs): Promise<Window> {
+    install(inputs: InstallInputs): Promise<WindowOrWorkerGlobalScope> {
         const css = inputs.css || []
-        const executingWindow = inputs.executingWindow || window
+        const executingWindow = inputs.executingWindow || globalThis
         const aliases = inputs.aliases || {}
         const display = inputs.displayLoadingScreen || false
         const customInstallers = inputs.customInstallers || []
@@ -285,11 +288,12 @@ export class Client {
             executingWindow,
             onEvent,
         })
-
-        const cssPromise = this.installStyleSheets({
-            css,
-            renderingWindow: inputs.executingWindow,
-        })
+        const cssPromise = isInstanceOfWindow(executingWindow)
+            ? this.installStyleSheets({
+                  css,
+                  renderingWindow: executingWindow,
+              })
+            : Promise.resolve()
         const jsPromise = bundlesPromise.then(() => {
             return this.installScripts({
                 scripts: inputs.scripts || [],

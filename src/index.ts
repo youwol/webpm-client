@@ -116,11 +116,11 @@ export { setup } from './auto-generated'
 import * as cdnClient from './lib'
 import { setup } from './auto-generated'
 
-if (!window['@youwol/cdn-client']) {
+if (!globalThis['@youwol/cdn-client']) {
     /**
      * Cdn client is particular: when imported from a `<scrip>` element its installation has not been managed
      * by the library itself, and the (latest) version exposed with the original library name has not been set.
      * This is why the following line is needed.
      */
-    window['@youwol/cdn-client'] = { ...cdnClient, setup }
+    globalThis['@youwol/cdn-client'] = { ...cdnClient, setup }
 }

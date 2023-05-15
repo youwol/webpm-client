@@ -260,16 +260,18 @@ export function entryPointWorker(messageEvent: MessageEvent) {
     //   * add 'webworker' in 'compilerOptions.lib'
     //   * **BUT** typedoc then fails to run, complaining about duplicated declaration.
     // Not sure how to fix this, we keep the documentation working for now using this workaround
+    // In TypeScript, the 'Worker' type refers to the global object that represents a web worker.
+    // The 'DedicatedWorkerGlobalScope' interface is a subset of the global object that is available to
+    // dedicated workers, which are a type of web worker that runs in a single thread.
     interface DedicatedWorkerGlobalScope {
         // message type: https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Structured_clone_algorithm
         postMessage: (message: unknown) => void
     }
 
     const message: Message = messageEvent.data
-    const workerScope = self as unknown as DedicatedWorkerGlobalScope
-    // Following is a workaround: if not done, the @youwol/cdn-client will complain of undefined 'window' and
-    // will fail installing dependencies. It is a bug in @youwol/cdn-client, see TG#488.
-    workerScope['window'] = self
+    const workerScope = globalThis as unknown as DedicatedWorkerGlobalScope
+    // Following is a workaround to allow installing libraries using 'window' instead of 'globalThis' or 'self'.
+    workerScope['window'] = globalThis
     if (message.type == 'Execute') {
         const data: MessageExecute = message.data as unknown as MessageExecute
         const context: WorkerContext = {
