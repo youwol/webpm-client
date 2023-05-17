@@ -35,3 +35,5 @@ export * from './events.models'
 export { getAssetId, getUrlBase, parseResourceId } from './utils'
 export { youwolSvgLogo } from './utils.view'
 export * from './add-ons'
+
+export * as WorkersPoolTypes from './workers-pool/index-types'
