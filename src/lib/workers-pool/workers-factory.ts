@@ -1043,6 +1043,12 @@ export class WorkersPool {
                 )
                 return
             }
+
+            if (this.busyWorkers$.value.includes(workerId)) {
+                throw Error(
+                    `Can not pick task by ${workerId}: worker already busy. Please report a bug for @youwol/cdn-client.`,
+                )
+            }
             this.busyWorkers$.next([...this.busyWorkers$.value, workerId])
             const { taskId, entryPoint, args, channel$ } = this.tasksQueue.find(
                 (t) =>
