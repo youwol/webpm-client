@@ -451,7 +451,7 @@ function entryPointInstall(input: EntryPointArguments<MessageInstall>) {
         })
         .then(() => {
             input.context.info('Dependencies installation done')
-            for (const task of input.args.postInstallTasks) {
+            const donePromises = input.args.postInstallTasks.map((task) => {
                 input.context.info(`Start post-install task '${task.title}'`)
                 const entryPoint = new Function(task.entryPoint)()
                 const r = entryPoint({
@@ -459,9 +459,12 @@ function entryPointInstall(input: EntryPointArguments<MessageInstall>) {
                     context: input.context,
                     taskId: input.taskId,
                     workerScope: input.workerScope,
-                })()
-                r instanceof Promise && r.then()
-            }
+                })
+                return r instanceof Promise ? r : Promise.resolve(r)
+            })
+            return Promise.all(donePromises)
+        })
+        .then(() => {
             input.context.info('Post install tasks done')
             input.context.sendData({
                 type: 'installEvent',
