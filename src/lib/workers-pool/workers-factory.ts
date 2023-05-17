@@ -1009,7 +1009,6 @@ export class WorkersPool {
                             channel$: workerChannel$,
                         },
                     })
-                    this.pickTask(workerId, ctx)
                 }),
                 mapTo({
                     workerId,
