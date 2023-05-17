@@ -13,12 +13,8 @@ jobs:
     uses: youwol/nestor/.github/workflows/typescript-ci.yaml@v3
     with:
       skip: tests
-      pyYouwolRef: feature/refactor
 
   nestor_integration_tests:
     name: Integration Tests
     uses: youwol/nestor/.github/workflows/integration-tests.yaml@v3
     secrets: inherit
-    with:
-      pyYouwolRef: feature/refactor
-      confRef: feature/refactor
