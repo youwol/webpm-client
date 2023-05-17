@@ -245,6 +245,7 @@ export interface Message {
 export interface EntryPointArguments<TArgs> {
     args: TArgs
     taskId: string
+    workerId: string
     context: WorkerContext
     workerScope
 }
@@ -270,13 +271,35 @@ export function entryPointWorker(messageEvent: MessageEvent) {
 
     const message: Message = messageEvent.data
     const workerScope = globalThis as unknown as DedicatedWorkerGlobalScope
+    const postMessage = (message: { type: string; data: unknown }) => {
+        try {
+            workerScope.postMessage(message)
+        } catch (e) {
+            console.error(
+                `Failed to post message from worker to main thread.`,
+                message,
+            )
+            if (message.type == 'Exit') {
+                const data = message.data as MessageExit
+                workerScope.postMessage({
+                    type: 'Exit',
+                    data: {
+                        taskId: data.taskId,
+                        workerId: data.workerId,
+                        error: true,
+                    },
+                })
+            }
+        }
+    }
+
     // Following is a workaround to allow installing libraries using 'window' instead of 'globalThis' or 'self'.
     workerScope['window'] = globalThis
     if (message.type == 'Execute') {
         const data: MessageExecute = message.data as unknown as MessageExecute
         const context: WorkerContext = {
             info: (text, json) => {
-                workerScope.postMessage({
+                postMessage({
                     type: 'Log',
                     data: {
                         taskId: data.taskId,
@@ -288,7 +311,7 @@ export function entryPointWorker(messageEvent: MessageEvent) {
                 })
             },
             sendData: (consumerData) => {
-                workerScope.postMessage({
+                postMessage({
                     type: 'Data',
                     data: {
                         ...consumerData,
@@ -297,14 +320,13 @@ export function entryPointWorker(messageEvent: MessageEvent) {
                 })
             },
         }
-
         const entryPoint =
             // The first branch is to facilitate test environment
             typeof data.entryPoint == 'function'
                 ? data.entryPoint
                 : new Function(data.entryPoint)()
 
-        workerScope.postMessage({
+        postMessage({
             type: 'Start',
             data: {
                 taskId: data.taskId,
@@ -321,7 +343,7 @@ export function entryPointWorker(messageEvent: MessageEvent) {
             if (resultOrPromise instanceof Promise) {
                 resultOrPromise
                     .then((result) => {
-                        workerScope.postMessage({
+                        postMessage({
                             type: 'Exit',
                             data: {
                                 taskId: data.taskId,
@@ -332,7 +354,7 @@ export function entryPointWorker(messageEvent: MessageEvent) {
                         })
                     })
                     .catch((error) => {
-                        workerScope.postMessage({
+                        postMessage({
                             type: 'Exit',
                             data: {
                                 taskId: data.taskId,
@@ -345,7 +367,7 @@ export function entryPointWorker(messageEvent: MessageEvent) {
                 return
             }
 
-            workerScope.postMessage({
+            postMessage({
                 type: 'Exit',
                 data: {
                     taskId: data.taskId,
@@ -355,7 +377,7 @@ export function entryPointWorker(messageEvent: MessageEvent) {
                 },
             })
         } catch (e) {
-            workerScope.postMessage({
+            postMessage({
                 type: 'Exit',
                 data: {
                     taskId: data.taskId,
