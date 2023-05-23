@@ -2,8 +2,8 @@
 // eslint-disable-next-line eslint-comments/disable-enable-pair -- to not have problem
 /* eslint-disable jest/no-done-callback -- eslint-comment Find a good way to work with rxjs in jest */
 
-import { installWorkersPoolModule } from '../lib'
-import { cleanDocument, installPackages$ } from './common'
+import { Client, installWorkersPoolModule } from '../lib'
+import { cleanDocument, installPackages$, testBackendConfig } from './common'
 import './mock-requests'
 import {
     CdnEventView,
@@ -106,6 +106,8 @@ class WebWorkersJest implements IWWorkerProxy {
 WorkersPool.webWorkersProxy = new WebWorkersJest()
 
 beforeAll((done) => {
+    WorkersPool.BackendConfiguration = testBackendConfig
+    Client.BackendConfiguration = testBackendConfig
     installPackages$([
         './.packages-test/rxjs#7.5.6/cdn.zip',
         './.packages-test/rxjs#6.5.5/cdn.zip',

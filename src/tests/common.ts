@@ -17,12 +17,18 @@ import {
     SourceParsedEvent,
     StartEvent,
     DefaultLoadingScreenOptions,
+    backendConfiguration,
 } from '../lib'
 import { ContextTrait } from '../lib/workers-pool'
 
 RootRouter.HostName = getPyYouwolBasePath()
 RootRouter.Headers = { 'py-youwol-local-only': 'true' }
-Client.HostName = RootRouter.HostName
+export const testBackendConfig = backendConfiguration({
+    origin: { port: 2001 },
+    pathLoadingGraph: '/api/assets-gateway/cdn-backend/queries/loading-graph',
+    pathRawPackage: '/api/assets-gateway/raw/package',
+})
+Client.BackendConfiguration = testBackendConfig
 Client.Headers = RootRouter.Headers
 
 /**
