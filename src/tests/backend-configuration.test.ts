@@ -1,3 +1,4 @@
+import { describe } from '@jest/globals'
 import { backendConfiguration } from '../lib/backend-configuration'
 
 const pathLoadingGraph = '/__loading_graph__'
@@ -12,206 +13,34 @@ function getParams(
     return { origin, pathRawPackage, pathLoadingGraph }
 }
 
-test('without origin', () => {
-    // Given
-    const params = getParams()
+describe('backendConfiguration', () => {
+    test.each`
+        origin                                                    | expectedOrigin                | title
+        ${undefined}                                              | ${''}                         | ${'out origin'}
+        ${{}}                                                     | ${'http://localhost:8080'}    | ${' origin {}'}
+        ${{ hostname: 'example.com' }}                            | ${'https://example.com'}      | ${' hostname "example.com"'}
+        ${{ port: 8888 }}                                         | ${'http://localhost:8888'}    | ${' port 8888'}
+        ${{ secure: false }}                                      | ${'http://localhost:8080'}    | ${' secure false'}
+        ${{ secure: true }}                                       | ${'https://localhost:8080'}   | ${' secure true'}
+        ${{ hostname: 'example.com', port: 8443 }}                | ${'https://example.com:8443'} | ${' hostname "example.com" and port 8443'}
+        ${{ hostname: 'example.com', secure: false }}             | ${'http://example.com'}       | ${' hostname "example.com" and secure false'}
+        ${{ hostname: 'example.com', secure: true }}              | ${'https://example.com'}      | ${' hostname "example.com" and secure true'}
+        ${{ port: 8080, secure: false }}                          | ${'http://localhost:8080'}    | ${' port 8080 and secure false'}
+        ${{ port: 8443, secure: true }}                           | ${'https://localhost:8443'}   | ${' port 8443 and secure true'}
+        ${{ hostname: 'example.com', port: 8080, secure: false }} | ${'http://example.com:8080'}  | ${' hostname "example.com", port 8080 and secure false'}
+        ${{ hostname: 'example.com', port: 8443, secure: true }}  | ${'https://example.com:8443'} | ${' hostname "example.com", port 8443 and secure true'}
+    `(
+        'with$title has origin "$expectedOrigin"',
+        ({ origin, expectedOrigin }) => {
+            const params = getParams(origin)
 
-    //
-    const subject = backendConfiguration(params)
+            const subject = backendConfiguration(params)
 
-    //
-    expect(subject.origin).toBe('')
-    expect(subject.urlLoadingGraph).toBe(pathLoadingGraph)
-    expect(subject.urlRawPackage).toBe(pathRawPackage)
-})
-
-test('with origin empty object', () => {
-    // Given
-    const params = getParams({})
-
-    //
-    const subject = backendConfiguration(params)
-
-    //
-    const expectedOrigin = 'http://localhost:8080'
-    expect(subject.origin).toBe(expectedOrigin)
-    expect(subject.urlLoadingGraph).toBe(expectedOrigin + pathLoadingGraph)
-    expect(subject.urlRawPackage).toBe(expectedOrigin + pathRawPackage)
-})
-
-test('with origin string', () => {
-    // Given
-    const origin = 'https://example.com:1234'
-    const params = getParams(origin)
-
-    //
-    const subject = backendConfiguration(params)
-
-    //
-    const expectedOrigin = origin
-    expect(subject.origin).toBe(expectedOrigin)
-    expect(subject.urlLoadingGraph).toBe(expectedOrigin + pathLoadingGraph)
-    expect(subject.urlRawPackage).toBe(expectedOrigin + pathRawPackage)
-})
-
-test('with hostname', () => {
-    // Given
-    const params = getParams({ hostname: 'example.com' })
-
-    //
-    const subject = backendConfiguration(params)
-
-    //
-    const expectedOrigin = 'https://example.com'
-    expect(subject.origin).toBe(expectedOrigin)
-    expect(subject.urlLoadingGraph).toBe(expectedOrigin + pathLoadingGraph)
-    expect(subject.urlRawPackage).toBe(expectedOrigin + pathRawPackage)
-})
-
-test('with port', () => {
-    // Given
-    const params = getParams({ port: 8888 })
-
-    //
-    const subject = backendConfiguration(params)
-
-    //
-    const expectedOrigin = 'http://localhost:8888'
-    expect(subject.origin).toBe(expectedOrigin)
-    expect(subject.urlLoadingGraph).toBe(expectedOrigin + pathLoadingGraph)
-    expect(subject.urlRawPackage).toBe(expectedOrigin + pathRawPackage)
-})
-
-test('with hostname and port', () => {
-    // Given
-    const params = getParams({ hostname: 'example.com', port: 8443 })
-
-    //
-    const subject = backendConfiguration(params)
-
-    //
-    const expectedOrigin = 'https://example.com:8443'
-    expect(subject.origin).toBe(expectedOrigin)
-    expect(subject.urlLoadingGraph).toBe(expectedOrigin + pathLoadingGraph)
-    expect(subject.urlRawPackage).toBe(expectedOrigin + pathRawPackage)
-})
-
-test('with secure true', () => {
-    // Given
-    const params = getParams({ secure: true })
-
-    //
-    const subject = backendConfiguration(params)
-
-    //
-    const expectedOrigin = 'https://localhost:8080'
-    expect(subject.origin).toBe(expectedOrigin)
-    expect(subject.urlLoadingGraph).toBe(expectedOrigin + pathLoadingGraph)
-    expect(subject.urlRawPackage).toBe(expectedOrigin + pathRawPackage)
-})
-
-test('with secure false', () => {
-    // Given
-    const params = getParams({ secure: false })
-
-    //
-    const subject = backendConfiguration(params)
-
-    //
-    const expectedOrigin = 'http://localhost:8080'
-    expect(subject.origin).toBe(expectedOrigin)
-    expect(subject.urlLoadingGraph).toBe(expectedOrigin + pathLoadingGraph)
-    expect(subject.urlRawPackage).toBe(expectedOrigin + pathRawPackage)
-})
-
-test('with hostname and secure true', () => {
-    // Given
-    const params = getParams({ hostname: 'example.com', secure: true })
-
-    //
-    const subject = backendConfiguration(params)
-
-    //
-    const expectedOrigin = 'https://example.com'
-    expect(subject.origin).toBe(expectedOrigin)
-    expect(subject.urlLoadingGraph).toBe(expectedOrigin + pathLoadingGraph)
-    expect(subject.urlRawPackage).toBe(expectedOrigin + pathRawPackage)
-})
-
-test('with hostname and secure false', () => {
-    // Given
-    const params = getParams({ hostname: 'example.com', secure: false })
-
-    //
-    const subject = backendConfiguration(params)
-
-    //
-    const expectedOrigin = 'http://example.com'
-    expect(subject.origin).toBe(expectedOrigin)
-    expect(subject.urlLoadingGraph).toBe(expectedOrigin + pathLoadingGraph)
-    expect(subject.urlRawPackage).toBe(expectedOrigin + pathRawPackage)
-})
-
-test('with port and secure true', () => {
-    // Given
-    const params = getParams({ port: 8443, secure: true })
-
-    //
-    const subject = backendConfiguration(params)
-
-    //
-    const expectedOrigin = 'https://localhost:8443'
-    expect(subject.origin).toBe(expectedOrigin)
-    expect(subject.urlLoadingGraph).toBe(expectedOrigin + pathLoadingGraph)
-    expect(subject.urlRawPackage).toBe(expectedOrigin + pathRawPackage)
-})
-
-test('with port and secure false', () => {
-    // Given
-    const params = getParams({ port: 8888, secure: false })
-
-    //
-    const subject = backendConfiguration(params)
-
-    //
-    const expectedOrigin = 'http://localhost:8888'
-    expect(subject.origin).toBe(expectedOrigin)
-    expect(subject.urlLoadingGraph).toBe(expectedOrigin + pathLoadingGraph)
-    expect(subject.urlRawPackage).toBe(expectedOrigin + pathRawPackage)
-})
-
-test('with hostname, port and secure true', () => {
-    // Given
-    const params = getParams({
-        hostname: 'example.com',
-        port: 8443,
-        secure: true,
-    })
-
-    //
-    const subject = backendConfiguration(params)
-
-    //
-    const expectedOrigin = 'https://example.com:8443'
-    expect(subject.origin).toBe(expectedOrigin)
-    expect(subject.urlLoadingGraph).toBe(expectedOrigin + pathLoadingGraph)
-    expect(subject.urlRawPackage).toBe(expectedOrigin + pathRawPackage)
-})
-
-test('with hostname, port and secure false', () => {
-    // Given
-    const params = getParams({
-        hostname: 'example.com',
-        port: 8888,
-        secure: false,
-    })
-
-    //
-    const subject = backendConfiguration(params)
-
-    //
-    const expectedOrigin = 'http://example.com:8888'
-    expect(subject.origin).toBe(expectedOrigin)
-    expect(subject.urlLoadingGraph).toBe(expectedOrigin + pathLoadingGraph)
-    expect(subject.urlRawPackage).toBe(expectedOrigin + pathRawPackage)
+            expect(subject.origin).toBe(expectedOrigin)
+            expect(subject.urlLoadingGraph).toBe(
+                expectedOrigin + pathLoadingGraph,
+            )
+            expect(subject.urlRawPackage).toBe(expectedOrigin + pathRawPackage)
+        },
+    )
 })
