@@ -45,6 +45,11 @@ template = Template(
                 name='workersPool',
                 entryFile="./lib/workers-pool/index.ts",
                 loadDependencies=list(externals.keys())
+            ),
+            AuxiliaryModule(
+                name='webPm',
+                entryFile="./lib/webpm/index.ts",
+                loadDependencies=list(externals.keys())
             )
         ]
     )

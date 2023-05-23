@@ -52,6 +52,14 @@ const secondaryEntries : {[k:string]:{entryFile: string, name: string, loadDepen
             "@youwol/flux-view"
         ],
         "name": "workersPool"
+    },
+    "webPm": {
+        "entryFile": "./lib/webpm/index.ts",
+        "loadDependencies": [
+            "rxjs",
+            "@youwol/flux-view"
+        ],
+        "name": "webPm"
     }
 }
 
