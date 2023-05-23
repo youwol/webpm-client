@@ -18,12 +18,16 @@ import {
     StartEvent,
     DefaultLoadingScreenOptions,
 } from '../lib'
+import { backendConfiguration } from '../lib/backend-configuration'
 import { ContextTrait } from '../lib/workers-pool'
 
 RootRouter.HostName = getPyYouwolBasePath()
 RootRouter.Headers = { 'py-youwol-local-only': 'true' }
-Client.HostName = RootRouter.HostName
 Client.Headers = RootRouter.Headers
+Client.BackendConfiguration = backendConfiguration({
+    pathLoadingGraph: '/api/assets-gateway/cdn-backend/queries/loading-graph',
+    pathRawPackage: '/api/assets-gateway/raw/package',
+})
 
 /**
  *
@@ -130,10 +134,12 @@ export class TestContext implements ContextTrait {
     public readonly prefix = ''
     public readonly indent = 0
     public readonly t0: number
+
     constructor(params: { prefix?: string; t0?: number } = {}) {
         Object.assign(this, params)
         this.t0 = params.t0 || Date.now()
     }
+
     withChild<T>(name: string, cb: (ctx: ContextTrait) => T): T {
         const context = new TestContext({
             prefix: `\t${this.prefix}.${name}`,
@@ -142,6 +148,7 @@ export class TestContext implements ContextTrait {
         context.info('>Start')
         return cb(context)
     }
+
     info(text: string) {
         const delta = (Date.now() - this.t0) / 1000
         console['ensureLog'](`${delta}: ${this.prefix}: ${text}`)

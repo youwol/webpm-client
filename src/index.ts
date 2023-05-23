@@ -122,5 +122,10 @@ if (!globalThis['@youwol/cdn-client']) {
      * by the library itself, and the (latest) version exposed with the original library name has not been set.
      * This is why the following line is needed.
      */
+    cdnClient.Client.BackendConfiguration = cdnClient.backendConfiguration({
+        pathLoadingGraph:
+            '/api/assets-gateway/cdn-backend/queries/loading-graph',
+        pathRawPackage: '/api/assets-gateway/raw/package',
+    })
     globalThis['@youwol/cdn-client'] = { ...cdnClient, setup }
 }
