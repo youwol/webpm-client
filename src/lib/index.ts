@@ -29,7 +29,10 @@ export {
     Library,
     FileLocationString,
 } from './inputs.models'
-
+export {
+    backendConfiguration,
+    BackendConfiguration,
+} from './backend-configuration'
 export * from './errors.models'
 export * from './events.models'
 export { getAssetId, getUrlBase, parseResourceId } from './utils'

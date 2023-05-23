@@ -36,7 +36,8 @@
  * ## The backend server
  *
  * Serving the resources & resolving {@link LoadingGraph | loading graphs} is handled by a backend server, configured
- * by default to reach the one provided by YouWol. You can provide other host using the {@link Client} object.
+ * by default to reach the one provided by YouWol. You can provide other backend's configuration
+ * using the {@link backendConfiguration} function.
  *
  * ## Resources installation
  *
@@ -111,10 +112,19 @@
  *
  * @module MainModule
  */
+import { backendConfiguration } from './lib'
+
 export * from './lib'
 export { setup } from './auto-generated'
 import * as cdnClient from './lib'
 import { setup } from './auto-generated'
+
+cdnClient.Client.BackendConfiguration = backendConfiguration({
+    id: 'standard',
+    origin: '',
+    pathLoadingGraph: '/api/assets-gateway/cdn-backend/queries/loading-graph',
+    pathRawPackage: '/api/assets-gateway/raw/package',
+})
 
 if (!globalThis['@youwol/cdn-client']) {
     /**

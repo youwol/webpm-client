@@ -4,7 +4,7 @@ import { BehaviorSubject, forkJoin, Observable, of, Subject } from 'rxjs'
 import { filter, last, map, mapTo, take, takeWhile, tap } from 'rxjs/operators'
 import {
     CdnEvent,
-    getUrlBase,
+    getAssetId,
     InstallInputs,
     InstallLoadingGraphInputs,
     isCdnEvent,
@@ -16,6 +16,7 @@ import {
     WWorkerTrait,
 } from './web-worker.proxy'
 import { setup } from '../../auto-generated'
+import { BackendConfiguration } from '../backend-configuration'
 type WorkerId = string
 
 export interface ContextTrait {
@@ -397,8 +398,8 @@ export function entryPointWorker(messageEvent: MessageEvent) {
  * @category Worker's Message
  */
 export interface MessageInstall {
+    backendConfiguration: BackendConfiguration
     cdnUrl: string
-    hostName: string
     variables: WorkerVariable<unknown>[]
     functions: { id: string; target: string }[]
     cdnInstallation: InstallInputs | InstallLoadingGraphInputs
@@ -422,9 +423,9 @@ function entryPointInstall(input: EntryPointArguments<MessageInstall>) {
 
     console.log('Install environment in worker', input)
 
-    self['importScripts'](`${input.args.hostName}${input.args.cdnUrl}`)
+    self['importScripts'](input.args.cdnUrl)
     const cdn = self['@youwol/cdn-client']
-    cdn.Client.HostName = input.args.hostName
+    cdn.Client.BackendConfiguration = input.args.backendConfiguration
 
     const onEvent = (cdnEvent) => {
         const message = { type: 'CdnEvent', event: cdnEvent }
@@ -605,6 +606,7 @@ export type ScheduleInput<TArgs> = {
  * @category Getting Started
  */
 export class WorkersPool {
+    static BackendConfiguration: BackendConfiguration
     static webWorkersProxy: IWWorkerProxy = new WebWorkersBrowser()
 
     /**
@@ -695,6 +697,11 @@ export class WorkersPool {
     }> = []
 
     constructor(params: WorkersPoolInput) {
+        if (WorkersPool.BackendConfiguration === undefined) {
+            throw new Error(
+                'Client.BackendConfiguration not configured and no explicit backendConfiguration param',
+            )
+        }
         this.backgroundContext =
             params.ctxFactory && params.ctxFactory('background management')
         this.cdnEvent$ = params.cdnEvent$ || new Subject<CdnEventWorker>()
@@ -956,17 +963,14 @@ export class WorkersPool {
                 context: ctx,
             })
             const taskChannel$ = this.getTaskChannel$(p, taskId, context)
-            const hostName =
-                window.location.origin != 'null'
-                    ? window.location.origin
-                    : window.location.ancestorOrigins[0]
             const cdnPackage = '@youwol/cdn-client'
+            const cdnUrl = `${
+                WorkersPool.BackendConfiguration.urlRawPackage
+            }/${getAssetId(cdnPackage)}/${setup.version}/dist/${cdnPackage}.js`
+
             const argsInstall: MessageInstall = {
-                cdnUrl: `${getUrlBase(
-                    cdnPackage,
-                    setup.version,
-                )}/dist/${cdnPackage}.js`,
-                hostName: hostName,
+                backendConfiguration: WorkersPool.BackendConfiguration,
+                cdnUrl: cdnUrl,
                 variables: this.environment.variables,
                 functions: this.environment.functions.map(({ id, target }) => ({
                     id,
