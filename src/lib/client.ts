@@ -552,7 +552,7 @@ export class Client {
                     )
                     link.classList.add(...classes)
                     link.setAttribute('type', 'text/css')
-                    link.href = this.backendConfiguration.origin + url
+                    link.href = url
                     link.rel = 'stylesheet'
                     renderingWindow.document
                         .getElementsByTagName('head')[0]
