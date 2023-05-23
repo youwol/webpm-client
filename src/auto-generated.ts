@@ -55,10 +55,7 @@ const secondaryEntries : {[k:string]:{entryFile: string, name: string, loadDepen
     },
     "webPm": {
         "entryFile": "./lib/webpm/index.ts",
-        "loadDependencies": [
-            "rxjs",
-            "@youwol/flux-view"
-        ],
+        "loadDependencies": [],
         "name": "webPm"
     }
 }

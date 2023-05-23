@@ -49,7 +49,6 @@ template = Template(
             AuxiliaryModule(
                 name='webPm',
                 entryFile="./lib/webpm/index.ts",
-                loadDependencies=list(externals.keys())
             )
         ]
     )
