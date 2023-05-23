@@ -1,5 +1,6 @@
 import { setup } from '../auto-generated'
 import * as cdnClient from '.'
+import { backendConfiguration } from '.'
 
 export type WorkersModule = typeof import('./workers-pool')
 
@@ -33,13 +34,14 @@ export async function installWorkersPoolModule(): Promise<WorkersModule> {
                  * from the window's location.
                  * This is only when the cdnClient lib is used with 'standard' configuration.
                  */
-                config = {
-                    ...config,
+                config = backendConfiguration({
+                    pathLoadingGraph: config.urlLoadingGraph,
+                    pathRawPackage: config.urlRawPackage,
                     origin:
                         window.location.origin != 'null'
                             ? window.location.origin
                             : window.location.ancestorOrigins[0],
-                }
+                })
             }
             module.WorkersPool.BackendConfiguration = config
             return module
