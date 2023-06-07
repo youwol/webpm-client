@@ -199,7 +199,7 @@ export function importScriptWebWorker({ url }): undefined | Error {
         return
     }
     try {
-        self['importScripts'](`${Client.HostName}${url}`)
+        self['importScripts'](url)
         self['cdnClientImportedScriptUrls'] = [...importedScripts, url]
     } catch (error) {
         console.error(`Failed to import script ${url} in WebWorker`, error)
@@ -299,7 +299,7 @@ export function getAssetId(name: string) {
  */
 export function getUrlBase(name: string, version: string) {
     const assetId = getAssetId(name)
-    return `/api/assets-gateway/raw/package/${assetId}/${version}`
+    return `${Client.BackendConfiguration.urlRawPackage}/${assetId}/${version}`
 }
 
 /**

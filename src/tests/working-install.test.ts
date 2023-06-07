@@ -11,13 +11,22 @@ import {
     InstallInputs,
     installLoadingGraph,
     parseResourceId,
+    Client,
 } from '../lib'
 import '../lib/inputs.models'
-import { cleanDocument, expectEvents, installPackages$ } from './common'
+import {
+    cleanDocument,
+    expectEvents,
+    installPackages$,
+    testBackendConfig,
+} from './common'
 import './mock-requests'
 import { StateImplementation } from '../lib/state'
 
+const originString = 'http://localhost:2001'
+
 beforeAll((done) => {
+    Client.BackendConfiguration = testBackendConfig
     installPackages$([
         './.packages/root.zip',
         './.packages/a.zip',
@@ -58,9 +67,8 @@ test('fetch script', async () => {
         name: 'a',
         version: '1.0.0',
         assetId: 'YQ==',
-        url: '/api/assets-gateway/raw/package/YQ==/1.0.0/folder/add-on.js',
-        content:
-            "window.a.addOn = ['add-on']\n\n//# sourceURL=/api/assets-gateway/raw/package/YQ==/1.0.0/folder/",
+        url: `${originString}/api/assets-gateway/raw/package/YQ==/1.0.0/folder/add-on.js`,
+        content: `window.a.addOn = ['add-on']\n\n//# sourceURL=${originString}/api/assets-gateway/raw/package/YQ==/1.0.0/folder/`,
     })
 })
 
@@ -188,7 +196,7 @@ test('loading graph a', async () => {
     addOn: [],
 }
 
-//# sourceURL=/api/assets-gateway/raw/package/YQ==/1.0.0/`)
+//# sourceURL=${originString}/api/assets-gateway/raw/package/YQ==/1.0.0/`)
 })
 
 test('install a', async () => {
@@ -288,7 +296,9 @@ test('install style sheet', async () => {
         css: ['a#1.0.0~style.css'],
     })
     const link = document.querySelector('link')
-    expect(link.id).toBe('/api/assets-gateway/raw/package/YQ==/1.0.0/style.css')
+    expect(link.id).toBe(
+        `${originString}/api/assets-gateway/raw/package/YQ==/1.0.0/style.css`,
+    )
     expect(link.classList.contains('cdn-client_a')).toBeTruthy()
 })
 

@@ -36,7 +36,8 @@
  * ## The backend server
  *
  * Serving the resources & resolving {@link LoadingGraph | loading graphs} is handled by a backend server, configured
- * by default to reach the one provided by YouWol. You can provide other host using the {@link Client} object.
+ * by default to reach the one provided by YouWol. You can provide other backend's configuration
+ * using the {@link backendConfiguration} function.
  *
  * ## Resources installation
  *
@@ -111,10 +112,38 @@
  *
  * @module MainModule
  */
+
 export * from './lib'
 export { setup } from './auto-generated'
 import * as cdnClient from './lib'
 import { setup } from './auto-generated'
+
+let config
+// In a worker, globalThis.document is undefined -> no config initialization here.
+// In this case it is propagated when calling 'installWorkersPoolModule'.
+if (globalThis.document) {
+    const src = document.currentScript.getAttribute('src')
+    const configStandard = cdnClient.backendConfiguration({
+        id: 'standard',
+        origin: '',
+        pathLoadingGraph:
+            '/api/assets-gateway/cdn-backend/queries/loading-graph',
+        pathRawPackage: '/api/assets-gateway/raw/package',
+    })
+    // 'assets-gateway-bis' is temporary until the WebPM server is deployed.
+    // to simulate it, add to 'backends' in the file 'native_backends.py' in youwol.app.routers:
+    //     BackendPlugin(prefix="/api/assets-gateway-bis", tags=["Assets gateway"],
+    //     router=assets_gateway.get_router(assets_gtw_config_py_youwol)),
+    const configWebPM = cdnClient.backendConfiguration({
+        id: 'webPM',
+        origin: { secure: false, hostname: 'localhost', port: 2000 },
+        pathLoadingGraph:
+            '/api/assets-gateway-bis/cdn-backend/queries/loading-graph',
+        pathRawPackage: '/api/assets-gateway-bis/raw/package',
+    })
+    config = src.includes('assets-gateway-bis') ? configWebPM : configStandard
+}
+cdnClient.Client.BackendConfiguration = config
 
 if (!globalThis['@youwol/cdn-client']) {
     /**

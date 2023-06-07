@@ -31,6 +31,7 @@ import {
     installAliases,
     isInstanceOfWindow,
 } from './utils'
+import { BackendConfiguration } from './backend-configuration'
 
 /**
  *
@@ -99,6 +100,11 @@ export function monitoring() {
  */
 export class Client {
     private static state = StateImplementation
+    /**
+     * Default backend configuration.
+     * Can be overriden at construction, see {@link Client.backendConfiguration}.
+     */
+    public static BackendConfiguration: BackendConfiguration
 
     static Headers: { [key: string]: string } = {}
     /**
@@ -116,25 +122,34 @@ export class Client {
     public readonly headers: { [key: string]: string } = {}
 
     /**
-     * Hostname used when doing HTTP requests.
+     * Backend's configuration used when doing HTTP requests, see {@link backendConfiguration}.
      *
-     * `this.hostName = hostName ? hostName : Client.HostName`
+     * See {@link Client.constructor}.
      */
-    public readonly hostName: string
+    public readonly backendConfiguration: BackendConfiguration
 
     /**
-     * @param params options setting up HTTP requests regarding {@link Client.headers} & {@link Client.hostName}
+     * @param params options setting up HTTP requests
      * @param params.headers headers forwarded by every request, in addition to {@link Client.Headers}.
-     * @param params.hostName host name of the cdn server, if none provided use {@link Client.HostName}
+     * @param params.backendConfiguration backend configuration, if none provided use {@link Client.BackendConfiguration}
      */
     constructor(
         params: {
             headers?: { [_key: string]: string }
-            hostName?: string
+            backendConfiguration?: BackendConfiguration
         } = {},
     ) {
         this.headers = { ...Client.Headers, ...(params.headers || {}) }
-        this.hostName = params.hostName || Client.HostName
+        if (
+            params.backendConfiguration === undefined &&
+            Client.BackendConfiguration === undefined
+        ) {
+            throw new Error(
+                'Client.BackendConfiguration not configured and no explicit backendConfiguration param',
+            )
+        }
+        this.backendConfiguration =
+            params.backendConfiguration ?? Client.BackendConfiguration
     }
 
     /**
@@ -166,8 +181,7 @@ export class Client {
         if (Client.state.fetchedLoadingGraph[key]) {
             return finalize()
         }
-        const url = `${Client.HostName}/api/assets-gateway/cdn-backend/queries/loading-graph`
-        const request = new Request(url, {
+        const request = new Request(this.backendConfiguration.urlLoadingGraph, {
             method: 'POST',
             body: JSON.stringify(body),
             headers: { ...this.headers, 'content-type': 'application/json' },
@@ -186,14 +200,16 @@ export class Client {
     async fetchScript(inputs: FetchScriptInputs): Promise<FetchedScript> {
         let { url, name } = inputs
         const onEvent = inputs.onEvent
-        if (!url.startsWith('/api/assets-gateway/raw/package')) {
+        if (!url.startsWith(this.backendConfiguration.urlRawPackage)) {
             url = url.startsWith('/') ? url : `/${url}`
-            url = `/api/assets-gateway/raw/package${url}`
+            url = `${this.backendConfiguration.urlRawPackage}${url}`
         }
 
-        const parts = url.split('/')
-        const assetId = parts[5]
-        const version = parts[6]
+        const parts = url
+            .substring(this.backendConfiguration.urlRawPackage.length)
+            .split('/')
+        const assetId = parts[1]
+        const version = parts[2]
         name = name || parts[parts.length - 1]
         url = Client.state.getPatchedUrl({
             name,
@@ -341,7 +357,7 @@ export class Client {
                 )
                 return {
                     assetId,
-                    url: `/api/assets-gateway/raw/package/${cdn_url}`,
+                    url: `${this.backendConfiguration.urlRawPackage}/${cdn_url}`,
                     name: asset.name,
                     version: asset.version,
                 }
@@ -500,7 +516,7 @@ export class Client {
         const getLinkElement = (url) => {
             return Array.from(
                 renderingWindow.document.head.querySelectorAll('link'),
-            ).find((e) => e.href == this.hostName + url)
+            ).find((e) => e.href == this.backendConfiguration.origin + url)
         }
         const futures = css
             .map((elem) => {
@@ -536,7 +552,7 @@ export class Client {
                     )
                     link.classList.add(...classes)
                     link.setAttribute('type', 'text/css')
-                    link.href = this.hostName + url
+                    link.href = url
                     link.rel = 'stylesheet'
                     renderingWindow.document
                         .getElementsByTagName('head')[0]
