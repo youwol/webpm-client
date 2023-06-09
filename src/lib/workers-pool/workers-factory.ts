@@ -157,6 +157,13 @@ export interface WorkerContext {
      * @param data data to send.
      */
     sendData: (data: Record<string, unknown>) => void
+
+    /**
+     * If defined by the developer in its worker's implementation,
+     * every message send using {@link WorkersPool.sendData} will
+     * be forwarded to this callback.
+     */
+    onData?: (message) => void
 }
 
 /**
@@ -229,13 +236,42 @@ export interface MessageData {
 }
 
 /**
+ * Message send from the main thread to a worker for a particular task.
+ * See {@link WorkersPool.sendData}.
+ *
+ * @category Worker's Message
+ */
+export interface MainToWorkerMessage {
+    /**
+     * Id of the task
+     */
+    taskId: string
+
+    /**
+     * Id of the worker
+     */
+    workerId: string
+
+    /**
+     * Data forwarded
+     */
+    data: unknown
+}
+
+/**
  * Messages exchanged between the main thread and the workers' thread.
  *
  * @category Worker's Message
  */
 export interface Message {
-    type: 'Execute' | 'Exit' | 'Start' | 'Log' | 'Data'
-    data: MessageExecute | MessageData | MessageExit | MessageLog | MessageStart
+    type: 'Execute' | 'Exit' | 'Start' | 'Log' | 'Data' | 'MainToWorkerMessage'
+    data:
+        | MessageExecute
+        | MessageData
+        | MessageExit
+        | MessageLog
+        | MessageStart
+        | MainToWorkerMessage
 }
 
 /**
@@ -272,6 +308,12 @@ export function entryPointWorker(messageEvent: MessageEvent) {
 
     const message: Message = messageEvent.data
     const workerScope = globalThis as unknown as DedicatedWorkerGlobalScope
+
+    // contextByTasks allows to communicate from main to worker after tasks have started execution.
+    // In worker's implementation, the developer has to define the property `onMessage` of the received `context`.
+    globalThis.contextByTasks = globalThis.contextByTasks || {}
+    const contextByTasks = globalThis.contextByTasks
+
     const postMessage = (message: { type: string; data: unknown }) => {
         try {
             workerScope.postMessage(message)
@@ -282,6 +324,9 @@ export function entryPointWorker(messageEvent: MessageEvent) {
             )
             if (message.type == 'Exit') {
                 const data = message.data as MessageExit
+                if (contextByTasks[data.taskId]) {
+                    delete contextByTasks[data.taskId]
+                }
                 workerScope.postMessage({
                     type: 'Exit',
                     data: {
@@ -294,6 +339,14 @@ export function entryPointWorker(messageEvent: MessageEvent) {
         }
     }
 
+    if (message.type == 'MainToWorkerMessage') {
+        const messageContent: MainToWorkerMessage =
+            message.data as unknown as MainToWorkerMessage
+        const { taskId, data } = messageContent
+        contextByTasks[taskId] &&
+            contextByTasks[taskId].onData &&
+            contextByTasks[taskId].onData(data)
+    }
     // Following is a workaround to allow installing libraries using 'window' instead of 'globalThis' or 'self'.
     workerScope['window'] = globalThis
     if (message.type == 'Execute') {
@@ -321,6 +374,9 @@ export function entryPointWorker(messageEvent: MessageEvent) {
                 })
             },
         }
+
+        contextByTasks[data.taskId] = context
+
         const entryPoint =
             // The first branch is to facilitate test environment
             typeof data.entryPoint == 'function'
@@ -853,6 +909,40 @@ export class WorkersPool {
 
             return taskChannel$
         })
+    }
+
+    /**
+     * Send a message from main thread to the worker processing a target task.
+     * The function running in the worker has to instrument the received `context`
+     * argument in order to process the messages.
+     * E.g.
+     * ```
+     * async function functionInWorker({
+     *     args,
+     *     workerScope,
+     *     workerId,
+     *     taskId,
+     *     context,
+     * }){
+     *     context.onData = (args) => {
+     *         console.log('Received data from main thread', args)
+     *     }
+     * }
+     * ```
+     * @param taskId target taskId
+     * @param args arguments to forward,
+     * should be valid regarding the [structured clone algo](https://developer.mozilla.org/en-US/docs/Web/API/Web_Workers_API/Structured_clone_algorithm).
+     */
+    sendData<T>({ taskId, data }: { taskId: string; data: T }) {
+        const runningTask = this.runningTasks$.value.find(
+            (t) => t.taskId == taskId,
+        )
+        if (!runningTask) {
+            console.error(`WorkersPool.sendMessage: no task #${taskId} running`)
+            return
+        }
+        const worker = this.workers$.value[runningTask.workerId].worker
+        worker.send({ taskId, data })
     }
 
     private getTaskChannel$(

@@ -58,7 +58,9 @@ class WebWorkerJest implements WWorkerTrait {
             entryPointWorker({ data: message })
         }, 0)
     }
-
+    send() {
+        /*not tested*/
+    }
     sendBackToMain(message) {
         this.messages.push(message)
         this.onMessageMain({ data: message })
