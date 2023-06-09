@@ -193,14 +193,14 @@ export function importScriptMainWindow({
 }
 
 export function importScriptWebWorker({ url }): undefined | Error {
-    const importedScripts = self['cdnClientImportedScriptUrls'] || []
-
-    if (importedScripts.includes[url]) {
+    const cacheKey = 'cdnClientImportedScriptUrls'
+    const importedScripts = self[cacheKey] || []
+    if (importedScripts.includes(url)) {
         return
     }
     try {
         self['importScripts'](url)
-        self['cdnClientImportedScriptUrls'] = [...importedScripts, url]
+        self[cacheKey] = [...importedScripts, url]
     } catch (error) {
         console.error(`Failed to import script ${url} in WebWorker`, error)
         return error
