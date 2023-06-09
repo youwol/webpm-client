@@ -12,7 +12,7 @@
  * <iframe id="iFrameExample" src="" width="100%" height="800px"></iframe>
  * <script>
  *      const src = `
- *          function inWorker({args, workerScope}){
+ *      function inWorker({args, workerScope}){
  *          const {PY} = workerScope
  *          PY.registerJsModule('jsModule', {count: args.count})
  *          return PY.runPython(\`
