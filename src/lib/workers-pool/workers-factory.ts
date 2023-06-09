@@ -394,6 +394,7 @@ export function entryPointWorker(messageEvent: MessageEvent) {
             const resultOrPromise = entryPoint({
                 args: data.args,
                 taskId: data.taskId,
+                workerId: data.workerId,
                 workerScope: workerScope,
                 context,
             })
