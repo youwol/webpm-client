@@ -64,7 +64,7 @@ export const setup = {
         assetId:'QHlvdXdvbC9jZG4tY2xpZW50',
     version:'2.0.4-wip',
     shortDescription:"Library for dynamic npm's libraries installation from YouWol's CDN.",
-    developerDocumentation:'https://platform.youwol.com/applications/@youwol/cdn-explorer/latest?package=@youwol/cdn-client',
+    developerDocumentation:'https://platform.youwol.com/applications/@youwol/cdn-explorer/latest?package=@youwol/cdn-client&tab=doc',
     npmPackage:'https://www.npmjs.com/package/@youwol/cdn-client',
     sourceGithub:'https://github.com/youwol/cdn-client',
     userGuide:'',
@@ -79,7 +79,7 @@ export const setup = {
     },
 
     installMainModule: ({cdnClient, installParameters}:{
-        cdnClient:{install:(unknown) => Promise<Window>},
+        cdnClient:{install:(unknown) => Promise<WindowOrWorkerGlobalScope>},
         installParameters?
     }) => {
         const parameters = installParameters || {}
@@ -98,7 +98,7 @@ export const setup = {
     },
     installAuxiliaryModule: ({name, cdnClient, installParameters}:{
         name: string,
-        cdnClient:{install:(unknown) => Promise<Window>},
+        cdnClient:{install:(unknown) => Promise<WindowOrWorkerGlobalScope>},
         installParameters?
     }) => {
         const entry = secondaryEntries[name]
