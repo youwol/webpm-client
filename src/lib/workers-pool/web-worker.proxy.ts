@@ -21,6 +21,14 @@ export interface WWorkerTrait {
         entryPoint: (args: EntryPointArguments<T>) => unknown
         args: T
     })
+
+    /**
+     * Send to the worker some data in the channel associated to `taskId`
+     * @param params.taskId task Id
+     * @param params.data arguments to send
+     */
+    send<T>(params: { taskId: string; data: T })
+
     terminate()
 }
 
@@ -69,6 +77,19 @@ export class WebWorkerBrowser implements WWorkerTrait {
         }
         this.worker.postMessage(message)
     }
+
+    send<T>({ taskId, data }: { taskId: string; data: T }) {
+        const messageToWorker = {
+            type: 'MainToWorkerMessage',
+            data: {
+                taskId,
+                workerId: this.uid,
+                data,
+            },
+        }
+        this.worker.postMessage(messageToWorker)
+    }
+
     terminate() {
         this.worker.terminate()
     }
