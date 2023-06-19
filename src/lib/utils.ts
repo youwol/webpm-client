@@ -299,7 +299,7 @@ export function getAssetId(name: string) {
  */
 export function getUrlBase(name: string, version: string) {
     const assetId = getAssetId(name)
-    return `${Client.BackendConfiguration.urlRawPackage}/${assetId}/${version}`
+    return `${Client.BackendConfiguration.urlResource}/${assetId}/${version}`
 }
 
 /**

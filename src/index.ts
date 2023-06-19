@@ -122,7 +122,7 @@ const configStandard = cdnClient.backendConfiguration({
     id: 'standard',
     origin: '',
     pathLoadingGraph: '/api/assets-gateway/cdn-backend/queries/loading-graph',
-    pathRawPackage: '/api/assets-gateway/raw/package',
+    pathResource: '/api/assets-gateway/raw/package',
 })
 // Configured by default to reach '@youwol/platform' (relative path as empty origin)
 let config = configStandard
@@ -138,17 +138,21 @@ if (globalThis.document && globalThis.document.currentScript) {
     //     router=assets_gateway.get_router(assets_gtw_config_py_youwol)),
     const configWebPM = cdnClient.backendConfiguration({
         id: 'webPM',
-        origin: { secure: false, hostname: 'localhost', port: 2000 },
-        pathLoadingGraph:
-            '/api/assets-gateway-bis/cdn-backend/queries/loading-graph',
-        pathRawPackage: '/api/assets-gateway-bis/raw/package',
+        origin: {
+            secure: true,
+            hostname: 'testing.webpm.org',
+            port: 443,
+        },
+        pathLoadingGraph: '/loading-graph',
+        pathResource: '/resource',
     })
 
+    config = src.includes('webpm.org') ? configWebPM : configStandard
     console.log('CDN script origin', {
         currentScript: globalThis.document.currentScript,
         src,
+        config,
     })
-    config = src.includes('assets-gateway-bis') ? configWebPM : configStandard
 }
 cdnClient.Client.BackendConfiguration = config
 

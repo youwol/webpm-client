@@ -200,13 +200,13 @@ export class Client {
     async fetchScript(inputs: FetchScriptInputs): Promise<FetchedScript> {
         let { url, name } = inputs
         const onEvent = inputs.onEvent
-        if (!url.startsWith(this.backendConfiguration.urlRawPackage)) {
+        if (!url.startsWith(this.backendConfiguration.urlResource)) {
             url = url.startsWith('/') ? url : `/${url}`
-            url = `${this.backendConfiguration.urlRawPackage}${url}`
+            url = `${this.backendConfiguration.urlResource}${url}`
         }
 
         const parts = url
-            .substring(this.backendConfiguration.urlRawPackage.length)
+            .substring(this.backendConfiguration.urlResource.length)
             .split('/')
         const assetId = parts[1]
         const version = parts[2]
@@ -357,7 +357,7 @@ export class Client {
                 )
                 return {
                     assetId,
-                    url: `${this.backendConfiguration.urlRawPackage}/${cdn_url}`,
+                    url: `${this.backendConfiguration.urlResource}/${cdn_url}`,
                     name: asset.name,
                     version: asset.version,
                 }

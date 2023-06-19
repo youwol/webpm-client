@@ -36,7 +36,7 @@ export async function installWorkersPoolModule(): Promise<WorkersModule> {
                  */
                 config = backendConfiguration({
                     pathLoadingGraph: config.urlLoadingGraph,
-                    pathRawPackage: config.urlRawPackage,
+                    pathResource: config.urlResource,
                     origin:
                         window.location.origin != 'null'
                             ? window.location.origin

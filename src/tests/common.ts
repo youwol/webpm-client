@@ -26,7 +26,7 @@ RootRouter.Headers = { 'py-youwol-local-only': 'true' }
 export const testBackendConfig = backendConfiguration({
     origin: { port: 2001 },
     pathLoadingGraph: '/api/assets-gateway/cdn-backend/queries/loading-graph',
-    pathRawPackage: '/api/assets-gateway/raw/package',
+    pathResource: '/api/assets-gateway/raw/package',
 })
 Client.BackendConfiguration = testBackendConfig
 Client.Headers = RootRouter.Headers

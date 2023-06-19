@@ -1,7 +1,7 @@
 import { backendConfiguration } from '../lib'
 
 const pathLoadingGraph = '/__loading_graph__'
-const pathRawPackage = '/__raw_package__'
+const pathResource = '/__raw_package__'
 
 function getParams(
     origin:
@@ -9,7 +9,7 @@ function getParams(
         | string
         | undefined = undefined,
 ) {
-    return { origin, pathRawPackage, pathLoadingGraph }
+    return { origin, pathResource, pathLoadingGraph }
 }
 
 test('without origin', () => {
@@ -22,7 +22,7 @@ test('without origin', () => {
     //
     expect(subject.origin).toBe('')
     expect(subject.urlLoadingGraph).toBe(pathLoadingGraph)
-    expect(subject.urlRawPackage).toBe(pathRawPackage)
+    expect(subject.urlResource).toBe(pathResource)
 })
 
 test('with origin empty object', () => {
@@ -36,7 +36,7 @@ test('with origin empty object', () => {
     const expectedOrigin = 'http://localhost:8080'
     expect(subject.origin).toBe(expectedOrigin)
     expect(subject.urlLoadingGraph).toBe(expectedOrigin + pathLoadingGraph)
-    expect(subject.urlRawPackage).toBe(expectedOrigin + pathRawPackage)
+    expect(subject.urlResource).toBe(expectedOrigin + pathResource)
 })
 
 test('with origin string', () => {
@@ -51,7 +51,7 @@ test('with origin string', () => {
     const expectedOrigin = origin
     expect(subject.origin).toBe(expectedOrigin)
     expect(subject.urlLoadingGraph).toBe(expectedOrigin + pathLoadingGraph)
-    expect(subject.urlRawPackage).toBe(expectedOrigin + pathRawPackage)
+    expect(subject.urlResource).toBe(expectedOrigin + pathResource)
 })
 
 test('with hostname', () => {
@@ -65,7 +65,7 @@ test('with hostname', () => {
     const expectedOrigin = 'https://example.com'
     expect(subject.origin).toBe(expectedOrigin)
     expect(subject.urlLoadingGraph).toBe(expectedOrigin + pathLoadingGraph)
-    expect(subject.urlRawPackage).toBe(expectedOrigin + pathRawPackage)
+    expect(subject.urlResource).toBe(expectedOrigin + pathResource)
 })
 
 test('with port', () => {
@@ -79,7 +79,7 @@ test('with port', () => {
     const expectedOrigin = 'http://localhost:8888'
     expect(subject.origin).toBe(expectedOrigin)
     expect(subject.urlLoadingGraph).toBe(expectedOrigin + pathLoadingGraph)
-    expect(subject.urlRawPackage).toBe(expectedOrigin + pathRawPackage)
+    expect(subject.urlResource).toBe(expectedOrigin + pathResource)
 })
 
 test('with hostname and port', () => {
@@ -93,7 +93,7 @@ test('with hostname and port', () => {
     const expectedOrigin = 'https://example.com:8443'
     expect(subject.origin).toBe(expectedOrigin)
     expect(subject.urlLoadingGraph).toBe(expectedOrigin + pathLoadingGraph)
-    expect(subject.urlRawPackage).toBe(expectedOrigin + pathRawPackage)
+    expect(subject.urlResource).toBe(expectedOrigin + pathResource)
 })
 
 test('with secure true', () => {
@@ -107,7 +107,7 @@ test('with secure true', () => {
     const expectedOrigin = 'https://localhost:8080'
     expect(subject.origin).toBe(expectedOrigin)
     expect(subject.urlLoadingGraph).toBe(expectedOrigin + pathLoadingGraph)
-    expect(subject.urlRawPackage).toBe(expectedOrigin + pathRawPackage)
+    expect(subject.urlResource).toBe(expectedOrigin + pathResource)
 })
 
 test('with secure false', () => {
@@ -121,7 +121,7 @@ test('with secure false', () => {
     const expectedOrigin = 'http://localhost:8080'
     expect(subject.origin).toBe(expectedOrigin)
     expect(subject.urlLoadingGraph).toBe(expectedOrigin + pathLoadingGraph)
-    expect(subject.urlRawPackage).toBe(expectedOrigin + pathRawPackage)
+    expect(subject.urlResource).toBe(expectedOrigin + pathResource)
 })
 
 test('with hostname and secure true', () => {
@@ -135,7 +135,7 @@ test('with hostname and secure true', () => {
     const expectedOrigin = 'https://example.com'
     expect(subject.origin).toBe(expectedOrigin)
     expect(subject.urlLoadingGraph).toBe(expectedOrigin + pathLoadingGraph)
-    expect(subject.urlRawPackage).toBe(expectedOrigin + pathRawPackage)
+    expect(subject.urlResource).toBe(expectedOrigin + pathResource)
 })
 
 test('with hostname and secure false', () => {
@@ -149,7 +149,7 @@ test('with hostname and secure false', () => {
     const expectedOrigin = 'http://example.com'
     expect(subject.origin).toBe(expectedOrigin)
     expect(subject.urlLoadingGraph).toBe(expectedOrigin + pathLoadingGraph)
-    expect(subject.urlRawPackage).toBe(expectedOrigin + pathRawPackage)
+    expect(subject.urlResource).toBe(expectedOrigin + pathResource)
 })
 
 test('with port and secure true', () => {
@@ -163,7 +163,7 @@ test('with port and secure true', () => {
     const expectedOrigin = 'https://localhost:8443'
     expect(subject.origin).toBe(expectedOrigin)
     expect(subject.urlLoadingGraph).toBe(expectedOrigin + pathLoadingGraph)
-    expect(subject.urlRawPackage).toBe(expectedOrigin + pathRawPackage)
+    expect(subject.urlResource).toBe(expectedOrigin + pathResource)
 })
 
 test('with port and secure false', () => {
@@ -177,7 +177,7 @@ test('with port and secure false', () => {
     const expectedOrigin = 'http://localhost:8888'
     expect(subject.origin).toBe(expectedOrigin)
     expect(subject.urlLoadingGraph).toBe(expectedOrigin + pathLoadingGraph)
-    expect(subject.urlRawPackage).toBe(expectedOrigin + pathRawPackage)
+    expect(subject.urlResource).toBe(expectedOrigin + pathResource)
 })
 
 test('with hostname, port and secure true', () => {
@@ -195,7 +195,7 @@ test('with hostname, port and secure true', () => {
     const expectedOrigin = 'https://example.com:8443'
     expect(subject.origin).toBe(expectedOrigin)
     expect(subject.urlLoadingGraph).toBe(expectedOrigin + pathLoadingGraph)
-    expect(subject.urlRawPackage).toBe(expectedOrigin + pathRawPackage)
+    expect(subject.urlResource).toBe(expectedOrigin + pathResource)
 })
 
 test('with hostname, port and secure false', () => {
@@ -213,5 +213,5 @@ test('with hostname, port and secure false', () => {
     const expectedOrigin = 'http://example.com:8888'
     expect(subject.origin).toBe(expectedOrigin)
     expect(subject.urlLoadingGraph).toBe(expectedOrigin + pathLoadingGraph)
-    expect(subject.urlRawPackage).toBe(expectedOrigin + pathRawPackage)
+    expect(subject.urlResource).toBe(expectedOrigin + pathResource)
 })

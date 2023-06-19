@@ -1056,7 +1056,7 @@ export class WorkersPool {
             const taskChannel$ = this.getTaskChannel$(p, taskId, context)
             const cdnPackage = '@youwol/cdn-client'
             const cdnUrl = `${
-                WorkersPool.BackendConfiguration.urlRawPackage
+                WorkersPool.BackendConfiguration.urlResource
             }/${getAssetId(cdnPackage)}/${setup.version}/dist/${cdnPackage}.js`
 
             const argsInstall: MessageInstall = {
