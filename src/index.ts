@@ -143,6 +143,11 @@ if (globalThis.document && globalThis.document.currentScript) {
             '/api/assets-gateway-bis/cdn-backend/queries/loading-graph',
         pathRawPackage: '/api/assets-gateway-bis/raw/package',
     })
+
+    console.log('CDN script origin', {
+        currentScript: globalThis.document.currentScript,
+        src,
+    })
     config = src.includes('assets-gateway-bis') ? configWebPM : configStandard
 }
 cdnClient.Client.BackendConfiguration = config
