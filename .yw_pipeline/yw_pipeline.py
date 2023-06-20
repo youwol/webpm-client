@@ -13,6 +13,7 @@ from youwol.pipelines.pipeline_typescript_weback_npm import (
     test_result,
     test_coverage,
     PublishConfig,
+    BuildStep,
 )
 from youwol.utils.context import Context
 
@@ -23,6 +24,8 @@ test_html_outputs: Artifact = Artifact(
     ),
     links=[Link(name="HTML outputs", url="src/tests/.html-outputs/index.html")],
 )
+
+copy_yw_config_cmd = "cp ./yw-backend.config.json ./dist/@youwol/cdn-client.config.json"
 
 
 class PipelineFactory(IPipelineFactory):
@@ -44,5 +47,12 @@ class PipelineFactory(IPipelineFactory):
             publishConfig=PublishConfig(
                 packagedArtifacts=["dist", "docs", "test-coverage", "test-html-outputs"]
             ),
+            overridenSteps=[
+                BuildStep(
+                    id=f"build-{flow}",
+                    run=f"yarn build:{flow} && {copy_yw_config_cmd}",
+                )
+                for flow in ["dev", "prod"]
+            ],
         )
         return await pipeline(config, context)
