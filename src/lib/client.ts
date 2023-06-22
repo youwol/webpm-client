@@ -32,6 +32,7 @@ import {
     isInstanceOfWindow,
 } from './utils'
 import { BackendConfiguration } from './backend-configuration'
+import { FrontendConfiguration } from './frontend-configuration'
 
 /**
  *
@@ -101,9 +102,14 @@ export function monitoring() {
 export class Client {
     private static state = StateImplementation
     /**
-     * Default backend configuration.
+     * Backend configuration.
      */
     public static BackendConfiguration: BackendConfiguration
+
+    /**
+     * Frontend configuration
+     */
+    public static FrontendConfiguration: FrontendConfiguration = {}
 
     static Headers: { [key: string]: string } = {}
     /**
@@ -536,6 +542,10 @@ export class Client {
                 return new Promise<HTMLLinkElement>((resolveCb) => {
                     const link = renderingWindow.document.createElement('link')
                     link.id = url
+                    if (Client.FrontendConfiguration.crossOrigin != undefined) {
+                        link.crossOrigin =
+                            Client.FrontendConfiguration.crossOrigin
+                    }
                     const classes = [assetId, name, version].map((key) =>
                         sanitizeCssId(key),
                     )

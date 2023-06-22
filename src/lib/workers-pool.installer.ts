@@ -39,6 +39,8 @@ export async function installWorkersPoolModule(): Promise<WorkersModule> {
                 })
             }
             module.WorkersPool.BackendConfiguration = config
+            module.WorkersPool.FrontendConfiguration =
+                cdnClient.Client.FrontendConfiguration
             return module
         })
 }

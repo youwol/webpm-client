@@ -179,6 +179,9 @@ export function importScriptMainWindow({
     }
     const script = document.createElement('script')
     script.id = url
+    if (Client.FrontendConfiguration.crossOrigin != undefined) {
+        script.crossOrigin = Client.FrontendConfiguration.crossOrigin
+    }
     const classes = [assetId, name, version].map((key) => sanitizeCssId(key))
     script.classList.add(...classes)
     script.innerHTML = content
@@ -199,7 +202,9 @@ export function importScriptWebWorker({ url }): undefined | Error {
         return
     }
     try {
-        self['importScripts'](url)
+        // The way scripts are imported into workers depend on FrontendConfiguration.crossOrigin attribute.
+        // It is implemented in the function 'entryPointInstall'
+        self['customImportScripts'](url)
         self[cacheKey] = [...importedScripts, url]
     } catch (error) {
         console.error(`Failed to import script ${url} in WebWorker`, error)

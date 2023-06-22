@@ -140,7 +140,12 @@ if (globalThis.document && globalThis.document.currentScript) {
     cdnClient.Client.BackendConfiguration = cdnClient.backendConfiguration(
         JSON.parse(request.responseText),
     )
-    console.log({ config: cdnClient.Client.BackendConfiguration })
+    const crossOrigin = document.currentScript.getAttribute('crossorigin')
+    if (crossOrigin != null) {
+        cdnClient.Client.FrontendConfiguration = {
+            crossOrigin,
+        }
+    }
 }
 
 if (!globalThis['@youwol/cdn-client']) {
