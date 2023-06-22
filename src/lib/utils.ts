@@ -141,7 +141,11 @@ export async function applyModuleSideEffects(
     executingWindow[exportedName]['__yw_set_from_version__'] = origin.version
 
     StateImplementation.registerImportedModules([origin], executingWindow)
-
+    if (origin.name == '@youwol/cdn-client') {
+        const installedClient = executingWindow[exportedName].Client
+        installedClient.FrontendConfiguration = Client.FrontendConfiguration
+        installedClient.BackendConfiguration = Client.BackendConfiguration
+    }
     for (const sideEffectFct of userSideEffects) {
         const args = {
             module: executingWindow[exportedName],
