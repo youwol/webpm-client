@@ -118,34 +118,35 @@ export { setup } from './auto-generated'
 import * as cdnClient from './lib'
 import { setup } from './auto-generated'
 
-const configStandard = cdnClient.backendConfiguration({
-    id: 'standard',
-    origin: '',
-    pathLoadingGraph: '/api/assets-gateway/cdn-backend/queries/loading-graph',
-    pathRawPackage: '/api/assets-gateway/raw/package',
-})
-// Configured by default to reach '@youwol/platform' (relative path as empty origin)
-let config = configStandard
-
 // In a worker, globalThis.document is undefined -> no config initialization here.
 // In this case it is propagated when calling 'installWorkersPoolModule'.
-// Also, in Node environment (e.g. jest tests) `globalThis.document.currentScript` is undefined.
+// Also, in Node environment (e.g. jest tests) `globalThis.document.currentScript` is undefined -> it has to be set as
+// `Client.BackendConfiguration` static member.
 if (globalThis.document && globalThis.document.currentScript) {
     const src = document.currentScript.getAttribute('src')
-    // 'assets-gateway-bis' is temporary until the WebPM server is deployed.
-    // to simulate it, add to 'backends' in the file 'native_backends.py' in youwol.app.routers:
-    //     BackendPlugin(prefix="/api/assets-gateway-bis", tags=["Assets gateway"],
-    //     router=assets_gateway.get_router(assets_gtw_config_py_youwol)),
-    const configWebPM = cdnClient.backendConfiguration({
-        id: 'webPM',
-        origin: { secure: false, hostname: 'localhost', port: 2000 },
-        pathLoadingGraph:
-            '/api/assets-gateway-bis/cdn-backend/queries/loading-graph',
-        pathRawPackage: '/api/assets-gateway-bis/raw/package',
-    })
-    config = src.includes('assets-gateway-bis') ? configWebPM : configStandard
+    const pathConfig = [
+        ...src.split('/').slice(0, -1),
+        'cdn-client.config.json',
+    ].join('/')
+
+    // Using a synchronous request here is on purpose: the objective is to provide a module fully initialized.
+    // Using a promise over `backendConfiguration` can be tempting, but:
+    // *  promise will propagate and make the API more difficult to use for some functions
+    // *  in any practical cases, no installation can start until the following request resolve (so it is like 'frozen')
+    // *  the request is usually a couple of 10ms, and is most of the time cached
+    const request = new XMLHttpRequest()
+    request.open('GET', pathConfig, false) // `false` makes the request synchronous
+    request.send(null)
+    cdnClient.Client.BackendConfiguration = cdnClient.backendConfiguration(
+        JSON.parse(request.responseText),
+    )
+    const crossOrigin = document.currentScript.getAttribute('crossorigin')
+    if (crossOrigin != null) {
+        cdnClient.Client.FrontendConfiguration = {
+            crossOrigin,
+        }
+    }
 }
-cdnClient.Client.BackendConfiguration = config
 
 if (!globalThis['@youwol/cdn-client']) {
     /**

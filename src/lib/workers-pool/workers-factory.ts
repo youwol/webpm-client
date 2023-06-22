@@ -17,6 +17,7 @@ import {
 } from './web-worker.proxy'
 import { setup } from '../../auto-generated'
 import { BackendConfiguration } from '../backend-configuration'
+import { FrontendConfiguration } from '../frontend-configuration'
 type WorkerId = string
 
 export interface ContextTrait {
@@ -456,6 +457,7 @@ export function entryPointWorker(messageEvent: MessageEvent) {
  */
 export interface MessageInstall {
     backendConfiguration: BackendConfiguration
+    frontendConfiguration: FrontendConfiguration
     cdnUrl: string
     variables: WorkerVariable<unknown>[]
     functions: { id: string; target: string }[]
@@ -472,6 +474,23 @@ function entryPointInstall(input: EntryPointArguments<MessageInstall>) {
         // The environment is already installed
         return Promise.resolve()
     }
+    /**
+     * The function 'importScriptsXMLHttpRequest' is used in place of [importScripts](https://developer.mozilla.org/en-US/docs/Web/API/WorkerGlobalScope/importScripts)
+     * when 'FrontendConfiguration.crossOrigin' is "anonymous". Using 'importScripts' fails in this case (request are blocked).
+     */
+    function importScriptsXMLHttpRequest(...urls: string[]) {
+        urls.forEach((url) => {
+            const request = new XMLHttpRequest()
+            request.open('GET', url, false)
+            request.send(null)
+            eval(request.responseText)
+        })
+    }
+    self['customImportScripts'] = ['', 'anonymous'].includes(
+        input.args.frontendConfiguration.crossOrigin,
+    )
+        ? importScriptsXMLHttpRequest
+        : self['importScripts']
     function isLoadingGraphInstallInputs(
         body: InstallInputs | InstallLoadingGraphInputs,
     ): body is InstallLoadingGraphInputs {
@@ -480,7 +499,7 @@ function entryPointInstall(input: EntryPointArguments<MessageInstall>) {
 
     console.log('Install environment in worker', input)
 
-    self['importScripts'](input.args.cdnUrl)
+    self['customImportScripts'](input.args.cdnUrl)
     const cdn = self['@youwol/cdn-client']
     cdn.Client.BackendConfiguration = input.args.backendConfiguration
 
@@ -664,6 +683,7 @@ export type ScheduleInput<TArgs> = {
  */
 export class WorkersPool {
     static BackendConfiguration: BackendConfiguration
+    static FrontendConfiguration: FrontendConfiguration = {}
     static webWorkersProxy: IWWorkerProxy = new WebWorkersBrowser()
 
     /**
@@ -1056,11 +1076,12 @@ export class WorkersPool {
             const taskChannel$ = this.getTaskChannel$(p, taskId, context)
             const cdnPackage = '@youwol/cdn-client'
             const cdnUrl = `${
-                WorkersPool.BackendConfiguration.urlRawPackage
+                WorkersPool.BackendConfiguration.urlResource
             }/${getAssetId(cdnPackage)}/${setup.version}/dist/${cdnPackage}.js`
 
             const argsInstall: MessageInstall = {
                 backendConfiguration: WorkersPool.BackendConfiguration,
+                frontendConfiguration: WorkersPool.FrontendConfiguration,
                 cdnUrl: cdnUrl,
                 variables: this.environment.variables,
                 functions: this.environment.functions.map(({ id, target }) => ({

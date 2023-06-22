@@ -15,7 +15,7 @@ export interface BackendConfiguration {
     /**
      * Backend's URL used to fetch the raw content of a package
      */
-    readonly urlRawPackage: string
+    readonly urlResource: string
     /**
      * id of the configuration
      */
@@ -54,13 +54,13 @@ function computeOrigin(
  */
 export function backendConfiguration({
     pathLoadingGraph,
-    pathRawPackage,
+    pathResource,
     origin,
     id,
 }: {
     id?: string
     pathLoadingGraph: string
-    pathRawPackage: string
+    pathResource: string
     origin?: { secure?: boolean; hostname?: string; port?: number } | string
 }): BackendConfiguration {
     if (typeof origin !== 'string') {
@@ -70,6 +70,6 @@ export function backendConfiguration({
         id,
         origin,
         urlLoadingGraph: `${origin}${pathLoadingGraph}`,
-        urlRawPackage: `${origin}${pathRawPackage}`,
+        urlResource: `${origin}${pathResource}`,
     }
 }

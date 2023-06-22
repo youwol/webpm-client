@@ -32,6 +32,7 @@ import {
     isInstanceOfWindow,
 } from './utils'
 import { BackendConfiguration } from './backend-configuration'
+import { FrontendConfiguration } from './frontend-configuration'
 
 /**
  *
@@ -101,10 +102,14 @@ export function monitoring() {
 export class Client {
     private static state = StateImplementation
     /**
-     * Default backend configuration.
-     * Can be overriden at construction, see {@link Client.backendConfiguration}.
+     * Backend configuration.
      */
     public static BackendConfiguration: BackendConfiguration
+
+    /**
+     * Frontend configuration
+     */
+    public static FrontendConfiguration: FrontendConfiguration = {}
 
     static Headers: { [key: string]: string } = {}
     /**
@@ -122,34 +127,18 @@ export class Client {
     public readonly headers: { [key: string]: string } = {}
 
     /**
-     * Backend's configuration used when doing HTTP requests, see {@link backendConfiguration}.
-     *
-     * See {@link Client.constructor}.
-     */
-    public readonly backendConfiguration: BackendConfiguration
-
-    /**
      * @param params options setting up HTTP requests
      * @param params.headers headers forwarded by every request, in addition to {@link Client.Headers}.
-     * @param params.backendConfiguration backend configuration, if none provided use {@link Client.BackendConfiguration}
      */
     constructor(
         params: {
             headers?: { [_key: string]: string }
-            backendConfiguration?: BackendConfiguration
         } = {},
     ) {
         this.headers = { ...Client.Headers, ...(params.headers || {}) }
-        if (
-            params.backendConfiguration === undefined &&
-            Client.BackendConfiguration === undefined
-        ) {
-            throw new Error(
-                'Client.BackendConfiguration not configured and no explicit backendConfiguration param',
-            )
+        if (Client.BackendConfiguration === undefined) {
+            throw new Error('Client.BackendConfiguration not configured')
         }
-        this.backendConfiguration =
-            params.backendConfiguration ?? Client.BackendConfiguration
     }
 
     /**
@@ -181,11 +170,17 @@ export class Client {
         if (Client.state.fetchedLoadingGraph[key]) {
             return finalize()
         }
-        const request = new Request(this.backendConfiguration.urlLoadingGraph, {
-            method: 'POST',
-            body: JSON.stringify(body),
-            headers: { ...this.headers, 'content-type': 'application/json' },
-        })
+        const request = new Request(
+            Client.BackendConfiguration.urlLoadingGraph,
+            {
+                method: 'POST',
+                body: JSON.stringify(body),
+                headers: {
+                    ...this.headers,
+                    'content-type': 'application/json',
+                },
+            },
+        )
         Client.state.fetchedLoadingGraph[key] = fetch(request).then((resp) =>
             resp.json(),
         )
@@ -200,13 +195,13 @@ export class Client {
     async fetchScript(inputs: FetchScriptInputs): Promise<FetchedScript> {
         let { url, name } = inputs
         const onEvent = inputs.onEvent
-        if (!url.startsWith(this.backendConfiguration.urlRawPackage)) {
+        if (!url.startsWith(Client.BackendConfiguration.urlResource)) {
             url = url.startsWith('/') ? url : `/${url}`
-            url = `${this.backendConfiguration.urlRawPackage}${url}`
+            url = `${Client.BackendConfiguration.urlResource}${url}`
         }
 
         const parts = url
-            .substring(this.backendConfiguration.urlRawPackage.length)
+            .substring(Client.BackendConfiguration.urlResource.length)
             .split('/')
         const assetId = parts[1]
         const version = parts[2]
@@ -357,7 +352,7 @@ export class Client {
                 )
                 return {
                     assetId,
-                    url: `${this.backendConfiguration.urlRawPackage}/${cdn_url}`,
+                    url: `${Client.BackendConfiguration.urlResource}/${cdn_url}`,
                     name: asset.name,
                     version: asset.version,
                 }
@@ -516,7 +511,7 @@ export class Client {
         const getLinkElement = (url) => {
             return Array.from(
                 renderingWindow.document.head.querySelectorAll('link'),
-            ).find((e) => e.href == this.backendConfiguration.origin + url)
+            ).find((e) => e.href == Client.BackendConfiguration.origin + url)
         }
         const futures = css
             .map((elem) => {
@@ -547,6 +542,10 @@ export class Client {
                 return new Promise<HTMLLinkElement>((resolveCb) => {
                     const link = renderingWindow.document.createElement('link')
                     link.id = url
+                    if (Client.FrontendConfiguration.crossOrigin != undefined) {
+                        link.crossOrigin =
+                            Client.FrontendConfiguration.crossOrigin
+                    }
                     const classes = [assetId, name, version].map((key) =>
                         sanitizeCssId(key),
                     )

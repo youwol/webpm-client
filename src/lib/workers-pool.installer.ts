@@ -11,15 +11,10 @@ export type WorkersModule = typeof import('./workers-pool')
  * @category WorkersPool
  */
 export async function installWorkersPoolModule(): Promise<WorkersModule> {
-    // this patch is until the youwol's pipeline TS is updated regarding 'installAuxiliaryModule'.
-    // see issue: https://tooling.youwol.com/taiga/project/pyyouwol/issue/1137
-    const patchedClient = {
-        install: (inputs) => cdnClient.install(inputs) as Promise<Window>,
-    }
     return await setup
         .installAuxiliaryModule({
             name: 'workersPool',
-            cdnClient: patchedClient,
+            cdnClient,
             installParameters: {
                 executingWindow: window,
             },
@@ -36,7 +31,7 @@ export async function installWorkersPoolModule(): Promise<WorkersModule> {
                  */
                 config = backendConfiguration({
                     pathLoadingGraph: config.urlLoadingGraph,
-                    pathRawPackage: config.urlRawPackage,
+                    pathResource: config.urlResource,
                     origin:
                         window.location.origin != 'null'
                             ? window.location.origin
@@ -44,6 +39,8 @@ export async function installWorkersPoolModule(): Promise<WorkersModule> {
                 })
             }
             module.WorkersPool.BackendConfiguration = config
+            module.WorkersPool.FrontendConfiguration =
+                cdnClient.Client.FrontendConfiguration
             return module
         })
 }
