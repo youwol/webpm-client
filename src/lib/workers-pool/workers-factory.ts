@@ -726,7 +726,7 @@ export class WorkersPool {
      * @group Observables
      */
     public readonly runningTasks$ = new BehaviorSubject<
-        { workerId: string; taskId: string }[]
+        { workerId: string; taskId: string; title: string }[]
     >([])
     /**
      * Observable that emits the id of workers that are currently running a tasks each time a task is started
@@ -767,6 +767,7 @@ export class WorkersPool {
 
     private tasksQueue: Array<{
         taskId: string
+        title: string
         targetWorkerId?: string
         args: unknown
         channel$: Observable<Message>
@@ -888,6 +889,7 @@ export class WorkersPool {
                     entryPoint,
                     args,
                     taskId,
+                    title,
                     channel$: taskChannel$,
                     targetWorkerId,
                 })
@@ -907,6 +909,7 @@ export class WorkersPool {
                     entryPoint,
                     args,
                     taskId,
+                    title,
                     channel$: taskChannel$,
                 })
                 return taskChannel$
@@ -920,6 +923,7 @@ export class WorkersPool {
                             entryPoint,
                             args,
                             taskId,
+                            title,
                             channel$: taskChannel$,
                         })
                         this.pickTask(workerId, ctx)
@@ -1166,16 +1170,16 @@ export class WorkersPool {
                 )
             }
             this.busyWorkers$.next([...this.busyWorkers$.value, workerId])
-            const { taskId, entryPoint, args, channel$ } = this.tasksQueue.find(
-                (t) =>
+            const { taskId, title, entryPoint, args, channel$ } =
+                this.tasksQueue.find((t) =>
                     t.targetWorkerId ? t.targetWorkerId === workerId : true,
-            )
+                )
             ctx.info(`Pick task ${taskId} by ${workerId}`)
             this.tasksQueue = this.tasksQueue.filter((t) => t.taskId != taskId)
 
             this.runningTasks$.next([
                 ...this.runningTasks$.value,
-                { workerId, taskId },
+                { workerId, taskId, title },
             ])
             const worker = this.workers$.value[workerId].worker
 
