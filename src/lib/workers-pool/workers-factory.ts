@@ -975,6 +975,13 @@ export class WorkersPool {
         worker.send({ taskId, data })
     }
 
+    /**
+     * Return the Web Workers proxy.
+     */
+    getWebWorkersProxy() {
+        return WorkersPool.webWorkersProxy
+    }
+
     private getTaskChannel$(
         exposedProcess: Process,
         taskId: string,
