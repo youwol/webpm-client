@@ -470,7 +470,7 @@ export interface MessageInstall {
 }
 
 function entryPointInstall(input: EntryPointArguments<MessageInstall>) {
-    if (self['@youwol/cdn-client']) {
+    if (self['@youwol/cdn-client:worker-install-done']) {
         // The environment is already installed
         return Promise.resolve()
     }
@@ -551,6 +551,7 @@ function entryPointInstall(input: EntryPointArguments<MessageInstall>) {
                 type: 'installEvent',
                 value: 'install done',
             })
+            self['@youwol/cdn-client:worker-install-done'] = true
         })
 }
 
