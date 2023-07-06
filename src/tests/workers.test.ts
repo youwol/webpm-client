@@ -8,19 +8,17 @@ import './mock-requests'
 import {
     CdnEventView,
     CdnEventWorker,
-    entryPointWorker,
     WorkerCard,
     WorkersPool,
-    IWWorkerProxy,
-    WWorkerTrait,
     NoContext,
+    entryPointWorker,
 } from '../lib/workers-pool'
 import { delay, last, mergeMap, takeWhile, tap } from 'rxjs/operators'
 import { from, Subject } from 'rxjs'
-import * as cdnClient from '../../src/lib'
 import { render } from '@youwol/flux-view'
 import { StateImplementation } from '../lib/state'
-
+import { WebWorkersJest } from '../lib/test-utils'
+import * as cdnClient from '..'
 jest.setTimeout(20 * 1000)
 
 console['ensureLog'] = console.log
@@ -28,84 +26,10 @@ console.log = () => {
     /*no-op*/
 }
 
-class WebWorkerJest implements WWorkerTrait {
-    public readonly uid: string
-    public readonly messages = []
-    onMessageWorker: (message) => unknown
-    onMessageMain: (message) => unknown
-
-    constructor(params: {
-        uid: string
-        onMessageWorker: (message) => unknown
-        onMessageMain: (message) => unknown
-    }) {
-        Object.assign(this, params)
-    }
-
-    execute({ taskId, entryPoint, args }: { taskId; entryPoint; args }) {
-        const message = {
-            type: 'Execute',
-            data: {
-                taskId,
-                workerId: this.uid,
-                args,
-                entryPoint,
-            },
-        }
-        setTimeout(() => {
-            // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- testing workaround
-            // @ts-ignore
-            entryPointWorker({ data: message })
-        }, 0)
-    }
-    send() {
-        /*not tested*/
-    }
-    sendBackToMain(message) {
-        this.messages.push(message)
-        this.onMessageMain({ data: message })
-    }
-    terminate() {
-        /*no op*/
-    }
-}
-
-class WebWorkersJest implements IWWorkerProxy {
-    static workers = {}
-
-    constructor() {
-        globalThis['importScripts'] = () => {
-            // this is only called when 'installing' cdnClient in worker
-            window['@youwol/cdn-client'] = cdnClient
-        }
-
-        globalThis['postMessage'] = (message) => {
-            //setTimeout because in worker 'postMessage' let the eventLoop to process the next task
-            setTimeout(() => {
-                const workerId = message.data.workerId
-                const worker = WebWorkersJest.workers[workerId]
-                worker.sendBackToMain(message)
-            }, 0)
-        }
-    }
-    createWorker({
-        onMessageWorker,
-        onMessageMain,
-    }: {
-        onMessageWorker: (message) => unknown
-        onMessageMain: (message) => unknown
-    }) {
-        const worker = new WebWorkerJest({
-            uid: `w${Math.floor(Math.random() * 1e6)}`,
-            onMessageWorker,
-            onMessageMain,
-        })
-        WebWorkersJest.workers[worker.uid] = worker
-        return worker
-    }
-}
-
-WorkersPool.webWorkersProxy = new WebWorkersJest()
+WorkersPool.webWorkersProxy = new WebWorkersJest({
+    globalEntryPoint: entryPointWorker,
+    cdnClient,
+})
 
 beforeAll((done) => {
     WorkersPool.BackendConfiguration = testBackendConfig

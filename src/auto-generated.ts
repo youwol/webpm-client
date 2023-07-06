@@ -52,6 +52,11 @@ const secondaryEntries : {[k:string]:{entryFile: string, name: string, loadDepen
             "@youwol/flux-view"
         ],
         "name": "workersPool"
+    },
+    "testUtils": {
+        "entryFile": "./lib/test-utils/index.ts",
+        "loadDependencies": [],
+        "name": "testUtils"
     }
 }
 

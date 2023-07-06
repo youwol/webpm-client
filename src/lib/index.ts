@@ -40,3 +40,4 @@ export { youwolSvgLogo } from './utils.view'
 export * from './add-ons'
 
 export * as WorkersPoolTypes from './workers-pool/index-types'
+export * as TestUtilsTypes from './test-utils/index-types'

@@ -48,3 +48,22 @@ export async function installWorkersPoolModule(): Promise<WorkersModule> {
             return module
         })
 }
+
+export async function installTestWorkersPoolModule(): Promise<WorkersModule> {
+    return await Promise.all([
+        installWorkersPoolModule(),
+        setup.installAuxiliaryModule({
+            name: 'testUtils',
+            cdnClient,
+            installParameters: {
+                executingWindow: window,
+            },
+        }),
+    ]).then(([module, test]: [WorkersModule, TestUtilsModule]) => {
+        module.WorkersPool.webWorkersProxy = new test.WebWorkersJest({
+            globalEntryPoint: module.entryPointWorker,
+            cdnClient,
+        })
+        return module
+    })
+}

@@ -44,7 +44,12 @@ template = Template(
                 name="workersPool",
                 entryFile="./lib/workers-pool/index.ts",
                 loadDependencies=list(externals.keys()),
-            )
+            ),
+            AuxiliaryModule(
+                name="testUtils",
+                entryFile="./lib/test-utils/index.ts",
+                loadDependencies=[],
+            ),
         ],
     ),
 )
