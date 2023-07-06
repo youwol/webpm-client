@@ -46,7 +46,7 @@ beforeAll((done) => {
 })
 beforeEach(() => {
     cleanDocument()
-    window['@youwol/cdn-client'] = undefined
+    window['@youwol/cdn-client:worker-install-done'] = false
     StateImplementation.clear()
 })
 
