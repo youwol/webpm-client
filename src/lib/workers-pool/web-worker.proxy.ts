@@ -46,6 +46,8 @@ export interface IWWorkerProxy {
         onMessageWorker: (message) => unknown
         onMessageMain: (message) => unknown
     }): WWorkerTrait
+
+    serializeFunction(fct: (...unknown) => unknown)
 }
 
 /**
@@ -117,5 +119,9 @@ export class WebWorkersBrowser implements IWWorkerProxy {
             uid: `w${Math.floor(Math.random() * 1e6)}`,
             worker,
         })
+    }
+
+    serializeFunction(fct: (...unknown) => unknown) {
+        return `return ${String(fct)}`
     }
 }

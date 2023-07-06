@@ -520,7 +520,11 @@ function entryPointInstall(input: EntryPointArguments<MessageInstall>) {
     return install
         .then(() => {
             input.args.functions.forEach((f) => {
-                self[f.id] = new Function(f.target)()
+                self[f.id] =
+                    // In test environment, function are not serialized as string
+                    typeof f.target == 'string'
+                        ? new Function(f.target)()
+                        : f.target
             })
             input.args.variables.forEach((v) => {
                 self[v.id] = v.value
@@ -1088,10 +1092,20 @@ export class WorkersPool {
                 frontendConfiguration: WorkersPool.FrontendConfiguration,
                 cdnUrl: cdnUrl,
                 variables: this.environment.variables,
-                functions: this.environment.functions.map(({ id, target }) => ({
-                    id,
-                    target: `return ${String(target)}`,
-                })),
+                functions: this.environment.functions.map(
+                    ({
+                        id,
+                        target,
+                    }: {
+                        id: string
+                        target: (...unknown) => unknown
+                    }) => ({
+                        id,
+                        target: WorkersPool.webWorkersProxy.serializeFunction(
+                            target,
+                        ),
+                    }),
+                ),
                 cdnInstallation: this.environment.cdnInstallation,
                 postInstallTasks: this.environment.postInstallTasks.map(
                     (task) => {
