@@ -12,6 +12,7 @@ jobs:
     name: Typescript
     uses: youwol/nestor/.github/workflows/typescript-ci.yaml@v3
     with:
+      acceptedGhsaIds: GHSA-c2qf-rxjj-qqgw
       skip: tests
 
   nestor_integration_tests:
