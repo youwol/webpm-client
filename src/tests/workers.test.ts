@@ -472,6 +472,29 @@ test('view', (done) => {
         })
 })
 
+test('before/after install callback', async () => {
+    let beforeDone = false
+    let afterDone = false
+    WorkersPool.webWorkersProxy = new WebWorkersJest({
+        globalEntryPoint: entryPointWorker,
+        cdnClient,
+        onBeforeWorkerInstall: () => (beforeDone = true),
+        onAfterWorkerInstall: () => (afterDone = true),
+    })
+
+    const pool = new WorkersPool({
+        install: {
+            modules: ['rxjs#^6.5.5'],
+        },
+        pool: {
+            startAt: 1,
+        },
+    })
+    await pool.ready()
+    expect(beforeDone).toBeTruthy()
+    expect(afterDone).toBeTruthy()
+})
+
 test('installTestWorkersPoolModule', async () => {
     const workerPoolModule = await installTestWorkersPoolModule()
     expect(workerPoolModule).toBeTruthy()
