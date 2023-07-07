@@ -2,25 +2,33 @@
 // eslint-disable-next-line eslint-comments/disable-enable-pair -- to not have problem
 /* eslint-disable jest/no-done-callback -- eslint-comment Find a good way to work with rxjs in jest */
 
-import { Client, installWorkersPoolModule } from '../lib'
+import {
+    Client,
+    installTestWorkersPoolModule,
+    installWorkersPoolModule,
+} from '../lib'
 import { cleanDocument, installPackages$, testBackendConfig } from './common'
 import './mock-requests'
 import {
     CdnEventView,
     CdnEventWorker,
-    entryPointWorker,
     WorkerCard,
     WorkersPool,
-    IWWorkerProxy,
-    WWorkerTrait,
     NoContext,
+    entryPointWorker,
+    MessageExit,
+    MessagePostError,
 } from '../lib/workers-pool'
-import { delay, last, mergeMap, takeWhile, tap } from 'rxjs/operators'
+import { delay, last, map, mergeMap, takeWhile, tap } from 'rxjs/operators'
 import { from, Subject } from 'rxjs'
-import * as cdnClient from '../../src/lib'
 import { render } from '@youwol/flux-view'
 import { StateImplementation } from '../lib/state'
-
+import {
+    isInstanceOfWebWorkersJest,
+    NotCloneableData,
+    WebWorkersJest,
+} from '../lib/test-utils'
+import * as cdnClient from '..'
 jest.setTimeout(20 * 1000)
 
 console['ensureLog'] = console.log
@@ -28,84 +36,10 @@ console.log = () => {
     /*no-op*/
 }
 
-class WebWorkerJest implements WWorkerTrait {
-    public readonly uid: string
-    public readonly messages = []
-    onMessageWorker: (message) => unknown
-    onMessageMain: (message) => unknown
-
-    constructor(params: {
-        uid: string
-        onMessageWorker: (message) => unknown
-        onMessageMain: (message) => unknown
-    }) {
-        Object.assign(this, params)
-    }
-
-    execute({ taskId, entryPoint, args }: { taskId; entryPoint; args }) {
-        const message = {
-            type: 'Execute',
-            data: {
-                taskId,
-                workerId: this.uid,
-                args,
-                entryPoint,
-            },
-        }
-        setTimeout(() => {
-            // eslint-disable-next-line @typescript-eslint/ban-ts-comment -- testing workaround
-            // @ts-ignore
-            entryPointWorker({ data: message })
-        }, 0)
-    }
-    send() {
-        /*not tested*/
-    }
-    sendBackToMain(message) {
-        this.messages.push(message)
-        this.onMessageMain({ data: message })
-    }
-    terminate() {
-        /*no op*/
-    }
-}
-
-class WebWorkersJest implements IWWorkerProxy {
-    static workers = {}
-
-    constructor() {
-        globalThis['importScripts'] = () => {
-            // this is only called when 'installing' cdnClient in worker
-            window['@youwol/cdn-client'] = cdnClient
-        }
-
-        globalThis['postMessage'] = (message) => {
-            //setTimeout because in worker 'postMessage' let the eventLoop to process the next task
-            setTimeout(() => {
-                const workerId = message.data.workerId
-                const worker = WebWorkersJest.workers[workerId]
-                worker.sendBackToMain(message)
-            }, 0)
-        }
-    }
-    createWorker({
-        onMessageWorker,
-        onMessageMain,
-    }: {
-        onMessageWorker: (message) => unknown
-        onMessageMain: (message) => unknown
-    }) {
-        const worker = new WebWorkerJest({
-            uid: `w${Math.floor(Math.random() * 1e6)}`,
-            onMessageWorker,
-            onMessageMain,
-        })
-        WebWorkersJest.workers[worker.uid] = worker
-        return worker
-    }
-}
-
-WorkersPool.webWorkersProxy = new WebWorkersJest()
+WorkersPool.webWorkersProxy = new WebWorkersJest({
+    globalEntryPoint: entryPointWorker,
+    cdnClient,
+})
 
 beforeAll((done) => {
     WorkersPool.BackendConfiguration = testBackendConfig
@@ -122,7 +56,7 @@ beforeAll((done) => {
 })
 beforeEach(() => {
     cleanDocument()
-    window['@youwol/cdn-client'] = undefined
+    window['@youwol/cdn-client:worker-install-done'] = false
     StateImplementation.clear()
 })
 
@@ -338,6 +272,158 @@ test('schedule async with ready on particular worker', (done) => {
         })
 })
 
+test('schedule with error', (done) => {
+    const errorMessage = 'Expected error in test'
+    function scheduleFunctionWithError() {
+        throw Error(errorMessage)
+    }
+
+    const pool = new WorkersPool({
+        install: {},
+        pool: {
+            startAt: 1,
+        },
+    })
+    from(pool.ready())
+        .pipe(
+            mergeMap(() => {
+                return pool.schedule({
+                    title: 'test',
+                    entryPoint: scheduleFunctionWithError,
+                    args: {},
+                })
+            }),
+            takeWhile((m) => m.type != 'Exit', true),
+            last(),
+            // let the time to subscription (busy$ in particular) to be handled
+            delay(1),
+            map((m) => m.data as unknown as MessageExit),
+            tap((m: MessageExit) => {
+                expect(m.error).toBeTruthy()
+                expect(m.result['stack']).toBeTruthy()
+                expect(m.result['message']).toBe(errorMessage)
+            }),
+        )
+        .subscribe(() => {
+            done()
+        })
+})
+
+test('schedule & send message', (done) => {
+    const result = 42
+    function scheduleFunction({ context }) {
+        return new Promise((resolve) => {
+            context.onData = async (data: number) => {
+                resolve(data)
+            }
+        })
+    }
+
+    const pool = new WorkersPool({
+        install: {},
+        pool: {
+            startAt: 1,
+        },
+    })
+    from(pool.ready())
+        .pipe(
+            mergeMap(() => {
+                return pool.schedule({
+                    title: 'test',
+                    entryPoint: scheduleFunction,
+                    args: {},
+                })
+            }),
+            tap((m) => {
+                pool.sendData({ taskId: m.data.taskId, data: result })
+            }),
+            takeWhile((m) => m.type != 'Exit', true),
+            last(),
+            // let the time to subscription (busy$ in particular) to be handled
+            delay(1),
+            map((m) => m.data as unknown as MessageExit),
+            tap((m: MessageExit) => {
+                expect(m.error).toBeFalsy()
+                expect(m.result).toBe(result)
+            }),
+        )
+        .subscribe(() => {
+            done()
+        })
+})
+
+test('send not cloneable data', (done) => {
+    function scheduleFunction({ args, context }) {
+        context.sendData(new NotCloneableData())
+        return new Promise((resolve) => {
+            resolve(args)
+        })
+    }
+
+    const pool = new WorkersPool({
+        install: {},
+        pool: {
+            startAt: 1,
+        },
+    })
+    from(pool.ready())
+        .pipe(
+            mergeMap(() => {
+                return pool.schedule({
+                    title: 'test',
+                    entryPoint: scheduleFunction,
+                    args: {},
+                })
+            }),
+            takeWhile((m) => m.type != 'PostError', true),
+            last(),
+            // let the time to subscription (busy$ in particular) to be handled
+            delay(1),
+            map((m) => m.data as unknown as MessagePostError),
+            tap((m: MessagePostError) => {
+                expect(m.error.message).toBeTruthy()
+                expect(m.error.stack).toBeTruthy()
+            }),
+        )
+        .subscribe(() => {
+            done()
+        })
+})
+
+test('return not cloneable data', (done) => {
+    function scheduleFunction() {
+        return new Promise((resolve) => {
+            resolve(new NotCloneableData())
+        })
+    }
+
+    const pool = new WorkersPool({
+        install: {},
+        pool: {
+            startAt: 1,
+        },
+    })
+    from(pool.ready())
+        .pipe(
+            mergeMap(() => {
+                return pool.schedule({
+                    title: 'test',
+                    entryPoint: scheduleFunction,
+                    args: {},
+                })
+            }),
+            takeWhile((m) => m.type != 'Exit', true),
+            last(),
+            map((m) => m.data as unknown as MessageExit),
+            tap((m: MessageExit) => {
+                expect(m.error).toBeTruthy()
+            }),
+        )
+        .subscribe(() => {
+            done()
+        })
+})
+
 test('view', (done) => {
     const pool = new WorkersPool({
         install: {
@@ -384,4 +470,36 @@ test('view', (done) => {
         .subscribe(() => {
             done()
         })
+})
+
+test('before/after install callback', async () => {
+    let beforeDone = false
+    let afterDone = false
+    WorkersPool.webWorkersProxy = new WebWorkersJest({
+        globalEntryPoint: entryPointWorker,
+        cdnClient,
+        onBeforeWorkerInstall: () => (beforeDone = true),
+        onAfterWorkerInstall: () => (afterDone = true),
+    })
+
+    const pool = new WorkersPool({
+        install: {
+            modules: ['rxjs#^6.5.5'],
+        },
+        pool: {
+            startAt: 1,
+        },
+    })
+    await pool.ready()
+    expect(beforeDone).toBeTruthy()
+    expect(afterDone).toBeTruthy()
+})
+
+test('installTestWorkersPoolModule', async () => {
+    const workerPoolModule = await installTestWorkersPoolModule()
+    expect(workerPoolModule).toBeTruthy()
+    const pool = new workerPoolModule.WorkersPool({})
+    expect(pool).toBeTruthy()
+    const proxy = pool.getWebWorkersProxy()
+    expect(isInstanceOfWebWorkersJest(proxy)).toBeTruthy()
 })

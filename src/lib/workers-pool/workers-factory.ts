@@ -11,6 +11,7 @@ import {
 } from '..'
 import { WorkersPoolView } from './views'
 import {
+    InWorkerAction,
     IWWorkerProxy,
     WebWorkersBrowser,
     WWorkerTrait,
@@ -237,6 +238,17 @@ export interface MessageData {
 }
 
 /**
+ * Message emitted from workers when an error occurred.
+ *
+ * @category Worker's Message
+ */
+export interface MessagePostError {
+    taskId: string
+    workerId: string
+    error: Error
+}
+
+/**
  * Message send from the main thread to a worker for a particular task.
  * See {@link WorkersPool.sendData}.
  *
@@ -265,7 +277,14 @@ export interface MainToWorkerMessage {
  * @category Worker's Message
  */
 export interface Message {
-    type: 'Execute' | 'Exit' | 'Start' | 'Log' | 'Data' | 'MainToWorkerMessage'
+    type:
+        | 'Execute'
+        | 'Exit'
+        | 'Start'
+        | 'Log'
+        | 'Data'
+        | 'MainToWorkerMessage'
+        | 'PostError'
     data:
         | MessageExecute
         | MessageData
@@ -273,6 +292,7 @@ export interface Message {
         | MessageLog
         | MessageStart
         | MainToWorkerMessage
+        | MessagePostError
 }
 
 /**
@@ -337,6 +357,15 @@ export function entryPointWorker(messageEvent: MessageEvent) {
                     },
                 })
             }
+            const data = message.data as MessageData | MessageLog
+            workerScope.postMessage({
+                type: 'PostError',
+                data: {
+                    taskId: data.taskId,
+                    workerId: data.workerId,
+                    error: e,
+                },
+            })
         }
     }
 
@@ -467,13 +496,24 @@ export interface MessageInstall {
         entryPoint: string
         args: unknown
     }[]
+    onBeforeInstall: InWorkerAction
+    onAfterInstall: InWorkerAction
 }
 
 function entryPointInstall(input: EntryPointArguments<MessageInstall>) {
-    if (self['@youwol/cdn-client']) {
+    if (self['@youwol/cdn-client:worker-install-done']) {
         // The environment is already installed
         return Promise.resolve()
     }
+    const deserializeFunction = (fct) =>
+        typeof fct == 'string' ? new Function(fct)() : fct
+
+    input.args.onBeforeInstall &&
+        deserializeFunction(input.args.onBeforeInstall)({
+            message: input.args,
+            workerScope: input.workerScope,
+        })
+
     /**
      * The function 'importScriptsXMLHttpRequest' is used in place of [importScripts](https://developer.mozilla.org/en-US/docs/Web/API/WorkerGlobalScope/importScripts)
      * when 'FrontendConfiguration.crossOrigin' is "anonymous". Using 'importScripts' fails in this case (request are blocked).
@@ -520,8 +560,9 @@ function entryPointInstall(input: EntryPointArguments<MessageInstall>) {
     return install
         .then(() => {
             input.args.functions.forEach((f) => {
-                self[f.id] = new Function(f.target)()
+                self[f.id] = deserializeFunction(f.target)
             })
+            self['deserializeFunction'] = deserializeFunction
             input.args.variables.forEach((v) => {
                 self[v.id] = v.value
             })
@@ -547,6 +588,12 @@ function entryPointInstall(input: EntryPointArguments<MessageInstall>) {
                 type: 'installEvent',
                 value: 'install done',
             })
+            input.args.onAfterInstall &&
+                deserializeFunction(input.args.onAfterInstall)({
+                    message: input.args,
+                    workerScope: input.workerScope,
+                })
+            self['@youwol/cdn-client:worker-install-done'] = true
         })
 }
 
@@ -726,7 +773,7 @@ export class WorkersPool {
      * @group Observables
      */
     public readonly runningTasks$ = new BehaviorSubject<
-        { workerId: string; taskId: string }[]
+        { workerId: string; taskId: string; title: string }[]
     >([])
     /**
      * Observable that emits the id of workers that are currently running a tasks each time a task is started
@@ -767,6 +814,7 @@ export class WorkersPool {
 
     private tasksQueue: Array<{
         taskId: string
+        title: string
         targetWorkerId?: string
         args: unknown
         channel$: Observable<Message>
@@ -888,6 +936,7 @@ export class WorkersPool {
                     entryPoint,
                     args,
                     taskId,
+                    title,
                     channel$: taskChannel$,
                     targetWorkerId,
                 })
@@ -907,6 +956,7 @@ export class WorkersPool {
                     entryPoint,
                     args,
                     taskId,
+                    title,
                     channel$: taskChannel$,
                 })
                 return taskChannel$
@@ -920,6 +970,7 @@ export class WorkersPool {
                             entryPoint,
                             args,
                             taskId,
+                            title,
                             channel$: taskChannel$,
                         })
                         this.pickTask(workerId, ctx)
@@ -964,6 +1015,13 @@ export class WorkersPool {
         }
         const worker = this.workers$.value[runningTask.workerId].worker
         worker.send({ taskId, data })
+    }
+
+    /**
+     * Return the Web Workers proxy.
+     */
+    getWebWorkersProxy() {
+        return WorkersPool.webWorkersProxy
     }
 
     private getTaskChannel$(
@@ -1084,10 +1142,20 @@ export class WorkersPool {
                 frontendConfiguration: WorkersPool.FrontendConfiguration,
                 cdnUrl: cdnUrl,
                 variables: this.environment.variables,
-                functions: this.environment.functions.map(({ id, target }) => ({
-                    id,
-                    target: `return ${String(target)}`,
-                })),
+                functions: this.environment.functions.map(
+                    ({
+                        id,
+                        target,
+                    }: {
+                        id: string
+                        target: (...unknown) => unknown
+                    }) => ({
+                        id,
+                        target: WorkersPool.webWorkersProxy.serializeFunction(
+                            target,
+                        ),
+                    }),
+                ),
                 cdnInstallation: this.environment.cdnInstallation,
                 postInstallTasks: this.environment.postInstallTasks.map(
                     (task) => {
@@ -1097,6 +1165,12 @@ export class WorkersPool {
                             entryPoint: `return ${String(task.entryPoint)}`,
                         }
                     },
+                ),
+                onBeforeInstall: WorkersPool.webWorkersProxy.serializeFunction(
+                    WorkersPool.webWorkersProxy.onBeforeWorkerInstall,
+                ),
+                onAfterInstall: WorkersPool.webWorkersProxy.serializeFunction(
+                    WorkersPool.webWorkersProxy.onAfterWorkerInstall,
                 ),
             }
 
@@ -1166,16 +1240,16 @@ export class WorkersPool {
                 )
             }
             this.busyWorkers$.next([...this.busyWorkers$.value, workerId])
-            const { taskId, entryPoint, args, channel$ } = this.tasksQueue.find(
-                (t) =>
+            const { taskId, title, entryPoint, args, channel$ } =
+                this.tasksQueue.find((t) =>
                     t.targetWorkerId ? t.targetWorkerId === workerId : true,
-            )
+                )
             ctx.info(`Pick task ${taskId} by ${workerId}`)
             this.tasksQueue = this.tasksQueue.filter((t) => t.taskId != taskId)
 
             this.runningTasks$.next([
                 ...this.runningTasks$.value,
-                { workerId, taskId },
+                { workerId, taskId, title },
             ])
             const worker = this.workers$.value[workerId].worker
 
