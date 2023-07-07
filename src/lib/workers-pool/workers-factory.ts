@@ -11,6 +11,7 @@ import {
 } from '..'
 import { WorkersPoolView } from './views'
 import {
+    InWorkerAction,
     IWWorkerProxy,
     WebWorkersBrowser,
     WWorkerTrait,
@@ -458,6 +459,10 @@ export function entryPointWorker(messageEvent: MessageEvent) {
 export interface MessageInstall {
     backendConfiguration: BackendConfiguration
     frontendConfiguration: FrontendConfiguration
+    callForwarded: <T>(
+        fct: (...args) => T | undefined,
+        ...args
+    ) => T | undefined
     cdnUrl: string
     variables: WorkerVariable<unknown>[]
     functions: { id: string; target: string }[]
@@ -467,6 +472,8 @@ export interface MessageInstall {
         entryPoint: string
         args: unknown
     }[]
+    onBeforeInstall: InWorkerAction
+    onAfterInstall: InWorkerAction
 }
 
 function entryPointInstall(input: EntryPointArguments<MessageInstall>) {
@@ -474,6 +481,11 @@ function entryPointInstall(input: EntryPointArguments<MessageInstall>) {
         // The environment is already installed
         return Promise.resolve()
     }
+    input.args.callForwarded(input.args.onBeforeInstall, {
+        message: input.args,
+        workerScope: input.workerScope,
+    })
+
     /**
      * The function 'importScriptsXMLHttpRequest' is used in place of [importScripts](https://developer.mozilla.org/en-US/docs/Web/API/WorkerGlobalScope/importScripts)
      * when 'FrontendConfiguration.crossOrigin' is "anonymous". Using 'importScripts' fails in this case (request are blocked).
@@ -526,6 +538,7 @@ function entryPointInstall(input: EntryPointArguments<MessageInstall>) {
                         ? new Function(f.target)()
                         : f.target
             })
+            self['callForwarded'] = input.args.callForwarded
             input.args.variables.forEach((v) => {
                 self[v.id] = v.value
             })
@@ -550,6 +563,10 @@ function entryPointInstall(input: EntryPointArguments<MessageInstall>) {
             input.context.sendData({
                 type: 'installEvent',
                 value: 'install done',
+            })
+            input.args.callForwarded(input.args.onAfterInstall, {
+                message: input.args,
+                workerScope: input.workerScope,
             })
             self['@youwol/cdn-client:worker-install-done'] = true
         })
@@ -1098,6 +1115,9 @@ export class WorkersPool {
             const argsInstall: MessageInstall = {
                 backendConfiguration: WorkersPool.BackendConfiguration,
                 frontendConfiguration: WorkersPool.FrontendConfiguration,
+                callForwarded: WorkersPool.webWorkersProxy.serializeFunction(
+                    (fct, ...params) => fct && fct(...params),
+                ),
                 cdnUrl: cdnUrl,
                 variables: this.environment.variables,
                 functions: this.environment.functions.map(
@@ -1123,6 +1143,12 @@ export class WorkersPool {
                             entryPoint: `return ${String(task.entryPoint)}`,
                         }
                     },
+                ),
+                onBeforeInstall: WorkersPool.webWorkersProxy.serializeFunction(
+                    WorkersPool.webWorkersProxy.onBeforeWorkerInstall,
+                ),
+                onAfterInstall: WorkersPool.webWorkersProxy.serializeFunction(
+                    WorkersPool.webWorkersProxy.onAfterWorkerInstall,
                 ),
             }
 

@@ -32,6 +32,7 @@ export interface WWorkerTrait {
     terminate()
 }
 
+export type InWorkerAction = ({ message, workerScope }) => void
 /**
  * Proxy for WebWorkers creation.
  *
@@ -39,6 +40,8 @@ export interface WWorkerTrait {
  * Can be also overriden for example for testing contexts.
  */
 export interface IWWorkerProxy {
+    type: string
+
     createWorker({
         onMessageWorker,
         onMessageMain,
@@ -47,7 +50,10 @@ export interface IWWorkerProxy {
         onMessageMain: (message) => unknown
     }): WWorkerTrait
 
-    serializeFunction(fct: (...unknown) => unknown)
+    serializeFunction(fct?: (...unknown) => unknown)
+
+    onBeforeWorkerInstall?: InWorkerAction
+    onAfterWorkerInstall?: InWorkerAction
 }
 
 /**
@@ -98,6 +104,7 @@ export class WebWorkerBrowser implements WWorkerTrait {
 }
 
 export class WebWorkersBrowser implements IWWorkerProxy {
+    type = 'WebWorkersBrowser'
     createWorker({
         onMessageWorker,
         onMessageMain,
@@ -121,7 +128,7 @@ export class WebWorkersBrowser implements IWWorkerProxy {
         })
     }
 
-    serializeFunction(fct: (...unknown) => unknown) {
-        return `return ${String(fct)}`
+    serializeFunction(fct?: (...unknown) => unknown) {
+        return fct ? `return ${String(fct)}` : undefined
     }
 }

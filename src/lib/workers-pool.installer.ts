@@ -1,6 +1,7 @@
 import { setup } from '../auto-generated'
 import * as cdnClient from '.'
 import { backendConfiguration } from '.'
+import { InWorkerAction } from './workers-pool'
 
 export type WorkersModule = typeof import('./workers-pool')
 export type TestUtilsModule = typeof import('./test-utils')
@@ -49,7 +50,13 @@ export async function installWorkersPoolModule(): Promise<WorkersModule> {
         })
 }
 
-export async function installTestWorkersPoolModule(): Promise<WorkersModule> {
+export async function installTestWorkersPoolModule({
+    onBeforeWorkerInstall,
+    onAfterWorkerInstall,
+}: {
+    onBeforeWorkerInstall?: InWorkerAction
+    onAfterWorkerInstall?: InWorkerAction
+} = {}): Promise<WorkersModule> {
     return await Promise.all([
         installWorkersPoolModule(),
         setup.installAuxiliaryModule({
@@ -63,6 +70,8 @@ export async function installTestWorkersPoolModule(): Promise<WorkersModule> {
         module.WorkersPool.webWorkersProxy = new test.WebWorkersJest({
             globalEntryPoint: module.entryPointWorker,
             cdnClient,
+            onBeforeWorkerInstall: onBeforeWorkerInstall,
+            onAfterWorkerInstall: onAfterWorkerInstall,
         })
         return module
     })

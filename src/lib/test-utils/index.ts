@@ -3,6 +3,7 @@ import type {
     IWWorkerProxy,
     WWorkerTrait,
 } from '../workers-pool'
+import { InWorkerAction } from '../workers-pool'
 import type * as cdnClient from '../workers-pool.installer'
 
 export class WebWorkerJest implements WWorkerTrait {
@@ -60,11 +61,18 @@ export class WebWorkerJest implements WWorkerTrait {
 }
 
 export class WebWorkersJest implements IWWorkerProxy {
+    public readonly type = 'WebWorkersJest'
     static workers = {}
     public readonly globalEntryPoint: typeof entryPointWorker
+
+    public readonly onBeforeWorkerInstall?: InWorkerAction
+    public readonly onAfterWorkerInstall?: InWorkerAction
+
     constructor(params: {
         globalEntryPoint: typeof entryPointWorker
         cdnClient: typeof cdnClient
+        onBeforeWorkerInstall?: InWorkerAction
+        onAfterWorkerInstall?: InWorkerAction
     }) {
         Object.assign(this, params)
 
@@ -102,4 +110,10 @@ export class WebWorkersJest implements IWWorkerProxy {
     serializeFunction(fct: (...unknown) => unknown) {
         return fct
     }
+}
+
+export function isInstanceOfWebWorkersJest(
+    instance: unknown,
+): instance is WebWorkersJest {
+    return (instance as WebWorkersJest).type == 'WebWorkersJest'
 }
