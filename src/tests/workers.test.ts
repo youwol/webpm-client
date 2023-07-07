@@ -2,7 +2,11 @@
 // eslint-disable-next-line eslint-comments/disable-enable-pair -- to not have problem
 /* eslint-disable jest/no-done-callback -- eslint-comment Find a good way to work with rxjs in jest */
 
-import { Client, installWorkersPoolModule } from '../lib'
+import {
+    Client,
+    installTestWorkersPoolModule,
+    installWorkersPoolModule,
+} from '../lib'
 import { cleanDocument, installPackages$, testBackendConfig } from './common'
 import './mock-requests'
 import {
@@ -12,12 +16,18 @@ import {
     WorkersPool,
     NoContext,
     entryPointWorker,
+    MessageExit,
+    MessagePostError,
 } from '../lib/workers-pool'
-import { delay, last, mergeMap, takeWhile, tap } from 'rxjs/operators'
+import { delay, last, map, mergeMap, takeWhile, tap } from 'rxjs/operators'
 import { from, Subject } from 'rxjs'
 import { render } from '@youwol/flux-view'
 import { StateImplementation } from '../lib/state'
-import { WebWorkersJest } from '../lib/test-utils'
+import {
+    isInstanceOfWebWorkersJest,
+    NotCloneableData,
+    WebWorkersJest,
+} from '../lib/test-utils'
 import * as cdnClient from '..'
 jest.setTimeout(20 * 1000)
 
@@ -262,6 +272,158 @@ test('schedule async with ready on particular worker', (done) => {
         })
 })
 
+test('schedule with error', (done) => {
+    const errorMessage = 'Expected error in test'
+    function scheduleFunctionWithError() {
+        throw Error(errorMessage)
+    }
+
+    const pool = new WorkersPool({
+        install: {},
+        pool: {
+            startAt: 1,
+        },
+    })
+    from(pool.ready())
+        .pipe(
+            mergeMap(() => {
+                return pool.schedule({
+                    title: 'test',
+                    entryPoint: scheduleFunctionWithError,
+                    args: {},
+                })
+            }),
+            takeWhile((m) => m.type != 'Exit', true),
+            last(),
+            // let the time to subscription (busy$ in particular) to be handled
+            delay(1),
+            map((m) => m.data as unknown as MessageExit),
+            tap((m: MessageExit) => {
+                expect(m.error).toBeTruthy()
+                expect(m.result['stack']).toBeTruthy()
+                expect(m.result['message']).toBe(errorMessage)
+            }),
+        )
+        .subscribe(() => {
+            done()
+        })
+})
+
+test('schedule & send message', (done) => {
+    const result = 42
+    function scheduleFunction({ context }) {
+        return new Promise((resolve) => {
+            context.onData = async (data: number) => {
+                resolve(data)
+            }
+        })
+    }
+
+    const pool = new WorkersPool({
+        install: {},
+        pool: {
+            startAt: 1,
+        },
+    })
+    from(pool.ready())
+        .pipe(
+            mergeMap(() => {
+                return pool.schedule({
+                    title: 'test',
+                    entryPoint: scheduleFunction,
+                    args: {},
+                })
+            }),
+            tap((m) => {
+                pool.sendData({ taskId: m.data.taskId, data: result })
+            }),
+            takeWhile((m) => m.type != 'Exit', true),
+            last(),
+            // let the time to subscription (busy$ in particular) to be handled
+            delay(1),
+            map((m) => m.data as unknown as MessageExit),
+            tap((m: MessageExit) => {
+                expect(m.error).toBeFalsy()
+                expect(m.result).toBe(result)
+            }),
+        )
+        .subscribe(() => {
+            done()
+        })
+})
+
+test('send not cloneable data', (done) => {
+    function scheduleFunction({ args, context }) {
+        context.sendData(new NotCloneableData())
+        return new Promise((resolve) => {
+            resolve(args)
+        })
+    }
+
+    const pool = new WorkersPool({
+        install: {},
+        pool: {
+            startAt: 1,
+        },
+    })
+    from(pool.ready())
+        .pipe(
+            mergeMap(() => {
+                return pool.schedule({
+                    title: 'test',
+                    entryPoint: scheduleFunction,
+                    args: {},
+                })
+            }),
+            takeWhile((m) => m.type != 'PostError', true),
+            last(),
+            // let the time to subscription (busy$ in particular) to be handled
+            delay(1),
+            map((m) => m.data as unknown as MessagePostError),
+            tap((m: MessagePostError) => {
+                expect(m.error.message).toBeTruthy()
+                expect(m.error.stack).toBeTruthy()
+            }),
+        )
+        .subscribe(() => {
+            done()
+        })
+})
+
+test('return not cloneable data', (done) => {
+    function scheduleFunction() {
+        return new Promise((resolve) => {
+            resolve(new NotCloneableData())
+        })
+    }
+
+    const pool = new WorkersPool({
+        install: {},
+        pool: {
+            startAt: 1,
+        },
+    })
+    from(pool.ready())
+        .pipe(
+            mergeMap(() => {
+                return pool.schedule({
+                    title: 'test',
+                    entryPoint: scheduleFunction,
+                    args: {},
+                })
+            }),
+            takeWhile((m) => m.type != 'Exit', true),
+            last(),
+            map((m) => m.data as unknown as MessageExit),
+            tap((m: MessageExit) => {
+                expect(m.error).toBeTruthy()
+            }),
+        )
+        .subscribe(() => {
+            done()
+        })
+})
+
 test('view', (done) => {
     const pool = new WorkersPool({
         install: {
@@ -308,4 +470,13 @@ test('view', (done) => {
         .subscribe(() => {
             done()
         })
+})
+
+test('installTestWorkersPoolModule', async () => {
+    const workerPoolModule = await installTestWorkersPoolModule()
+    expect(workerPoolModule).toBeTruthy()
+    const pool = new workerPoolModule.WorkersPool({})
+    expect(pool).toBeTruthy()
+    const proxy = pool.getWebWorkersProxy()
+    expect(isInstanceOfWebWorkersJest(proxy)).toBeTruthy()
 })
