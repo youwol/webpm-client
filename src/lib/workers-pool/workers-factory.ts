@@ -487,10 +487,6 @@ export function entryPointWorker(messageEvent: MessageEvent) {
 export interface MessageInstall {
     backendConfiguration: BackendConfiguration
     frontendConfiguration: FrontendConfiguration
-    callForwarded: <T>(
-        fct: (...args) => T | undefined,
-        ...args
-    ) => T | undefined
     cdnUrl: string
     variables: WorkerVariable<unknown>[]
     functions: { id: string; target: string }[]
@@ -509,10 +505,14 @@ function entryPointInstall(input: EntryPointArguments<MessageInstall>) {
         // The environment is already installed
         return Promise.resolve()
     }
-    input.args.callForwarded(input.args.onBeforeInstall, {
-        message: input.args,
-        workerScope: input.workerScope,
-    })
+    const deserializeFunction = (fct) =>
+        typeof fct == 'string' ? new Function(fct)() : fct
+
+    input.args.onBeforeInstall &&
+        deserializeFunction(input.args.onBeforeInstall)({
+            message: input.args,
+            workerScope: input.workerScope,
+        })
 
     /**
      * The function 'importScriptsXMLHttpRequest' is used in place of [importScripts](https://developer.mozilla.org/en-US/docs/Web/API/WorkerGlobalScope/importScripts)
@@ -560,13 +560,9 @@ function entryPointInstall(input: EntryPointArguments<MessageInstall>) {
     return install
         .then(() => {
             input.args.functions.forEach((f) => {
-                self[f.id] =
-                    // In test environment, function are not serialized as string
-                    typeof f.target == 'string'
-                        ? new Function(f.target)()
-                        : f.target
+                self[f.id] = deserializeFunction(f.target)
             })
-            self['callForwarded'] = input.args.callForwarded
+            self['deserializeFunction'] = deserializeFunction
             input.args.variables.forEach((v) => {
                 self[v.id] = v.value
             })
@@ -592,10 +588,11 @@ function entryPointInstall(input: EntryPointArguments<MessageInstall>) {
                 type: 'installEvent',
                 value: 'install done',
             })
-            input.args.callForwarded(input.args.onAfterInstall, {
-                message: input.args,
-                workerScope: input.workerScope,
-            })
+            input.args.onAfterInstall &&
+                deserializeFunction(input.args.onAfterInstall)({
+                    message: input.args,
+                    workerScope: input.workerScope,
+                })
             self['@youwol/cdn-client:worker-install-done'] = true
         })
 }
@@ -1143,9 +1140,6 @@ export class WorkersPool {
             const argsInstall: MessageInstall = {
                 backendConfiguration: WorkersPool.BackendConfiguration,
                 frontendConfiguration: WorkersPool.FrontendConfiguration,
-                callForwarded: WorkersPool.webWorkersProxy.serializeFunction(
-                    (fct, ...params) => fct && fct(...params),
-                ),
                 cdnUrl: cdnUrl,
                 variables: this.environment.variables,
                 functions: this.environment.functions.map(
