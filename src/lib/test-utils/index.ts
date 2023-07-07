@@ -6,6 +6,10 @@ import type {
 import { InWorkerAction } from '../workers-pool'
 import type * as cdnClient from '../workers-pool.installer'
 
+export class NotCloneableData {
+    public readonly notCloneable = true
+}
+
 export class WebWorkerJest implements WWorkerTrait {
     public readonly uid: string
     public readonly messages = []
@@ -82,6 +86,12 @@ export class WebWorkersJest implements IWWorkerProxy {
         }
 
         globalThis['postMessage'] = (message) => {
+            if (
+                message.data.notCloneable ||
+                (message.data.result && message.data.result.notCloneable)
+            ) {
+                throw Error('Data can not be cloned to be sent to worker')
+            }
             //setTimeout because in worker 'postMessage' let the eventLoop to process the next task
             setTimeout(() => {
                 const workerId = message.data.workerId

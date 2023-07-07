@@ -238,6 +238,17 @@ export interface MessageData {
 }
 
 /**
+ * Message emitted from workers when an error occurred.
+ *
+ * @category Worker's Message
+ */
+export interface MessagePostError {
+    taskId: string
+    workerId: string
+    error: Error
+}
+
+/**
  * Message send from the main thread to a worker for a particular task.
  * See {@link WorkersPool.sendData}.
  *
@@ -266,7 +277,14 @@ export interface MainToWorkerMessage {
  * @category Worker's Message
  */
 export interface Message {
-    type: 'Execute' | 'Exit' | 'Start' | 'Log' | 'Data' | 'MainToWorkerMessage'
+    type:
+        | 'Execute'
+        | 'Exit'
+        | 'Start'
+        | 'Log'
+        | 'Data'
+        | 'MainToWorkerMessage'
+        | 'PostError'
     data:
         | MessageExecute
         | MessageData
@@ -274,6 +292,7 @@ export interface Message {
         | MessageLog
         | MessageStart
         | MainToWorkerMessage
+        | MessagePostError
 }
 
 /**
@@ -338,6 +357,15 @@ export function entryPointWorker(messageEvent: MessageEvent) {
                     },
                 })
             }
+            const data = message.data as MessageData | MessageLog
+            workerScope.postMessage({
+                type: 'PostError',
+                data: {
+                    taskId: data.taskId,
+                    workerId: data.workerId,
+                    error: e,
+                },
+            })
         }
     }
 
