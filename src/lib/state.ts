@@ -112,11 +112,12 @@ export class StateImplementation {
      *
      */
     static exportedSymbolsDict: {
-        [k: string]: { symbol: string; apiKey: string }
+        [k: string]: { symbol: string; apiKey: string; aliases: string[] }
     } = {
         [`${setup.name}#${setup.version}`]: {
             symbol: setup.name,
             apiKey: setup.apiVersion,
+            aliases: ['cdnClient'],
         },
     }
 
@@ -131,7 +132,7 @@ export class StateImplementation {
     static getExportedSymbol(
         name: string,
         version: string,
-    ): { symbol: string; apiKey: string } {
+    ): { symbol: string; apiKey: string; aliases: string[] } {
         return StateImplementation.exportedSymbolsDict[`${name}#${version}`]
     }
 
@@ -141,6 +142,7 @@ export class StateImplementation {
             version: string
             exportedSymbol: string
             apiKey: string
+            aliases: string[]
         }[],
     ) {
         const newEntries = modules.reduce(
@@ -149,6 +151,7 @@ export class StateImplementation {
                 [`${e.name}#${e.version}`]: {
                     symbol: e.exportedSymbol,
                     apiKey: e.apiKey,
+                    aliases: e.aliases,
                 },
             }),
             {},
@@ -379,27 +382,40 @@ export class StateImplementation {
             ) {
                 return
             }
-            const symbol = StateImplementation.getExportedSymbol(
+            const { symbol, aliases } = StateImplementation.getExportedSymbol(
                 name,
                 version,
-            ).symbol
+            )
             const exportedName = getInstalledFullExportedSymbol(name, version)
 
-            if (
-                executingWindow[exportedName] &&
-                !StateImplementation.latestVersion.has(name)
-            ) {
-                executingWindow[symbol] = executingWindow[exportedName]
-                StateImplementation.latestVersion.set(name, version)
-                return
-            }
-
-            executingWindow[symbol] = executingWindow[exportedName]
-            if (!executingWindow[symbol]) {
+            if (!executingWindow[exportedName]) {
                 console.error(
-                    `Problem with package "${name}" & export symbol "${symbol}"`,
+                    `Problem with package "${name}" & export symbol "${exportedName}"`,
+                    {
+                        name,
+                        version,
+                        symbol,
+                        exportedName,
+                    },
                 )
             }
+            if (StateImplementation.latestVersion.has(name)) {
+                const prevLatestVersion =
+                    StateImplementation.latestVersion.get(name)
+                const { symbol, aliases } =
+                    StateImplementation.getExportedSymbol(
+                        name,
+                        prevLatestVersion,
+                    )
+                const toRemove = [symbol, ...aliases]
+                toRemove.forEach((alias) => {
+                    delete executingWindow[alias]
+                })
+            }
+            const toAdd = [symbol, ...aliases]
+            toAdd.forEach((alias) => {
+                executingWindow[alias] = executingWindow[exportedName]
+            })
             StateImplementation.latestVersion.set(name, version)
         })
     }

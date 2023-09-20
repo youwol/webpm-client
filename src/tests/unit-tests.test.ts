@@ -5,6 +5,7 @@ function fakeInstalledModule(name, version) {
     StateImplementation.exportedSymbolsDict[`${name}#${version}`] = {
         symbol: name,
         apiKey: getApiKey(version),
+        aliases: [],
     }
     StateImplementation.registerImportedModules(
         [
