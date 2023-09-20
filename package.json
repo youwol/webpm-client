@@ -1,7 +1,7 @@
 {
     "name": "@youwol/cdn-client",
     "description": "Library for dynamic npm's libraries installation from YouWol's CDN.",
-    "version": "2.0.6",
+    "version": "2.1.0-wip",
     "author": "greinisch@youwol.com",
     "homepage": "https://github.com/youwol/cdn-client#README.md",
     "main": "dist/@youwol/cdn-client.js",
@@ -57,7 +57,8 @@
         "@youwol/flux-view": "^1.1.0",
         "semver": "^7.3.4"
     },
-    "youwol": {
-        "cdnDependencies": {}
+    "webpm": {
+        "dependencies": {},
+        "aliases": []
     }
 }
