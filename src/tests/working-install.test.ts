@@ -174,6 +174,7 @@ test('loading graph a', async () => {
                 type: 'library',
                 exportedSymbol: 'a',
                 apiKey: '1',
+                aliases: [],
             },
             {
                 name: 'root',
@@ -184,6 +185,7 @@ test('loading graph a', async () => {
                 type: 'library',
                 exportedSymbol: 'root',
                 apiKey: '1',
+                aliases: [],
             },
         ],
         definition: [

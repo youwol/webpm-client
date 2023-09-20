@@ -48,7 +48,7 @@ test('install rxjs#6.5.5 + side-effects', async () => {
     const events = []
     const packageName = 'rxjs'
     const sideEffects: string[] = []
-    const { rxjs, rxjs6 } = (await install({
+    const { rxjs, rxjs6, aliasRxjs6 } = (await install({
         modules: [`rxjs#6.5.5`],
         modulesSideEffects: {
             'rxjs#*': () => {
@@ -62,13 +62,15 @@ test('install rxjs#6.5.5 + side-effects', async () => {
         onEvent: (event) => {
             events.push(event)
         },
-    })) as unknown as { rxjs: unknown; rxjs6: unknown }
+    })) as unknown as { rxjs: unknown; rxjs6: unknown; aliasRxjs6: unknown }
 
     expect(document.scripts).toHaveLength(1)
     expect(sideEffects).toHaveLength(1)
     expect(rxjs).toBeTruthy()
     expect(rxjs6).toBeTruthy()
+    expect(aliasRxjs6).toBeTruthy()
     expect(rxjs).toEqual(rxjs6)
+    expect(rxjs).toEqual(aliasRxjs6)
     const s0 = document.scripts.item(0)
     const target = getUrlBase(packageName, '6.5.5') + `/dist/${packageName}.js`
     expect(s0.id).toBe(target)
@@ -78,7 +80,7 @@ test('install rxjs#6.5.5 + side-effects', async () => {
 test('install rxjs#6 & rxjs#7', async () => {
     const events = []
     const sideEffects: string[] = []
-    const { rxjs, rxjs6, rxjs7 } = (await install({
+    const { rxjs, rxjs6, rxjs7, aliasRxjs6, aliasRxjs7 } = (await install({
         modules: ['rxjs#6.5.5', 'rxjs#7.5.6'],
         modulesSideEffects: {
             'rxjs#6.x': () => {
@@ -96,7 +98,13 @@ test('install rxjs#6 & rxjs#7', async () => {
         onEvent: (event) => {
             events.push(event)
         },
-    })) as unknown as { rxjs: unknown; rxjs6: unknown; rxjs7: unknown }
+    })) as unknown as {
+        rxjs: unknown
+        rxjs6: unknown
+        rxjs7: unknown
+        aliasRxjs6: unknown
+        aliasRxjs7: unknown
+    }
 
     expect(document.scripts).toHaveLength(2)
     expect(sideEffects).toHaveLength(2)
@@ -104,8 +112,12 @@ test('install rxjs#6 & rxjs#7', async () => {
     expect(sideEffects.includes('rxjs#7.5.6')).toBeTruthy()
     expect(rxjs).toBeTruthy()
     expect(rxjs6).toBeTruthy()
+    // Aliases are only available for latest version of a module
+    expect(aliasRxjs6).toBeFalsy()
     expect(rxjs7).toBeTruthy()
+    expect(aliasRxjs7).toBeTruthy()
     expect(rxjs).toEqual(rxjs7)
+    expect(rxjs).toEqual(aliasRxjs7)
 })
 
 test('install rxjs#7 with pined dependencies #6', async () => {
