@@ -20,4 +20,5 @@ jobs:
     name: Integration Tests
     uses: youwol/nestor/.github/workflows/integration-tests.yaml@v3
     secrets: inherit
-    pyYouwolRef: feature/cdn/publish-with-aliases
+    with:
+      pyYouwolRef: feature/cdn/publish-with-aliases
