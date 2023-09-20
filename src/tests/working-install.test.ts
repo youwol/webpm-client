@@ -100,6 +100,7 @@ test('install loading graph', async () => {
                 type: 'library',
                 exportedSymbol: 'a',
                 apiKey: '1',
+                aliases: [],
             },
             {
                 name: 'root',
@@ -110,6 +111,7 @@ test('install loading graph', async () => {
                 type: 'library',
                 exportedSymbol: 'root',
                 apiKey: '1',
+                aliases: [],
             },
         ],
         definition: [

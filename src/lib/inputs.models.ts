@@ -548,6 +548,11 @@ export type Library = {
      * Uid of the API version
      */
     apiKey: string
+
+    /**
+     * List of aliases
+     */
+    aliases: string[]
 }
 
 /**
