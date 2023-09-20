@@ -14,8 +14,10 @@ jobs:
     with:
       acceptedGhsaIds: GHSA-c2qf-rxjj-qqgw
       skip: tests
+      pyYouwolRef: feature/cdn/publish-with-aliases
 
   nestor_integration_tests:
     name: Integration Tests
     uses: youwol/nestor/.github/workflows/integration-tests.yaml@v3
     secrets: inherit
+    pyYouwolRef: feature/cdn/publish-with-aliases
