@@ -561,9 +561,7 @@ class SymbolsView implements VirtualDOM {
         this.children = Array.from(Object.entries(exportedSymbolsDict)).map(
             ([k, symbol]) => {
                 const symbolKey = `${symbol.symbol}_APIv${symbol.apiKey}`
-                const aliases =
-                    (window[symbolKey] && window[symbolKey].__yw_aliases__) ||
-                    new Set()
+                const aliases = window[symbolKey]?.__yw_aliases__ || new Set()
                 return {
                     class: 'd-flex align-items-center my-1 row',
                     children: [
