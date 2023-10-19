@@ -144,7 +144,13 @@ export class StateImplementation {
         name: string,
         version: string,
     ): { symbol: string; apiKey: string; aliases: string[] } {
-        return StateImplementation.exportedSymbolsDict[`${name}#${version}`]
+        const exported =
+            StateImplementation.exportedSymbolsDict[`${name}#${version}`]
+        if (exported.aliases === undefined) {
+            // This case can happen when installing a saved loading graph that did not included aliases at that time.
+            return { ...exported, aliases: [] }
+        }
+        return exported
     }
 
     static updateExportedSymbolsDict(
