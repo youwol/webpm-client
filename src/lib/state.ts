@@ -99,6 +99,17 @@ export class State {
     ) {
         StateImplementation.registerUrlPatcher(patcher)
     }
+
+    /**
+     * Remove installed modules & reset the cache.
+     * It makes its best to clear modules & associated side effects, but it is not perfect.
+     * It is mostly intended at helping 'tear down' methods in tests.
+     *
+     * @param executingWindow where the resources have been installed
+     */
+    static clear(executingWindow?: Window) {
+        StateImplementation.clear(executingWindow)
+    }
 }
 /**
  * Singleton object that gathers history of fetched modules, scripts & CSS.
@@ -133,7 +144,13 @@ export class StateImplementation {
         name: string,
         version: string,
     ): { symbol: string; apiKey: string; aliases: string[] } {
-        return StateImplementation.exportedSymbolsDict[`${name}#${version}`]
+        const exported =
+            StateImplementation.exportedSymbolsDict[`${name}#${version}`]
+        if (exported.aliases === undefined) {
+            // This case can happen when installing a saved loading graph that did not included aliases at that time.
+            return { ...exported, aliases: [] }
+        }
+        return exported
     }
 
     static updateExportedSymbolsDict(
@@ -544,9 +561,7 @@ class SymbolsView implements VirtualDOM {
         this.children = Array.from(Object.entries(exportedSymbolsDict)).map(
             ([k, symbol]) => {
                 const symbolKey = `${symbol.symbol}_APIv${symbol.apiKey}`
-                const aliases =
-                    (window[symbolKey] && window[symbolKey].__yw_aliases__) ||
-                    new Set()
+                const aliases = window[symbolKey]?.__yw_aliases__ || new Set()
                 return {
                     class: 'd-flex align-items-center my-1 row',
                     children: [

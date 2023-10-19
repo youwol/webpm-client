@@ -120,6 +120,42 @@ test('install rxjs#6 & rxjs#7', async () => {
     expect(rxjs).toEqual(aliasRxjs7)
 })
 
+test('install rxjs#6 then rxjs#7', async () => {
+    const { rxjs, rxjs6, aliasRxjs6 } = (await install({
+        modules: ['rxjs#6.5.5'],
+        aliases: {
+            rxjs: 'rxjs',
+            rxjs6: 'rxjs_APIv6',
+        },
+    })) as unknown as {
+        rxjs: unknown
+        rxjs6: unknown
+        aliasRxjs6: unknown
+    }
+
+    expect(document.scripts).toHaveLength(1)
+
+    expect(rxjs).toBeTruthy()
+    expect(rxjs6).toBeTruthy()
+    expect(rxjs).toEqual(rxjs6)
+    expect(aliasRxjs6).toEqual(rxjs6)
+
+    const { rxjs7, aliasRxjs7 } = (await install({
+        modules: ['rxjs#7.5.6'],
+        aliases: {
+            rxjs: 'rxjs',
+            rxjs7: 'rxjs_APIv7',
+        },
+    })) as unknown as {
+        rxjs7: unknown
+        aliasRxjs7: unknown
+    }
+    expect(globalThis['rxjs']).toBeTruthy()
+    expect(rxjs6).toBeTruthy()
+    expect(globalThis['rxjs']).toEqual(rxjs7)
+    expect(aliasRxjs7).toEqual(rxjs7)
+})
+
 test('install rxjs#7 with pined dependencies #6', async () => {
     StateImplementation.pinDependencies(['rxjs#6.5.5'])
     const { rxjs, rxjs6, rxjs7 } = (await install({
