@@ -99,6 +99,17 @@ export class State {
     ) {
         StateImplementation.registerUrlPatcher(patcher)
     }
+
+    /**
+     * Remove installed modules & reset the cache.
+     * It makes its best to clear modules & associated side effects, but it is not perfect.
+     * It is mostly intended at helping 'tear down' methods in tests.
+     *
+     * @param executingWindow where the resources have been installed
+     */
+    static clear(executingWindow?: Window) {
+        StateImplementation.clear(executingWindow)
+    }
 }
 /**
  * Singleton object that gathers history of fetched modules, scripts & CSS.
