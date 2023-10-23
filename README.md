@@ -7,7 +7,9 @@ This library is part of the hybrid cloud/local ecosystem
 
 ## Links
 
-[Developers documentation](https://platform.youwol.com/applications/@youwol/cdn-explorer/latest?package=@youwol/cdn-client)
+<!-- no user guide provided -->
+
+[Developers documentation](https://platform.youwol.com/applications/@youwol/cdn-explorer/latest?package=@youwol/cdn-client&tab=doc)
 
 [Package on npm](https://www.npmjs.com/package/@youwol/cdn-client)
 
@@ -38,6 +40,7 @@ yarn build:prod
 ---
 
 Tests require [py-youwol](https://l.youwol.com/doc/py-youwol) to run on port 2001 using the configuration defined [here](https://github.com/youwol/integration-tests-conf).
+
 To run tests:
 
 ```shell
