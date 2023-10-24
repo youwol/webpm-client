@@ -67,7 +67,7 @@ const entries = {
 export const setup = {
     name:'@youwol/cdn-client',
         assetId:'QHlvdXdvbC9jZG4tY2xpZW50',
-    version:'2.1.1',
+    version:'2.1.2-wip',
     shortDescription:"Library for dynamic npm's libraries installation from YouWol's CDN.",
     developerDocumentation:'https://platform.youwol.com/applications/@youwol/cdn-explorer/latest?package=@youwol/cdn-client&tab=doc',
     npmPackage:'https://www.npmjs.com/package/@youwol/cdn-client',
@@ -113,7 +113,7 @@ export const setup = {
         const parameters = installParameters || {}
         const scripts = [
             ...(parameters.scripts || []),
-            `@youwol/cdn-client#2.1.1~dist/@youwol/cdn-client/${entry.name}.js`
+            `@youwol/cdn-client#2.1.2-wip~dist/@youwol/cdn-client/${entry.name}.js`
         ]
         const modules = [
             ...(parameters.modules || []),
