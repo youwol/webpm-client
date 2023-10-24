@@ -94,14 +94,18 @@ export function parseResourceId(resourceId: string): {
     return { name, version, path, assetId, url }
 }
 
-export async function applyModuleSideEffects(
+export function patchExportedSymbolForBackwardCompatibility(
     origin: FetchedScript,
-    htmlScriptElement: HTMLScriptElement,
     executingWindow: WindowOrWorkerGlobalScope,
-    userSideEffects: ModuleSideEffectCallback[],
-    onEvent: (CdnEvent) => void,
 ) {
-    const exportedName = getInstalledFullExportedSymbol(
+    const regularExported = getRegularFullExportedSymbol(
+        origin.name,
+        origin.version,
+    )
+    /**
+     * All 3 variables below corresponds to deprecated symbols
+     */
+    const deprecatedExportedName = getInstalledFullExportedSymbol(
         origin.name,
         origin.version,
     )
@@ -113,24 +117,58 @@ export async function applyModuleSideEffects(
         origin.name,
         origin.version,
     )
-
-    if (executingWindow[symbolBase] && !executingWindow[exportedName]) {
-        console.warn(
-            `Package "${origin.name}#${origin.version}" export symbol "${symbolBase}" with no API version`,
-        )
-    }
-
-    executingWindow[exportedName] =
-        executingWindow[exportedName] ||
-        executingWindow[aliasExportedName] ||
-        executingWindow[symbolBase]
-    executingWindow[aliasExportedName] = executingWindow[exportedName]
-
-    if (!executingWindow[exportedName]) {
+    if (
+        !executingWindow[regularExported] &&
+        !executingWindow[deprecatedExportedName] &&
+        !executingWindow[symbolBase]
+    ) {
         console.warn(
             `Can not find exported symbol of library ${origin.name}#${origin.version} in current context`,
             {
-                exportedName,
+                exportedName: deprecatedExportedName,
+                aliasExportedName,
+                symbolBase,
+                contextKeys: Object.keys(executingWindow),
+            },
+        )
+        return
+    }
+    if (executingWindow[regularExported]) {
+        executingWindow[deprecatedExportedName] =
+            executingWindow[regularExported]
+    }
+    if (!executingWindow[regularExported]) {
+        console.warn('The export symbol of the package is deprecated', {
+            deprecatedExportedName,
+            name: origin.name,
+            version: origin.version,
+        })
+        if (
+            executingWindow[symbolBase] &&
+            !executingWindow[deprecatedExportedName]
+        ) {
+            console.warn(
+                `Package "${origin.name}#${origin.version}" export symbol "${symbolBase}" with no API version`,
+            )
+        }
+        window[regularExported] =
+            executingWindow[deprecatedExportedName] ||
+            executingWindow[aliasExportedName] ||
+            executingWindow[symbolBase]
+    }
+
+    executingWindow[aliasExportedName] = executingWindow[regularExported]
+
+    if (!executingWindow[regularExported]) {
+        console.log('applyModuleSideEffects error', {
+            exportedName: regularExported,
+            symbolBase,
+            aliasExportedName,
+        })
+        console.warn(
+            `Can not find exported symbol of library ${origin.name}#${origin.version} in current context`,
+            {
+                exportedName: regularExported,
                 aliasExportedName,
                 symbolBase,
                 contextKeys: Object.keys(window),
@@ -138,17 +176,34 @@ export async function applyModuleSideEffects(
         )
         return
     }
-    executingWindow[exportedName]['__yw_set_from_version__'] = origin.version
+    return executingWindow[regularExported]
+}
+
+export async function applyModuleSideEffects(
+    origin: FetchedScript,
+    htmlScriptElement: HTMLScriptElement,
+    executingWindow: WindowOrWorkerGlobalScope,
+    userSideEffects: ModuleSideEffectCallback[],
+    onEvent: (CdnEvent) => void,
+) {
+    const module = patchExportedSymbolForBackwardCompatibility(
+        origin,
+        executingWindow,
+    )
+    if (!module) {
+        return
+    }
+    module['__yw_set_from_version__'] = origin.version
 
     StateImplementation.registerImportedModules([origin], executingWindow)
     if (origin.name == '@youwol/cdn-client') {
-        const installedClient = executingWindow[exportedName].Client
+        const installedClient = module.Client
         installedClient.FrontendConfiguration = Client.FrontendConfiguration
         installedClient.BackendConfiguration = Client.BackendConfiguration
     }
     for (const sideEffectFct of userSideEffects) {
         const args = {
-            module: executingWindow[exportedName],
+            module,
             origin,
             htmlScriptElement,
             executingWindow,
@@ -309,6 +364,18 @@ export function getAssetId(name: string) {
 export function getUrlBase(name: string, version: string) {
     const assetId = getAssetId(name)
     return `${Client.BackendConfiguration.urlResource}/${assetId}/${version}`
+}
+
+/**
+ * Return the regular exported symbol name of a library (including API version).
+ * Warning: Valid only for already installed package.
+ *
+ * @param name name of the library
+ * @param version version of the library
+ */
+export function getRegularFullExportedSymbol(name: string, version: string) {
+    const exported = StateImplementation.getExportedSymbol(name, version)
+    return `${name}_APIv${exported.apiKey}`
 }
 
 /**
