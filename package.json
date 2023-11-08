@@ -3,8 +3,8 @@
     "description": "Library for dynamic npm's libraries installation from YouWol's CDN.",
     "version": "2.1.4-wip",
     "author": "greinisch@youwol.com",
-    "homepage": "https://github.com/youwol/cdn-client#README.md",
-    "main": "dist/@youwol/cdn-client.js",
+    "homepage": "https://github.com/youwol/webpm-client#README.md",
+    "main": "dist/@youwol/webpm-client.js",
     "types": "src/index.ts",
     "scripts": {
         "clean": "del-cli dist",
