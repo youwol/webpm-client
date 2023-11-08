@@ -1,5 +1,6 @@
+import { CdnEvent, CdnFetchEvent } from './events.models'
 /**
- * A ScriptLocationString is a string that specifies location in the files structure of a module using the format:
+ * A FileLocationString is a string that specifies location in the files structure of a module using the format:
  * `{moduleName}#{version}~{rest-of-path}`
  *
  * Where:
@@ -12,8 +13,6 @@
  * E.g.: `codemirror#5.52.0~mode/javascript.min.js`
  *
  */
-import { CdnEvent, CdnFetchEvent } from './events.models'
-
 export type FileLocationString = string
 
 /**
