@@ -98,25 +98,39 @@ export type InstallStyleSheetsInputs = {
  *
  * <iframe id="iFrameExample" src="" width="100%" height="600px"></iframe>
  * <script>
- *      const src = `return async ({cdnClient}, event$) => {
+ *   const src = `<!--<!DOCTYPE html>
+ * <html lang="en">
+ *   <head><script src="https://webpm.org/^2.1.2/cdn-client.js"></script></head>
+ *
+ *   <body id="content"></body>
+ *
+ *   <script type="module">
+ *      const cdnClient = window['@youwol/cdn-client']
  *      // get a loading graph, this data could have been saved at some point in time
- *      // to latter-on restore the same run-time.
- *      event$.next('retrieve loading graph')
  *      const loadingGraph = await cdnClient.queryLoadingGraph({
  *          modules:['@youwol/flux-view#^1.1.0', 'rxjs#^7.5.6', 'lodash#*'],
  *      })
- *      event$.next('install loading graph')
- *      await cdnClient.installLoadingGraph({loadingGraph})
- *      event$.next('done')
- *      return {
- *          class:'fv-text-primary',
+ *      // install the loading graph with custom aliases
+ *      await cdnClient.installLoadingGraph({
+ *          loadingGraph,
+ *          aliases: { FV: '@youwol/flux-view' }
+ *      })
+ *      // To get the correct display of the next view.
+ *      await cdnClient.install({css:[
+ *          'bootstrap#^5.3.0~bootstrap.min.css',
+ *          'fontawesome#5.12.1~css/all.min.css'
+ *      ]})
+ *      const vDOM = {
+ *          class:'fv-text-primary p-2',
  *          children:[
  *              cdnClient.monitoring().view
  *          ]
- *      }
- * }
- * `
- *     const url = '/applications/@youwol/js-playground/latest?content='+encodeURIComponent(src)
+ *      };
+ *      document.getElementById('content').appendChild(FV.render(vDOM));
+ *   </script>
+ * </html>
+ * -->`
+ *     const url = '/applications/@youwol/js-playground/latest?content='+encodeURIComponent(src.substring(4,src.length-4))
  *     document.getElementById('iFrameExample').setAttribute("src",url);
  * </script>
  */
@@ -175,21 +189,26 @@ export type CustomInstaller = {
  *
  * <iframe id="iFrameExampleModules" src="" width="100%" height="600px"></iframe>
  * <script>
- *      const src = `return async ({cdnClient}) => {
+ *    const src = `<!--<!DOCTYPE html>
+ * <html lang="en">
+ *   <head><script src="https://webpm.org/^2.1.2/cdn-client.js"></script></head>
+ *
+ *   <body id="content"></body>
+ *
+ *   <script type="module">
+ *      const cdnClient = window['@youwol/cdn-client']
  *      const {FV, rx, rx6, rx7} = await cdnClient.install({
- *          modules:['@youwol/flux-view#^1.1.0', 'rxjs#^7.5.6', 'lodash#*'],
+ *          modules:['@youwol/flux-view#^1.1.0 as FV', 'rxjs#^7.5.6 as rx7', 'lodash#*'],
  *          modulesSideEffects: {
  *              'rxjs#6.x': (d) => console.log("Rxjs 6 installed", d),
  *              'rxjs#7.x': (d) => console.log("Rxjs 7 installed", d),
  *              'rxjs#*': (d) => console.log("A version of Rxjs has been  installed", d)
  *          },
  *          aliases: {
- *              // no API version -> implicitly latest installed
- *              FV: '@youwol/flux-view',
- *              // no API version -> implicitly latest installed (7.x)
+ *              // no API version on value -> implicitly latest installed (^7.5.6)
  *              rx: 'rxjs',
- *              rx6: 'rxjs_APIv6',
- *              rx7: 'rxjs_APIv7'
+ *              // rxjs#6 is installed as dependency of @youwol/flux-view
+ *              rx6: 'rxjs_APIv6'
  *          },
  *          scripts: [
  *              'codemirror#5.52.0~addons/lint/lint.js',
@@ -207,18 +226,21 @@ export type CustomInstaller = {
  *                  sideEffects: (d) => console.log("FontAwesome CSS imported", d)
  *              }
  *          ],
- *          onEvent: (ev) => console.log("CDN event", ev)
+ *          onEvent: (ev) => console.log("CDN event", ev),
+ *          displayLoadingScreen: true
  *      })
  *      console.log('🎉 installation done', {FV, rx, rx6, rx7})
- *      return {
- *          class:'fv-text-primary',
+ *      const vDOM = {
+ *          class:'fv-text-primary p-2',
  *          children:[
  *              cdnClient.monitoring().view
  *          ]
  *      }
- * }
- * `
- *     const url = '/applications/@youwol/js-playground/latest?content='+encodeURIComponent(src)
+ *      document.getElementById('content').appendChild(FV.render(vDOM));
+ *  </script>
+ * </html>
+ * -->`
+ *     const url = '/applications/@youwol/js-playground/latest?content='+encodeURIComponent(src.substring(4,src.length-4))
  *     document.getElementById('iFrameExampleModules').setAttribute("src",url);
  * </script>
  *
