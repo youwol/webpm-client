@@ -30,6 +30,8 @@ import {
     resolveCustomInstaller,
     installAliases,
     isInstanceOfWindow,
+    extractInlinedAliases,
+    extractModulesToInstall,
 } from './utils'
 import { BackendConfiguration } from './backend-configuration'
 import { FrontendConfiguration } from './frontend-configuration'
@@ -424,9 +426,11 @@ export class Client {
             ...(inputs.usingDependencies || []),
         ]
         inputs.modules = inputs.modules || []
-        const modules = sanitizeModules(inputs.modules)
+        const aliases = extractInlinedAliases(inputs.modules)
+        const inputsModules = extractModulesToInstall(inputs.modules)
+        const modules = sanitizeModules(inputsModules)
         const body = {
-            modules: inputs.modules,
+            modules: inputsModules,
             usingDependencies,
         }
         const modulesSideEffects = modules.reduce(
@@ -444,7 +448,7 @@ export class Client {
                 modulesSideEffects,
                 executingWindow: inputs.executingWindow,
                 onEvent: inputs.onEvent,
-                aliases: inputs.aliases,
+                aliases: { ...aliases, ...inputs.aliases },
             })
             return loadingGraph
         } catch (error) {

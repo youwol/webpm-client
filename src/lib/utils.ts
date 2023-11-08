@@ -4,6 +4,7 @@ import {
     FetchedScript,
     ScriptSideEffectCallback,
     CustomInstaller,
+    LightLibraryWithAliasQueryString,
 } from './inputs.models'
 import {
     CdnEvent,
@@ -458,4 +459,42 @@ export function isInstanceOfWindow(
     scope: WindowOrWorkerGlobalScope,
 ): scope is Window {
     return (scope as Window).document != undefined
+}
+
+export function extractModulesToInstall(
+    modules: LightLibraryWithAliasQueryString[],
+) {
+    return modules.map((module) => module.split(' as ')[0])
+}
+
+export function extractInlinedAliases(
+    modules: LightLibraryWithAliasQueryString[],
+) {
+    const getKey = (module: string) => {
+        const key = module.split(' as ')[0].trim()
+        if (!key.includes('#')) {
+            return key
+        }
+        let version = key.split('#')[1].trim()
+        if (version == 'x' || version == '*' || version == 'latest') {
+            return key.split('#')[0].trim()
+        }
+        if (version.startsWith('~') || version.startsWith('^')) {
+            version = version.substring(1)
+        }
+        return `${key.split('#')[0].trim()}_APIv${getApiKey(version)}`
+    }
+    const getValue = (module: string) => {
+        return module.split(' as ')[1].trim()
+    }
+
+    return modules
+        .filter((module) => module.includes(' as '))
+        .reduce(
+            (acc, module) => ({
+                ...acc,
+                [getValue(module)]: getKey(module),
+            }),
+            {},
+        )
 }

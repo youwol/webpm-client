@@ -34,6 +34,13 @@ export type FileLocationString = string
 export type LightLibraryQueryString = string
 
 /**
+ * A LightLibraryQueryStringWithAlias is a {@link LightLibraryQueryString} with the addition of an optional alias:
+ * `{moduleName}#{semver} as {alias}`
+ * `codemirror#^5.52.0 as CM`
+ */
+export type LightLibraryWithAliasQueryString = string
+
+/**
  * A FullLibraryQueryString is a string that defines query of a library using format:
  * `{moduleName}#{semver}`
  *
@@ -246,10 +253,10 @@ export type CustomInstaller = {
  */
 export type InstallInputs = {
     /**
-     * List of modules to install, see {@link LightLibraryQueryString} for specification.
+     * List of modules to install, see {@link LightLibraryWithAliasQueryString} for specification.
      *
      */
-    modules?: LightLibraryQueryString[]
+    modules?: LightLibraryWithAliasQueryString[]
 
     /**
      * Override the 'natural' version used for some libraries coming from the dependency graph when resolving
@@ -368,7 +375,7 @@ export type InstallModulesInputs = {
     /**
      * See {@link InstallInputs.modules}
      */
-    modules?: LightLibraryQueryString[]
+    modules?: LightLibraryWithAliasQueryString[]
 
     /**
      * See {@link InstallInputs.modulesSideEffects}
