@@ -1,4 +1,4 @@
-# @youwol/cdn-client
+# @youwol/webpm-client
 
 Library for dynamic npm's libraries installation from YouWol's CDN.
 
@@ -9,11 +9,11 @@ This library is part of the hybrid cloud/local ecosystem
 
 <!-- no user guide provided -->
 
-[Developers documentation](https://platform.youwol.com/applications/@youwol/cdn-explorer/latest?package=@youwol/cdn-client&tab=doc)
+[Developers documentation](https://platform.youwol.com/applications/@youwol/cdn-explorer/latest?package=@youwol/webpm-client&tab=doc)
 
-[Package on npm](https://www.npmjs.com/package/@youwol/cdn-client)
+[Package on npm](https://www.npmjs.com/package/@youwol/webpm-client)
 
-[Source on GitHub](https://github.com/youwol/cdn-client)
+[Source on GitHub](https://github.com/youwol/webpm-client)
 
 # Installation, Build, Test
 

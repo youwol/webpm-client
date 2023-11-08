@@ -100,7 +100,7 @@ export class DefaultLoadingScreenOptions implements LoadingScreenOptions {
  *
  * Here is an example:
  * ```
- * import {LoadingScreenView, install} from '@youwol/cdn-client'
+ * import {LoadingScreenView, install} from '@youwol/webpm-client'
  *
  * const loadingScreen = new LoadingScreenView({
  *     container: this,
@@ -124,7 +124,7 @@ export class DefaultLoadingScreenOptions implements LoadingScreenOptions {
  *
  * Default values of the display options are defined in {@link DefaultLoadingScreenOptions}, it can be controlled by e.g.:
  * ```
- * import {LoadingScreenView, DefaultLoadingScreenOptions} from '@youwol/cdn-client'
+ * import {LoadingScreenView, DefaultLoadingScreenOptions} from '@youwol/webpm-client'
  * // for all LoadingScreenView instances:
  * LoadingScreenView.DefaultOptions = {
  *     ...new DefaultLoadingScreenOptions(),

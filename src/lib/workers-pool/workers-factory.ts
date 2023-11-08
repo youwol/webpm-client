@@ -501,7 +501,7 @@ export interface MessageInstall {
 }
 
 function entryPointInstall(input: EntryPointArguments<MessageInstall>) {
-    if (self['@youwol/cdn-client:worker-install-done']) {
+    if (self['@youwol/webpm-client:worker-install-done']) {
         // The environment is already installed
         return Promise.resolve()
     }
@@ -540,7 +540,7 @@ function entryPointInstall(input: EntryPointArguments<MessageInstall>) {
     console.log('Install environment in worker', input)
 
     self['customImportScripts'](input.args.cdnUrl)
-    const cdn = self['@youwol/cdn-client']
+    const cdn = self['@youwol/webpm-client']
     cdn.Client.BackendConfiguration = input.args.backendConfiguration
 
     const onEvent = (cdnEvent) => {
@@ -593,7 +593,7 @@ function entryPointInstall(input: EntryPointArguments<MessageInstall>) {
                     message: input.args,
                     workerScope: input.workerScope,
                 })
-            self['@youwol/cdn-client:worker-install-done'] = true
+            self['@youwol/webpm-client:worker-install-done'] = true
         })
 }
 
@@ -1132,7 +1132,7 @@ export class WorkersPool {
                 context: ctx,
             })
             const taskChannel$ = this.getTaskChannel$(p, taskId, context)
-            const cdnPackage = '@youwol/cdn-client'
+            const cdnPackage = '@youwol/webpm-client'
             const cdnUrl = `${
                 WorkersPool.BackendConfiguration.urlResource
             }/${getAssetId(cdnPackage)}/${setup.version}/dist/${cdnPackage}.js`
@@ -1236,7 +1236,7 @@ export class WorkersPool {
 
             if (this.busyWorkers$.value.includes(workerId)) {
                 throw Error(
-                    `Can not pick task by ${workerId}: worker already busy. Please report a bug for @youwol/cdn-client.`,
+                    `Can not pick task by ${workerId}: worker already busy. Please report a bug for @youwol/webpm-client.`,
                 )
             }
             this.busyWorkers$.next([...this.busyWorkers$.value, workerId])

@@ -25,7 +25,7 @@ test_html_outputs: Artifact = Artifact(
     links=[Link(name="HTML outputs", url="src/tests/.html-outputs/index.html")],
 )
 
-copy_yw_config_cmd = "cp ./yw-backend.config.json ./dist/@youwol/cdn-client.config.json"
+copy_yw_config_cmd = "cp ./yw-backend.config.json ./dist/@youwol/webpm-client.config.json"
 
 
 class PipelineFactory(IPipelineFactory):

@@ -61,17 +61,17 @@ const secondaryEntries : {[k:string]:{entryFile: string, name: string, loadDepen
 }
 
 const entries = {
-     '@youwol/cdn-client': './index.ts',
-    ...Object.values(secondaryEntries).reduce( (acc,e) => ({...acc, [`@youwol/cdn-client/${e.name}`]:e.entryFile}), {})
+     '@youwol/webpm-client': './index.ts',
+    ...Object.values(secondaryEntries).reduce( (acc,e) => ({...acc, [`@youwol/webpm-client/${e.name}`]:e.entryFile}), {})
 }
 export const setup = {
-    name:'@youwol/cdn-client',
-        assetId:'QHlvdXdvbC9jZG4tY2xpZW50',
-    version:'2.1.3',
+    name:'@youwol/webpm-client',
+        assetId:'QHlvdXdvbC93ZWJwbS1jbGllbnQ=',
+    version:'2.1.5-wip',
     shortDescription:"Library for dynamic npm's libraries installation from YouWol's CDN.",
-    developerDocumentation:'https://platform.youwol.com/applications/@youwol/cdn-explorer/latest?package=@youwol/cdn-client&tab=doc',
-    npmPackage:'https://www.npmjs.com/package/@youwol/cdn-client',
-    sourceGithub:'https://github.com/youwol/cdn-client',
+    developerDocumentation:'https://platform.youwol.com/applications/@youwol/cdn-explorer/latest?package=@youwol/webpm-client&tab=doc',
+    npmPackage:'https://www.npmjs.com/package/@youwol/webpm-client',
+    sourceGithub:'https://github.com/youwol/webpm-client',
     userGuide:'',
     apiVersion:'2',
     runTimeDependencies,
@@ -98,7 +98,7 @@ export const setup = {
             modules,
             scripts,
         }).then(() => {
-            return window[`@youwol/cdn-client_APIv2`]
+            return window[`@youwol/webpm-client_APIv2`]
         })
     },
     installAuxiliaryModule: ({name, cdnClient, installParameters}:{
@@ -113,7 +113,7 @@ export const setup = {
         const parameters = installParameters || {}
         const scripts = [
             ...(parameters.scripts || []),
-            `@youwol/cdn-client#2.1.3~dist/@youwol/cdn-client/${entry.name}.js`
+            `@youwol/webpm-client#2.1.5-wip~dist/@youwol/webpm-client/${entry.name}.js`
         ]
         const modules = [
             ...(parameters.modules || []),
@@ -124,7 +124,7 @@ export const setup = {
             modules,
             scripts,
         }).then(() => {
-            return window[`@youwol/cdn-client/${entry.name}_APIv2`]
+            return window[`@youwol/webpm-client/${entry.name}_APIv2`]
         })
     },
     getCdnDependencies(name?: string){

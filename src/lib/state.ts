@@ -220,7 +220,7 @@ export class StateImplementation {
         libName: string,
         version: string,
     ): boolean {
-        if (libName == '@youwol/cdn-client') {
+        if (libName == '@youwol/webpm-client') {
             const symbol = getExpectedFullExportedSymbol(libName, version)
             const alreadyHere = window[symbol]
             const compatibleInstalled =

@@ -6,7 +6,7 @@
  *
  * It serves as helper when working with typescript, e.g.:
  * ```ts
- * import { installWorkersPoolModule, WorkersType } from '@youwol/cdn-client'
+ * import { installWorkersPoolModule, WorkersType } from '@youwol/webpm-client'
  *
  * async function foo(){
  *      const WPModule = await installWorkersPoolModule()
