@@ -120,6 +120,57 @@ test('install rxjs#6 & rxjs#7', async () => {
     expect(rxjs).toEqual(aliasRxjs7)
 })
 
+test('install rxjs with inlined aliases', async () => {
+    const { rxjs7 } = (await install({
+        modules: ['rxjs as rxjs7'],
+    })) as unknown as {
+        rxjs7: { __yw_set_from_version__: string }
+    }
+
+    expect(rxjs7).toBeTruthy()
+    expect(rxjs7.__yw_set_from_version__).toBe('7.5.6')
+    expect(window['rxjs']).toBe(rxjs7)
+})
+
+test('install rxjs#x with inlined aliases', async () => {
+    const { rxjs7 } = (await install({
+        modules: ['rxjs#x as rxjs7'],
+    })) as unknown as {
+        rxjs7: { __yw_set_from_version__: string }
+    }
+
+    expect(rxjs7).toBeTruthy()
+    expect(rxjs7.__yw_set_from_version__).toBe('7.5.6')
+    expect(window['rxjs']).toBe(rxjs7)
+})
+
+test('install rxjs#^6.0.0 with inlined aliases', async () => {
+    const { rxjs6 } = (await install({
+        modules: ['rxjs#^6.0.0 as rxjs6'],
+    })) as unknown as {
+        rxjs6: { __yw_set_from_version__: string }
+    }
+
+    expect(rxjs6).toBeTruthy()
+    expect(rxjs6.__yw_set_from_version__).toBe('6.5.5')
+    expect(window['rxjs']).toBe(rxjs6)
+})
+
+test('install rxjs#^6.0.0 & rxjs#^7.0.0 with inlined aliases', async () => {
+    const { rxjs6, rxjs7 } = (await install({
+        modules: ['rxjs#^6.0.0 as rxjs6', 'rxjs#^7.0.0 as rxjs7'],
+    })) as unknown as {
+        rxjs7: { __yw_set_from_version__: string }
+        rxjs6: { __yw_set_from_version__: string }
+    }
+
+    expect(rxjs6).toBeTruthy()
+    expect(rxjs6.__yw_set_from_version__).toBe('6.5.5')
+    expect(rxjs7).toBeTruthy()
+    expect(rxjs7.__yw_set_from_version__).toBe('7.5.6')
+    expect(window['rxjs']).toBe(rxjs7)
+})
+
 test('install rxjs#6 then rxjs#7', async () => {
     const { rxjs, rxjs6, aliasRxjs6 } = (await install({
         modules: ['rxjs#6.5.5'],
