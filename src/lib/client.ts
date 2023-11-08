@@ -30,6 +30,8 @@ import {
     resolveCustomInstaller,
     installAliases,
     isInstanceOfWindow,
+    extractInlinedAliases,
+    extractModulesToInstall,
 } from './utils'
 import { BackendConfiguration } from './backend-configuration'
 import { FrontendConfiguration } from './frontend-configuration'
@@ -214,24 +216,19 @@ export class Client {
         })
         if (Client.state.importedScripts[url]) {
             const { progressEvent } = await Client.state.importedScripts[url]
-            onEvent &&
-                onEvent(
-                    new SourceLoadedEvent(name, assetId, url, progressEvent),
-                )
+            onEvent?.(new SourceLoadedEvent(name, assetId, url, progressEvent))
             return Client.state.importedScripts[url]
         }
         if (!isInstanceOfWindow(globalThis)) {
             // In a web-worker the script will be imported using self.importScripts(url).
             // No need to pre-fetch the source file in this case.
-            return new Promise((resolve) => {
-                resolve({
-                    name,
-                    version,
-                    assetId,
-                    url,
-                    content: undefined,
-                    progressEvent: undefined,
-                })
+            return Promise.resolve({
+                name,
+                version,
+                assetId,
+                url,
+                content: undefined,
+                progressEvent: undefined,
             })
         }
         Client.state.importedScripts[url] = new Promise((resolve, reject) => {
@@ -240,10 +237,7 @@ export class Client {
             req.addEventListener(
                 'progress',
                 function (event) {
-                    onEvent &&
-                        onEvent(
-                            new SourceLoadingEvent(name, assetId, url, event),
-                        )
+                    onEvent?.(new SourceLoadingEvent(name, assetId, url, event))
                 },
                 false,
             )
@@ -265,7 +259,7 @@ export class Client {
             req.open('GET', url)
             req.responseType = 'text' // Client.responseParser ? 'blob' : 'text'
             req.send()
-            onEvent && onEvent(new StartEvent(name, assetId, url))
+            onEvent?.(new StartEvent(name, assetId, url))
         })
         return Client.state.importedScripts[url]
     }
@@ -287,8 +281,8 @@ export class Client {
             loadingScreen.render()
         }
         const onEvent = (ev) => {
-            loadingScreen && loadingScreen.next(ev)
-            inputs.onEvent && inputs.onEvent(ev)
+            loadingScreen?.next(ev)
+            inputs.onEvent?.(ev)
         }
 
         const bundlesPromise = this.installModules({
@@ -321,8 +315,8 @@ export class Client {
             cssPromise,
             ...customInstallersPromises,
         ]).then(() => {
-            onEvent && onEvent(new InstallDoneEvent())
-            loadingScreen && loadingScreen.done()
+            onEvent?.(new InstallDoneEvent())
+            loadingScreen?.done()
             return executingWindow
         })
     }
@@ -432,9 +426,11 @@ export class Client {
             ...(inputs.usingDependencies || []),
         ]
         inputs.modules = inputs.modules || []
-        const modules = sanitizeModules(inputs.modules)
+        const aliases = extractInlinedAliases(inputs.modules)
+        const inputsModules = extractModulesToInstall(inputs.modules)
+        const modules = sanitizeModules(inputsModules)
         const body = {
-            modules: inputs.modules,
+            modules: inputsModules,
             usingDependencies,
         }
         const modulesSideEffects = modules.reduce(
@@ -452,12 +448,11 @@ export class Client {
                 modulesSideEffects,
                 executingWindow: inputs.executingWindow,
                 onEvent: inputs.onEvent,
-                aliases: inputs.aliases,
+                aliases: { ...aliases, ...inputs.aliases },
             })
             return loadingGraph
         } catch (error) {
-            inputs.onEvent &&
-                inputs.onEvent(new CdnLoadingGraphErrorEvent(error))
+            inputs.onEvent?.(new CdnLoadingGraphErrorEvent(error))
             throw error
         }
     }
@@ -557,17 +552,16 @@ export class Client {
                         .getElementsByTagName('head')[0]
                         .appendChild(link)
                     link.onload = () => {
-                        sideEffects &&
-                            sideEffects({
-                                origin: {
-                                    moduleName: name,
-                                    version,
-                                    assetId,
-                                    url,
-                                },
-                                htmlLinkElement: link,
-                                renderingWindow,
-                            })
+                        sideEffects?.({
+                            origin: {
+                                moduleName: name,
+                                version,
+                                assetId,
+                                url,
+                            },
+                            htmlLinkElement: link,
+                            renderingWindow,
+                        })
                         resolveCb(link)
                     }
                 })

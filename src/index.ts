@@ -6,24 +6,37 @@
  * For instance:
  * <iframe id="iFrameExample" src="" width="100%" height="450px"></iframe>
  * <script>
- *      const src = `
- *   return async ({cdnClient}) => {
- *      const {FV, rx} = await cdnClient.install({
+ *   const src = `<!--<!DOCTYPE html>
+ * <html lang="en">
+ *   <head><script src="https://webpm.org/^2.1.2/cdn-client.js"></script></head>
+ *
+ *   <body id="content"></body>
+ *
+ *   <script type="module">
+ *      const cdnClient = window['@youwol/cdn-client']
+ *
+ *      const {FV, rxjs} = await cdnClient.install({
  *          // import modules, they come with their direct and indirect dependencies (e.g. rxjs here).
- *          modules:['@youwol/flux-view#^1.1.0'],
- *          // import css
+ *          modules:['@youwol/flux-view#^1.1.0 as FV'],
  *          css: [
- *             '@youwol/fv-widgets#latest~dist/assets/styles/style.youwol.css',
+ *              'bootstrap#^5.3.0~bootstrap.min.css',
+ *              '@youwol/fv-widgets#latest~dist/assets/styles/style.youwol.css',
  *          ],
- *          aliases: { FV: '@youwol/flux-view', rx: 'rxjs' }
+ *          displayLoadingScreen: true
  *      })
- *      return FV.render({
- *          class: 'fv-text-primary',
- *      	innerText: FV.attr$( rx.timer(0,1000), () => new Date().toLocaleString())
- *      })
- * }
- *  `
- *     const url = '/applications/@youwol/js-playground/latest?content='+encodeURIComponent(src)
+ *      // simple example
+ *      const vDOM = {
+ *          class: 'fv-text-primary fv-bg-background text-center py-2',
+ *          innerText: FV.attr$(
+ *              rxjs.timer(0,1000),
+ *              () => new Date().toLocaleString()
+ *          )
+ *      }
+ *      document.getElementById('content').appendChild(FV.render(vDOM));
+ *   </script>
+ * </html>
+ * -->`
+ *     const url = '/applications/@youwol/js-playground/latest?content='+encodeURIComponent(src.substring(4,src.length-4))
  *     document.getElementById('iFrameExample').setAttribute("src",url);
  * </script>
  *
