@@ -49,7 +49,7 @@ beforeAll((done) => {
         './.packages-test/rxjs#6.5.5/cdn.zip',
         './.packages-test/flux-view#1.1.0/cdn.zip',
         // to fetch the module 'WorkersPool' the current version of cdn is needed
-        './.packages-test/cdn-client/cdn.zip',
+        './.packages-test/webpm-client/cdn.zip',
     ]).subscribe(() => {
         done()
     })
