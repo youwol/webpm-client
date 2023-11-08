@@ -58,6 +58,8 @@
     },
     "webpm": {
         "dependencies": {},
-        "aliases": []
+        "aliases": [
+            "webpm"
+        ]
     }
 }

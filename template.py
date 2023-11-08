@@ -38,7 +38,10 @@ template = Template(
     testConfig="https://github.com/youwol/integration-tests-conf",
     userGuide=False,
     bundles=Bundles(
-        mainModule=MainModule(entryFile="./index.ts"),
+        mainModule=MainModule(
+            entryFile="./index.ts",
+            aliases=['webpm']
+        ),
         auxiliaryModules=[
             AuxiliaryModule(
                 name="workersPool",
