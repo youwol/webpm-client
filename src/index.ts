@@ -13,7 +13,7 @@
  *   <body id="content"></body>
  *
  *   <script type="module">
- *      const cdnClient = window['@youwol/cdn-client']
+ *      const cdnClient = window['@youwol/webpm-client']
  *
  *      const {FV, rxjs} = await cdnClient.install({
  *          // import modules, they come with their direct and indirect dependencies (e.g. rxjs here).
@@ -161,11 +161,11 @@ if (globalThis.document && globalThis.document.currentScript) {
     }
 }
 
-if (!globalThis['@youwol/cdn-client']) {
+if (!globalThis['@youwol/webpm-client']) {
     /**
      * Cdn client is particular: when imported from a `<scrip>` element its installation has not been managed
      * by the library itself, and the (latest) version exposed with the original library name has not been set.
      * This is why the following line is needed.
      */
-    globalThis['@youwol/cdn-client'] = { ...cdnClient, setup }
+    globalThis['@youwol/webpm-client'] = { ...cdnClient, setup }
 }

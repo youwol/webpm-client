@@ -23,7 +23,7 @@ function fakeInstalledModule(name, version) {
 }
 
 test('StateImplementation.isCompatibleVersionInstalled', () => {
-    fakeInstalledModule('@youwol/cdn-client', '1.2.0')
+    fakeInstalledModule('@youwol/webpm-client', '1.2.0')
     const tests = {
         '1.1.0': true,
         '1.3.0': false,
@@ -32,7 +32,7 @@ test('StateImplementation.isCompatibleVersionInstalled', () => {
     }
     Object.entries(tests).map(([version, expected]) => {
         const r = StateImplementation.isCompatibleVersionInstalled(
-            '@youwol/cdn-client',
+            '@youwol/webpm-client',
             version,
         )
         expect(r).toBe(expected)

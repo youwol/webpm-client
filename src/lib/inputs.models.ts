@@ -111,7 +111,7 @@ export type InstallStyleSheetsInputs = {
  *   <body id="content"></body>
  *
  *   <script type="module">
- *      const cdnClient = window['@youwol/cdn-client']
+ *      const cdnClient = window['@youwol/webpm-client']
  *      // get a loading graph, this data could have been saved at some point in time
  *      const loadingGraph = await cdnClient.queryLoadingGraph({
  *          modules:['@youwol/flux-view#^1.1.0', 'rxjs#^7.5.6', 'lodash#*'],
@@ -202,7 +202,7 @@ export type CustomInstaller = {
  *   <body id="content"></body>
  *
  *   <script type="module">
- *      const cdnClient = window['@youwol/cdn-client']
+ *      const cdnClient = window['@youwol/webpm-client']
  *      const {FV, rx, rx6, rx7} = await cdnClient.install({
  *          modules:['@youwol/flux-view#^1.1.0 as FV', 'rxjs#^7.5.6 as rx7', 'lodash#*'],
  *          modulesSideEffects: {
@@ -274,7 +274,7 @@ export type InstallInputs = {
      * (which will probably break at installation of `@youwol/flux-view#1.x` as the two versions of RxJS are not
      * compatible).
      * ```
-     * import {install} from `@youwol/cdn-client`
+     * import {install} from `@youwol/webpm-client`
      *
      * await install({
      *     modules: [`@youwol/fictive-package#0.x`, `@youwol/fictive-package#1.x`],
@@ -553,7 +553,7 @@ export type Library = {
     id: string
 
     /**
-     * name of the library, e.g. @youwol/cdn-client
+     * name of the library, e.g. @youwol/webpm-client
      */
     name: string
 

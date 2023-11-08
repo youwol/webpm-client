@@ -56,7 +56,7 @@ beforeAll((done) => {
 })
 beforeEach(() => {
     cleanDocument()
-    window['@youwol/cdn-client:worker-install-done'] = false
+    window['@youwol/webpm-client:worker-install-done'] = false
     StateImplementation.clear()
 })
 

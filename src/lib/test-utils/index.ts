@@ -82,7 +82,7 @@ export class WebWorkersJest implements IWWorkerProxy {
 
         globalThis['importScripts'] = () => {
             // this is only called when 'installing' cdnClient in worker
-            window['@youwol/cdn-client'] = params.cdnClient
+            window['@youwol/webpm-client'] = params.cdnClient
         }
 
         globalThis['postMessage'] = (message) => {

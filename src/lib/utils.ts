@@ -197,7 +197,7 @@ export async function applyModuleSideEffects(
     module['__yw_set_from_version__'] = origin.version
 
     StateImplementation.registerImportedModules([origin], executingWindow)
-    if (origin.name == '@youwol/cdn-client') {
+    if (origin.name == '@youwol/webpm-client') {
         const installedClient = module.Client
         installedClient.FrontendConfiguration = Client.FrontendConfiguration
         installedClient.BackendConfiguration = Client.BackendConfiguration

@@ -28,7 +28,7 @@
  *              len(np.argwhere(np.linalg.norm(data, axis=1)<0.5)) / count * 4
  *           \`)
  *        }
- *        const cdnClient = window['@youwol/cdn-client']
+ *        const cdnClient = window['@youwol/webpm-client']
  *
  *        // workers pool module is an opt-in feature of cdnClient
  *        const WPool = await cdnClient.installWorkersPoolModule()
