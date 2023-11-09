@@ -139,7 +139,7 @@ if (globalThis.document && globalThis.document.currentScript) {
     const src = document.currentScript.getAttribute('src')
     const pathConfig = [
         ...src.split('/').slice(0, -1),
-        'cdn-client.config.json',
+        'webpm-client.config.json',
     ].join('/')
 
     // Using a synchronous request here is on purpose: the objective is to provide a module fully initialized.

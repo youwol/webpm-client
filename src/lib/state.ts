@@ -128,7 +128,7 @@ export class StateImplementation {
         [`${setup.name}#${setup.version}`]: {
             symbol: setup.name,
             apiKey: setup.apiVersion,
-            aliases: ['cdnClient'],
+            aliases: ['webpmClient'],
         },
     }
 
