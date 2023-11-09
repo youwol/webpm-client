@@ -197,7 +197,10 @@ export async function applyModuleSideEffects(
     module['__yw_set_from_version__'] = origin.version
 
     StateImplementation.registerImportedModules([origin], executingWindow)
-    if (origin.name == '@youwol/cdn-client') {
+    // This is when this instance of webpm-client is installing either @youwol/webpm-client or @youwol/cdn-client
+    // => the configuration needs to be propagated
+    // The configuration is initially set by the root script of '@youwol/webpm-client'.
+    if (['@youwol/webpm-client', '@youwol/cdn-client'].includes(origin.name)) {
         const installedClient = module.Client
         installedClient.FrontendConfiguration = Client.FrontendConfiguration
         installedClient.BackendConfiguration = Client.BackendConfiguration
