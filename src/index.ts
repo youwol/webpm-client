@@ -131,15 +131,20 @@ export { setup } from './auto-generated'
 import * as cdnClient from './lib'
 import { setup } from './auto-generated'
 
-// In a worker, globalThis.document is undefined -> no config initialization here.
-// In this case it is propagated when calling 'installWorkersPoolModule'.
-// Also, in Node environment (e.g. jest tests) `globalThis.document.currentScript` is undefined -> it has to be set as
-// `Client.BackendConfiguration` static member.
-if (globalThis.document && globalThis.document.currentScript) {
+// In a worker, globalThis.document is undefined
+//      -> no config initialization here.
+//      -> it is propagated when calling 'installWorkersPoolModule'.
+// In Node environment (e.g. jest tests) `globalThis.document.currentScript` is undefined
+//      -> it has to be set as `Client.BackendConfiguration` static member.
+// When this package is installed using another instance of @youwol/webpm-client or @youwol/cdn-client
+//      -> 'globalThis.document?.currentScript' is defined, but not the 'src' attribute
+//      -> it is the responsibility of the parent installer to propagate the configurations (see
+//      {@link applyModuleSideEffects})
+if (globalThis.document?.currentScript?.getAttribute('src')) {
     const src = document.currentScript.getAttribute('src')
     const pathConfig = [
         ...src.split('/').slice(0, -1),
-        'cdn-client.config.json',
+        'webpm-client.config.json',
     ].join('/')
 
     // Using a synchronous request here is on purpose: the objective is to provide a module fully initialized.
@@ -163,9 +168,14 @@ if (globalThis.document && globalThis.document.currentScript) {
 
 if (!globalThis['@youwol/webpm-client']) {
     /**
-     * Cdn client is particular: when imported from a `<scrip>` element its installation has not been managed
+     * Cdn client is particular: when imported from a `<script>` element its installation has not been managed
      * by the library itself, and the (latest) version exposed with the original library name has not been set.
      * This is why the following line is needed.
      */
     globalThis['@youwol/webpm-client'] = { ...cdnClient, setup }
+    /**
+     * For the initial install, aliases have to be installed explicitly.
+     * They are coming from the file `template.py`, but are for now not available in auto-generated (hence duplication).
+     */
+    globalThis['webpm'] = globalThis['@youwol/webpm-client']
 }
