@@ -13,7 +13,7 @@
  * <script>
  *   const src = `<!--<!DOCTYPE html>
  * <html lang="en">
- *   <head><script src="https://webpm.org/^2.1.2/cdn-client.js"></script></head>
+ *   <head><script src="https://webpm.org/^2.2.0/webpm-client.js"></script></head>
  *
  *   <body id="content"></body>
  *
@@ -28,12 +28,11 @@
  *              len(np.argwhere(np.linalg.norm(data, axis=1)<0.5)) / count * 4
  *           \`)
  *        }
- *        const cdnClient = window['@youwol/webpm-client']
  *
- *        // workers pool module is an opt-in feature of cdnClient
- *        const WPool = await cdnClient.installWorkersPoolModule()
+ *        // workers pool module is an opt-in feature of webpm client
+ *        const WPool = await webpm.installWorkersPoolModule()
  *        // run-time of main thread
- *        const {FV, RX} = await cdnClient.install({
+ *        const {FV, RX} = await webpm.install({
  *            modules: ['@youwol/flux-view as FV'],
  *            css: [
  *                'bootstrap#4.4.1~bootstrap.min.css',

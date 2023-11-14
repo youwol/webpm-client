@@ -8,16 +8,15 @@
  * <script>
  *   const src = `<!--<!DOCTYPE html>
  * <html lang="en">
- *   <head><script src="https://webpm.org/^2.1.2/cdn-client.js"></script></head>
+ *   <head><script src="https://webpm.org/^2.2.0/webpm-client.js"></script></head>
  *
  *   <body id="content"></body>
  *
  *   <script type="module">
- *      const cdnClient = window['@youwol/webpm-client']
  *
- *      const {FV, rxjs} = await cdnClient.install({
+ *      const {FV, rxjs} = await webpm.install({
  *          // import modules, they come with their direct and indirect dependencies (e.g. rxjs here).
- *          modules:['@youwol/flux-view#^1.1.0 as FV'],
+ *          modules:['@youwol/flux-view#^1.1.0 as FV', 'rxjs#^7.5.6 as rxjs'],
  *          css: [
  *              'bootstrap#^5.3.0~bootstrap.min.css',
  *              '@youwol/fv-widgets#latest~dist/assets/styles/style.youwol.css',

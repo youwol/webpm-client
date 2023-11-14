@@ -106,30 +106,29 @@ export type InstallStyleSheetsInputs = {
  * <script>
  *   const src = `<!--<!DOCTYPE html>
  * <html lang="en">
- *   <head><script src="https://webpm.org/^2.1.2/cdn-client.js"></script></head>
+ *   <head><script src="https://webpm.org/^2.2.0/webpm-client.js"></script></head>
  *
  *   <body id="content"></body>
  *
  *   <script type="module">
- *      const cdnClient = window['@youwol/webpm-client']
  *      // get a loading graph, this data could have been saved at some point in time
- *      const loadingGraph = await cdnClient.queryLoadingGraph({
+ *      const loadingGraph = await webpm.queryLoadingGraph({
  *          modules:['@youwol/flux-view#^1.1.0', 'rxjs#^7.5.6', 'lodash#*'],
  *      })
  *      // install the loading graph with custom aliases
- *      await cdnClient.installLoadingGraph({
+ *      await webpm.installLoadingGraph({
  *          loadingGraph,
  *          aliases: { FV: '@youwol/flux-view' }
  *      })
  *      // To get the correct display of the next view.
- *      await cdnClient.install({css:[
+ *      await webpm.install({css:[
  *          'bootstrap#^5.3.0~bootstrap.min.css',
  *          'fontawesome#5.12.1~css/all.min.css'
  *      ]})
  *      const vDOM = {
  *          class:'fv-text-primary p-2',
  *          children:[
- *              cdnClient.monitoring().view
+ *              webpm.monitoring().view
  *          ]
  *      };
  *      document.getElementById('content').appendChild(FV.render(vDOM));
@@ -197,13 +196,12 @@ export type CustomInstaller = {
  * <script>
  *    const src = `<!--<!DOCTYPE html>
  * <html lang="en">
- *   <head><script src="https://webpm.org/^2.1.2/cdn-client.js"></script></head>
+ *   <head><script src="https://webpm.org/^2.2.0/webpm-client.js"></script></head>
  *
  *   <body id="content"></body>
  *
  *   <script type="module">
- *      const cdnClient = window['@youwol/webpm-client']
- *      const {FV, rx, rx6, rx7} = await cdnClient.install({
+ *      const {FV, rx, rx6, rx7} = await webpm.install({
  *          modules:['@youwol/flux-view#^1.1.0 as FV', 'rxjs#^7.5.6 as rx7', 'lodash#*'],
  *          modulesSideEffects: {
  *              'rxjs#6.x': (d) => console.log("Rxjs 6 installed", d),
@@ -239,7 +237,7 @@ export type CustomInstaller = {
  *      const vDOM = {
  *          class:'fv-text-primary p-2',
  *          children:[
- *              cdnClient.monitoring().view
+ *              webpm.monitoring().view
  *          ]
  *      }
  *      document.getElementById('content').appendChild(FV.render(vDOM));
@@ -519,18 +517,21 @@ export type ScriptSideEffectCallback = (
  *
  * <iframe id="iFrameExampleModules" src="" width="100%" height="600px"></iframe>
  * <script>
- *      const src = `return async ({cdnClient}) => {
- *      const response = await cdnClient.queryLoadingGraph({
- *          modules:['@youwol/flux-view#^1.1.0', 'rxjs#^7.5.6', 'lodash#*'],
- *      })
- *      return {
- *          tag: 'pre',
- *          class:'fv-text-primary',
- *          innerText: JSON.stringify(response, null, 4)
- *      }
- * }
- * `
- *     const url = '/applications/@youwol/js-playground/latest?content='+encodeURIComponent(src)
+ *      const src = `<!--<!DOCTYPE html>
+ * <html lang="en">
+ *   <head><script src="https://webpm.org/^2.2.0/webpm-client.js"></script></head>
+ *
+ *   <body><pre id='content'></pre></body>
+ *
+ *   <script type="module">
+ *         const response = await webpm.queryLoadingGraph({
+ *              modules:['@youwol/flux-view#^1.1.0', 'rxjs#^7.5.6', 'lodash#*']
+ *         })
+ *         document.getElementById('content').innerText = JSON.stringify(response, null, 4)
+ *   </script>
+ * </html>
+ * -->`
+ *     const url = '/applications/@youwol/js-playground/latest?content='+encodeURIComponent(src.substring(4,src.length-4))
  *     document.getElementById('iFrameExampleModules').setAttribute("src",url);
  * </script>
  */
