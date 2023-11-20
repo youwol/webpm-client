@@ -4,7 +4,7 @@
 import { CdnMessageEvent, install, LoadingScreenView, monitoring } from '../lib'
 import { cleanDocument, installPackages$ } from './common'
 import './mock-requests'
-import { render } from '@youwol/flux-view'
+import { render } from '@youwol/rx-vdom'
 
 beforeAll((done) => {
     installPackages$([
