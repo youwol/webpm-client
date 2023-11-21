@@ -266,8 +266,8 @@ export class WorkerCardTitleView implements VirtualDOM<'div'> {
                 return busy.includes(this.workerId)
                     ? 'Busy'
                     : ready.includes(this.workerId)
-                    ? 'Created'
-                    : 'Pending'
+                      ? 'Created'
+                      : 'Pending'
             }),
         )
         this.children = [
