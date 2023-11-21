@@ -16,7 +16,10 @@ from youwol.utils import parse_json
 folder_path = Path(__file__).parent
 
 pkg_json = parse_json(folder_path / "package.json")
-externals = {"rxjs": "^6.5.5", "@youwol/flux-view": "^1.1.0"}
+externals = {
+    "rxjs": "^7.5.6",
+    "@youwol/rx-vdom": "^1.0.1"
+}
 template = Template(
     path=folder_path,
     type=PackageType.Library,
@@ -28,9 +31,8 @@ template = Template(
         runTime=RunTimeDeps(externals=externals, includedInBundle={"semver": "^7.3.4"}),
         devTime={
             "brotli": "^1.3.2",
-            "rxjs": "^6.5.5",
-            "@youwol/http-clients": "^2.0.0",
-            "@youwol/http-primitives": "^0.1.2",
+            "@youwol/http-clients": "^3.0.0",
+            "@youwol/http-primitives": "^0.2.0",
             "util": "^0.12.5",
             "@jest/test-sequencer": "^29.5.0",
         },
@@ -67,7 +69,7 @@ for file in [
     "LICENSE",
     "README.md",
     "package.json",
-    "tsconfig.json",
+    # "tsconfig.json", because of rx-vdom-config
     "webpack.config.ts",
 ]:
     shutil.copyfile(src=folder_path / ".template" / file, dst=folder_path / file)

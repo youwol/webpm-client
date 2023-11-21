@@ -1,8 +1,8 @@
 
 const runTimeDependencies = {
     "externals": {
-        "rxjs": "^6.5.5",
-        "@youwol/flux-view": "^1.1.0"
+        "rxjs": "^7.5.6",
+        "@youwol/rx-vdom": "^1.0.1"
     },
     "includedInBundle": {
         "semver": "^7.3.4"
@@ -12,30 +12,30 @@ const externals = {
     "rxjs": {
         "commonjs": "rxjs",
         "commonjs2": "rxjs",
-        "root": "rxjs_APIv6"
+        "root": "rxjs_APIv7"
     },
-    "@youwol/flux-view": {
-        "commonjs": "@youwol/flux-view",
-        "commonjs2": "@youwol/flux-view",
-        "root": "@youwol/flux-view_APIv1"
+    "@youwol/rx-vdom": {
+        "commonjs": "@youwol/rx-vdom",
+        "commonjs2": "@youwol/rx-vdom",
+        "root": "@youwol/rx-vdom_APIv1"
     },
     "rxjs/operators": {
         "commonjs": "rxjs/operators",
         "commonjs2": "rxjs/operators",
         "root": [
-            "rxjs_APIv6",
+            "rxjs_APIv7",
             "operators"
         ]
     }
 }
 const exportedSymbols = {
     "rxjs": {
-        "apiKey": "6",
+        "apiKey": "7",
         "exportedSymbol": "rxjs"
     },
-    "@youwol/flux-view": {
+    "@youwol/rx-vdom": {
         "apiKey": "1",
-        "exportedSymbol": "@youwol/flux-view"
+        "exportedSymbol": "@youwol/rx-vdom"
     }
 }
 
@@ -49,7 +49,7 @@ const secondaryEntries : {[k:string]:{entryFile: string, name: string, loadDepen
         "entryFile": "./lib/workers-pool/index.ts",
         "loadDependencies": [
             "rxjs",
-            "@youwol/flux-view"
+            "@youwol/rx-vdom"
         ],
         "name": "workersPool"
     },
@@ -67,13 +67,13 @@ const entries = {
 export const setup = {
     name:'@youwol/webpm-client',
         assetId:'QHlvdXdvbC93ZWJwbS1jbGllbnQ=',
-    version:'2.2.1-wip',
+    version:'3.0.1-wip',
     shortDescription:"Library for dynamic npm's libraries installation from YouWol's CDN.",
     developerDocumentation:'https://platform.youwol.com/applications/@youwol/cdn-explorer/latest?package=@youwol/webpm-client&tab=doc',
     npmPackage:'https://www.npmjs.com/package/@youwol/webpm-client',
     sourceGithub:'https://github.com/youwol/webpm-client',
     userGuide:'',
-    apiVersion:'2',
+    apiVersion:'3',
     runTimeDependencies,
     externals,
     exportedSymbols,
@@ -98,7 +98,7 @@ export const setup = {
             modules,
             scripts,
         }).then(() => {
-            return window[`@youwol/webpm-client_APIv2`]
+            return window[`@youwol/webpm-client_APIv3`]
         })
     },
     installAuxiliaryModule: ({name, cdnClient, installParameters}:{
@@ -113,7 +113,7 @@ export const setup = {
         const parameters = installParameters || {}
         const scripts = [
             ...(parameters.scripts || []),
-            `@youwol/webpm-client#2.2.1-wip~dist/@youwol/webpm-client/${entry.name}.js`
+            `@youwol/webpm-client#3.0.1-wip~dist/@youwol/webpm-client/${entry.name}.js`
         ]
         const modules = [
             ...(parameters.modules || []),
@@ -124,7 +124,7 @@ export const setup = {
             modules,
             scripts,
         }).then(() => {
-            return window[`@youwol/webpm-client/${entry.name}_APIv2`]
+            return window[`@youwol/webpm-client/${entry.name}_APIv3`]
         })
     },
     getCdnDependencies(name?: string){

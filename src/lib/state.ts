@@ -9,7 +9,7 @@ import {
     getFullExportedSymbolAlias,
     getExpectedFullExportedSymbol,
 } from './utils'
-import { VirtualDOM } from '@youwol/flux-view'
+import { ChildrenLike, VirtualDOM } from '@youwol/rx-vdom'
 import { setup } from '../auto-generated'
 
 export type LibraryName = string
@@ -43,7 +43,7 @@ export class Monitoring {
      * Create a VirtualDOM (see [fluxView](https://github.com/youwol/flux-view))
      * representing the current state of installation (modules installed & available symbols).
      */
-    public readonly view: VirtualDOM
+    public readonly view: VirtualDOM<'div'>
 
     constructor() {
         this.exportedSymbols = { ...StateImplementation.getExportedSymbol }
@@ -487,13 +487,15 @@ export class StateImplementation {
         StateImplementation.urlPatcher = patcher
     }
 
-    static view(): VirtualDOM {
+    static view(): VirtualDOM<'div'> {
         return {
+            tag: 'div',
             class: 'StateView',
             children: [
                 { tag: 'h5', innerText: `I'm ${setup.name}#${setup.version}` },
                 { tag: 'h3', innerText: 'Modules installed' },
                 {
+                    tag: 'div',
                     class: 'px-3 py-2 container',
                     children: [
                         new ModulesView({
@@ -504,6 +506,7 @@ export class StateImplementation {
                 },
                 { tag: 'h3', innerText: 'Available symbols' },
                 {
+                    tag: 'div',
                     class: 'px-3 py-2 container',
                     children: [
                         new SymbolsView({
@@ -517,28 +520,30 @@ export class StateImplementation {
     }
 }
 
-class ModulesView implements VirtualDOM {
-    public readonly children: VirtualDOM[]
+class ModulesView implements VirtualDOM<'div'> {
+    public readonly tag = 'div'
+    public readonly children: ChildrenLike
     constructor({ importedBundles }) {
         this.children = Array.from(importedBundles.entries()).map(
             ([k, versions]) => {
                 return {
+                    tag: 'div',
                     class: 'd-flex align-items-center my-1 row',
                     children: [
                         {
+                            tag: 'div',
                             class: 'col-sm',
                             style: { fontWeight: 'bolder' },
                             innerText: k,
                         },
                         {
+                            tag: 'div',
                             class: 'd-flex align-items-center col',
                             children: versions.map((v) => ({
                                 class: 'border rounded p-1 mx-2 d-flex align-items-center',
                                 children: [
-                                    {
-                                        class: 'fas fa-tag mx-1',
-                                    },
-                                    { innerText: v },
+                                    { tag: 'div', class: 'fas fa-tag mx-1' },
+                                    { tag: 'div', innerText: v },
                                 ],
                             })),
                         },
@@ -549,8 +554,9 @@ class ModulesView implements VirtualDOM {
     }
 }
 
-class SymbolsView implements VirtualDOM {
-    public readonly children: VirtualDOM[]
+class SymbolsView implements VirtualDOM<'div'> {
+    public readonly tag = 'div'
+    public readonly children: ChildrenLike
     constructor({
         exportedSymbolsDict,
     }: {
@@ -563,22 +569,26 @@ class SymbolsView implements VirtualDOM {
                 const symbolKey = `${symbol.symbol}_APIv${symbol.apiKey}`
                 const aliases = window[symbolKey]?.__yw_aliases__ || new Set()
                 return {
+                    tag: 'div',
                     class: 'd-flex align-items-center my-1 row',
                     children: [
                         {
+                            tag: 'div',
                             class: 'col-sm',
                             style: { fontWeight: 'bolder' },
                             innerText: k,
                         },
                         {
+                            tag: 'div',
                             class: 'd-flex align-items-center col',
                             children: [symbolKey, ...aliases].map((v) => ({
+                                tag: 'div',
                                 class: 'border rounded p-1 mx-2 d-flex align-items-center',
                                 children: [
                                     /*{
                                     class: 'fas fa-tag mx-1',
                                 },*/
-                                    { innerText: v },
+                                    { tag: 'div', innerText: v },
                                 ],
                             })),
                         },

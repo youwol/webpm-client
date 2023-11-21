@@ -1,9 +1,4 @@
-import {
-    attr$,
-    children$,
-    VirtualDOM,
-    childrenFromStore$,
-} from '@youwol/flux-view'
+import { VirtualDOM, ChildrenLike } from '@youwol/rx-vdom'
 import { EventStatus } from '..'
 import { filter, map } from 'rxjs/operators'
 import {
@@ -75,9 +70,13 @@ export class WorkersPoolViewState {
  *
  * @category View
  */
-export class WorkersPoolView implements VirtualDOM {
+export class WorkersPoolView implements VirtualDOM<'div'> {
     static Class = 'WorkersPoolView'
 
+    /**
+     * @group Immutable DOM Constants
+     */
+    public readonly tag = 'div'
     /**
      * @group Immutable DOM Constants
      */
@@ -91,7 +90,7 @@ export class WorkersPoolView implements VirtualDOM {
     /**
      * @group Immutable DOM Constants
      */
-    public readonly children: VirtualDOM[]
+    public readonly children: ChildrenLike
 
     constructor(params: { workersPool: WorkersPool }) {
         this.workersPoolState = new WorkersPoolViewState({
@@ -99,10 +98,12 @@ export class WorkersPoolView implements VirtualDOM {
         })
         this.children = [
             {
+                tag: 'div',
                 class: 'w-100 d-flex flex-grow-1 p-2 flex-wrap overflow-auto',
-                children: children$(
-                    this.workersPoolState.workersPool.startedWorkers$,
-                    (workerIds) => {
+                children: {
+                    policy: 'replace',
+                    source$: this.workersPoolState.workersPool.startedWorkers$,
+                    vdomMap: (workerIds: string[]) => {
                         return [...workerIds].map((workerId) => {
                             return new WorkerCard({
                                 workerId,
@@ -110,7 +111,7 @@ export class WorkersPoolView implements VirtualDOM {
                             })
                         })
                     },
-                ),
+                },
             },
         ]
     }
@@ -121,9 +122,12 @@ export class WorkersPoolView implements VirtualDOM {
  *
  * @category View
  */
-export class WorkerCard implements VirtualDOM {
+export class WorkerCard implements VirtualDOM<'div'> {
     static Class = 'WorkerCard'
-
+    /**
+     * @group Immutable DOM Constants
+     */
+    public readonly tag = 'div'
     /**
      * @group Immutable DOM Constants
      */
@@ -140,7 +144,7 @@ export class WorkerCard implements VirtualDOM {
     /**
      * @group Immutable DOM Constants
      */
-    public readonly children: VirtualDOM[]
+    public readonly children: ChildrenLike
 
     /**
      * @group Immutable Constants
@@ -160,13 +164,17 @@ export class WorkerCard implements VirtualDOM {
         this.children = [
             new WorkerCardTitleView(params),
             {
+                tag: 'div',
                 class: 'p-2',
-                children: childrenFromStore$(
-                    this.workersPoolState.cdnEvents$[this.workerId] || of([]),
-                    (eventData: EventData) => {
+                children: {
+                    policy: 'sync',
+                    source$:
+                        this.workersPoolState.cdnEvents$[this.workerId] ||
+                        of([]),
+                    vdomMap: (eventData: EventData) => {
                         return new CdnEventView(eventData)
                     },
-                ),
+                },
             },
         ]
     }
@@ -176,8 +184,12 @@ export class WorkerCard implements VirtualDOM {
  *
  * @category View
  */
-export class CdnEventView implements VirtualDOM {
+export class CdnEventView implements VirtualDOM<'div'> {
     static Class = 'CdnEventView'
+    /**
+     * @group Immutable DOM Constants
+     */
+    public readonly tag: 'div'
     /**
      * @group Immutable DOM Constants
      */
@@ -185,7 +197,7 @@ export class CdnEventView implements VirtualDOM {
     /**
      * @group Immutable DOM Constants
      */
-    public readonly children: VirtualDOM[]
+    public readonly children: ChildrenLike
 
     constructor(event: EventData) {
         const icons: Record<EventStatus, string> = {
@@ -196,9 +208,9 @@ export class CdnEventView implements VirtualDOM {
         }
 
         this.children = [
-            { class: icons[event.status] },
-            { class: 'mx-1' },
-            { innerText: event.text },
+            { tag: 'div', class: icons[event.status] },
+            { tag: 'div', class: 'mx-1' },
+            { tag: 'div', innerText: event.text },
         ]
     }
 }
@@ -209,9 +221,12 @@ type WorkerStatus = 'Pending' | 'Created' | 'Busy'
  *
  * @category View
  */
-export class WorkerCardTitleView implements VirtualDOM {
+export class WorkerCardTitleView implements VirtualDOM<'div'> {
     static Class = 'WorkerCardTitleView'
-
+    /**
+     * @group Immutable DOM Constants
+     */
+    public readonly tag = 'div'
     /**
      * @group Immutable DOM Constants
      */
@@ -220,7 +235,7 @@ export class WorkerCardTitleView implements VirtualDOM {
     /**
      * @group Immutable DOM Constants
      */
-    public readonly children: VirtualDOM[]
+    public readonly children: ChildrenLike
 
     /**
      * @group Immutable Constants
@@ -251,8 +266,8 @@ export class WorkerCardTitleView implements VirtualDOM {
                 return busy.includes(this.workerId)
                     ? 'Busy'
                     : ready.includes(this.workerId)
-                    ? 'Created'
-                    : 'Pending'
+                      ? 'Created'
+                      : 'Pending'
             }),
         )
         this.children = [
@@ -261,14 +276,12 @@ export class WorkerCardTitleView implements VirtualDOM {
                 innerText: `Worker ${this.workerId}`,
             },
             {
-                class: attr$(
-                    statusWorker$,
-                    (status: WorkerStatus): string => classes[status],
-                    {
-                        wrapper: (d) =>
-                            `fas ${d} fv-text-success fv-blink mx-2`,
-                    },
-                ),
+                tag: 'div',
+                class: {
+                    source$: statusWorker$,
+                    vdomMap: (status: WorkerStatus): string => classes[status],
+                    wrapper: (d) => `fas ${d} fv-text-success fv-blink mx-2`,
+                },
             },
         ]
     }

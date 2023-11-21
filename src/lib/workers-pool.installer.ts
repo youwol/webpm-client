@@ -1,5 +1,5 @@
 import { setup } from '../auto-generated'
-import * as cdnClient from '.'
+import * as webpmClient from '.'
 import { backendConfiguration } from '.'
 import { InWorkerAction } from './workers-pool'
 
@@ -8,7 +8,7 @@ export type TestUtilsModule = typeof import('./test-utils')
 
 function setupWorkersPoolModule(module: WorkersModule) {
     let config = {
-        ...cdnClient.Client.BackendConfiguration,
+        ...webpmClient.Client.BackendConfiguration,
     }
     if (config.origin == '') {
         /**
@@ -27,7 +27,7 @@ function setupWorkersPoolModule(module: WorkersModule) {
     }
     module.WorkersPool.BackendConfiguration = config
     module.WorkersPool.FrontendConfiguration =
-        cdnClient.Client.FrontendConfiguration
+        webpmClient.Client.FrontendConfiguration
 }
 // noinspection JSValidateJSDoc
 /**
@@ -39,7 +39,7 @@ export async function installWorkersPoolModule(): Promise<WorkersModule> {
     return await setup
         .installAuxiliaryModule({
             name: 'workersPool',
-            cdnClient,
+            cdnClient: webpmClient,
             installParameters: {
                 executingWindow: window,
             },
@@ -61,7 +61,7 @@ export async function installTestWorkersPoolModule({
         installWorkersPoolModule(),
         setup.installAuxiliaryModule({
             name: 'testUtils',
-            cdnClient,
+            cdnClient: webpmClient,
             installParameters: {
                 executingWindow: window,
             },
@@ -69,7 +69,7 @@ export async function installTestWorkersPoolModule({
     ]).then(([module, test]: [WorkersModule, TestUtilsModule]) => {
         module.WorkersPool.webWorkersProxy = new test.WebWorkersJest({
             globalEntryPoint: module.entryPointWorker,
-            cdnClient,
+            cdnClient: webpmClient,
             onBeforeWorkerInstall: onBeforeWorkerInstall,
             onAfterWorkerInstall: onAfterWorkerInstall,
         })
