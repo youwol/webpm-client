@@ -1,6 +1,3 @@
-// eslint-disable-next-line eslint-comments/disable-enable-pair -- to not have problem
-/* eslint-disable jest/no-done-callback -- eslint-comment Find a good way to work with rxjs in jest */
-
 import { writeFileSync } from 'fs'
 import {
     queryLoadingGraph,
@@ -22,20 +19,21 @@ import {
 } from './common'
 import './mock-requests'
 import { StateImplementation } from '../lib/state'
+import { lastValueFrom } from 'rxjs'
 
 const originString = 'http://localhost:2001'
 
-beforeAll((done) => {
+beforeAll(async () => {
     Client.BackendConfiguration = testBackendConfig
-    installPackages$([
-        './.packages/root.zip',
-        './.packages/a.zip',
-        './.packages/b.zip',
-        './.packages/c.zip',
-        './.packages/d.zip',
-    ]).subscribe(() => {
-        done()
-    })
+    await lastValueFrom(
+        installPackages$([
+            './.packages/root.zip',
+            './.packages/a.zip',
+            './.packages/b.zip',
+            './.packages/c.zip',
+            './.packages/d.zip',
+        ]),
+    )
 })
 
 beforeEach(() => {

@@ -1,20 +1,17 @@
-// eslint-disable jest/no-conditional-expect
-// eslint-disable-next-line eslint-comments/disable-enable-pair -- to not have problem
-/* eslint-disable jest/no-done-callback -- eslint-comment Find a good way to work with rxjs in jest */
-
 import { getUrlBase, install, State } from '../lib'
 import { cleanDocument, expectEvents, installPackages$ } from './common'
 
 import './mock-requests'
 import { StateImplementation } from '../lib/state'
+import { lastValueFrom } from 'rxjs'
 
-beforeAll((done) => {
-    installPackages$([
-        './.packages-test/rxjs#6.5.5/cdn.zip',
-        './.packages-test/rxjs#7.5.6/cdn.zip',
-    ]).subscribe(() => {
-        done()
-    })
+beforeAll(async () => {
+    await lastValueFrom(
+        installPackages$([
+            './.packages-test/rxjs#6.5.5/cdn.zip',
+            './.packages-test/rxjs#7.5.6/cdn.zip',
+        ]),
+    )
 })
 beforeEach(() => {
     cleanDocument()
