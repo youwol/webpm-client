@@ -161,6 +161,7 @@ export class Client {
                     [dependency.split('#')[0]]: dependency.split('#')[1],
                 }
             }, {}),
+            extraIndex: inputs.extraIndex,
         }
         const finalize = async () => {
             const content = await Client.state.fetchedLoadingGraph[key]
