@@ -249,14 +249,15 @@ export function importScriptMainWindow({
     const classes = [assetId, name, version].map((key) => sanitizeCssId(key))
     script.classList.add(...classes)
     script.innerHTML = content
+    let error: ErrorEvent
     const onErrorParsing = (d: ErrorEvent) => {
         executingWindow.removeEventListener('error', onErrorParsing)
-        return d
+        error = d
     }
     executingWindow.addEventListener('error', onErrorParsing)
     head.appendChild(script)
     executingWindow.removeEventListener('error', onErrorParsing)
-    return script
+    return error || script
 }
 
 export function importScriptWebWorker({ url }): undefined | Error {
