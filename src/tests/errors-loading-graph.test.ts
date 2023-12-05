@@ -1,21 +1,18 @@
-// eslint-disable-next-line eslint-comments/disable-enable-pair -- to not have problem
-/* eslint-disable jest/no-done-callback --  Find a good way to work with rxjs in jest
- */
-
 import { CdnLoadingGraphErrorEvent, install, LoadingGraphError } from '../lib'
 import { cleanDocument, installPackages$, saveScreen } from './common'
 import './mock-requests'
+import { lastValueFrom } from 'rxjs'
 
-beforeAll((done) => {
-    installPackages$([
-        './.packages/root.zip',
-        './.packages/a.zip',
-        './.packages/b.zip',
-        './.packages/c.zip',
-        './.packages/d.zip',
-    ]).subscribe(() => {
-        done()
-    })
+beforeAll(async () => {
+    await lastValueFrom(
+        installPackages$([
+            './.packages/root.zip',
+            './.packages/a.zip',
+            './.packages/b.zip',
+            './.packages/c.zip',
+            './.packages/d.zip',
+        ]),
+    )
 })
 
 beforeEach(() => {

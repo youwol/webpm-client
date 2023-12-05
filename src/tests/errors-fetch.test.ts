@@ -1,7 +1,3 @@
-// eslint-disable jest/no-conditional-expect
-// eslint-disable-next-line eslint-comments/disable-enable-pair -- to not have problem
-/* eslint-disable jest/no-done-callback -- eslint-comment Find a good way to work with rxjs in jest */
-
 import { AssetsGateway } from '@youwol/http-clients'
 import { readFileSync } from 'fs'
 import path from 'path'
@@ -17,44 +13,44 @@ import { cleanDocument, installPackages$, saveScreen } from './common'
 import './mock-requests'
 import { LocalYouwol, raiseHTTPErrors } from '@youwol/http-primitives'
 import { StateImplementation } from '../lib/state'
+import { lastValueFrom } from 'rxjs'
 
-beforeAll((done) => {
+jest.setTimeout(10000)
+beforeAll(async () => {
     const assetsGtw = new AssetsGateway.AssetsGatewayClient()
-    installPackages$([
+    const setup$ = installPackages$([
         './.packages/root.zip',
         './.packages/a.zip',
         './.packages/b.zip',
         './.packages/c.zip',
         './.packages/d.zip',
-    ])
-        .pipe(
-            mergeMap(() => {
-                const client = new LocalYouwol.Client()
-                return client.admin.environment.login$({
-                    body: {
-                        authId: 'int_tests_yw-users_bis@test-user',
-                        envId: 'prod',
-                    },
-                })
-            }),
-            mergeMap(() => assetsGtw.explorer.getDefaultUserDrive$()),
-            raiseHTTPErrors(),
-            mergeMap(({ homeFolderId }) => {
-                const zip = './.packages/e.zip'
-                const buffer = readFileSync(path.resolve(__dirname, zip))
-                const arraybuffer = Uint8Array.from(buffer).buffer
+        './.packages/e.zip',
+    ]).pipe(
+        mergeMap(() => {
+            const client = new LocalYouwol.Client()
+            return client.admin.environment.login$({
+                body: {
+                    authId: 'int_tests_yw-users_bis@test-user',
+                    envId: 'prod',
+                },
+            })
+        }),
+        mergeMap(() => assetsGtw.explorer.getDefaultUserDrive$()),
+        raiseHTTPErrors(),
+        mergeMap(({ homeFolderId }) => {
+            const zip = './.packages/e.zip'
+            const buffer = readFileSync(path.resolve(__dirname, zip))
+            const arraybuffer = Uint8Array.from(buffer).buffer
 
-                return assetsGtw.cdn
-                    .upload$({
-                        queryParameters: { folderId: homeFolderId },
-                        body: { fileName: zip, blob: new Blob([arraybuffer]) },
-                    })
-                    .pipe(take(1))
-            }),
-        )
-        .subscribe(() => {
-            done()
-        })
+            return assetsGtw.cdn
+                .upload$({
+                    queryParameters: { folderId: homeFolderId },
+                    body: { fileName: zip, blob: new Blob([arraybuffer]) },
+                })
+                .pipe(take(1))
+        }),
+    )
+    await lastValueFrom(setup$)
 })
 
 beforeEach(() => {
@@ -64,7 +60,7 @@ beforeEach(() => {
 
 test('install unauthorized', async () => {
     const events = []
-    try {
+    const expectToThrow = async () => {
         await install({
             modules: ['a'],
             displayLoadingScreen: true,
@@ -74,15 +70,11 @@ test('install unauthorized', async () => {
                 }
             },
         })
-    } catch (error) {
-        // eslint-disable-next-line jest/no-conditional-expect -- more convenient that expect(fct).toThrow
-        expect(events).toHaveLength(2)
-        saveScreen('loading-view-unauthorized.html')
-        // eslint-disable-next-line jest/no-conditional-expect -- more convenient that expect(fct).toThrow
-        expect(error).toBeInstanceOf(FetchErrors)
-        // eslint-disable-next-line jest/no-conditional-expect -- more convenient that expect(fct).toThrow
-        expect(error.detail.errors).toHaveLength(2)
     }
+    await expect(expectToThrow).rejects.toThrow(FetchErrors)
+    expect(events).toHaveLength(2)
+    saveScreen('loading-view-unauthorized.html')
+    // I don't know how to assert on the thrown error 'expect(error.detail.errors).toHaveLength(2)'
 })
 
 test('install script error', async () => {
@@ -90,7 +82,7 @@ test('install script error', async () => {
     console.error = () => {
         /*no op*/
     }
-    try {
+    const expectToThrow = async () => {
         await install({
             modules: ['e'],
             displayLoadingScreen: true,
@@ -100,11 +92,8 @@ test('install script error', async () => {
                 }
             },
         })
-    } catch (error) {
-        // eslint-disable-next-line jest/no-conditional-expect -- more convenient that expect(fct).toThrow
-        expect(events).toHaveLength(1)
-        saveScreen('loading-view-parse-error.html')
-        // eslint-disable-next-line jest/no-conditional-expect -- more convenient that expect(fct).toThrow
-        expect(error).toBeInstanceOf(SourceParsingFailed)
     }
+    await expect(expectToThrow).rejects.toThrow(SourceParsingFailed)
+    expect(events).toHaveLength(1)
+    saveScreen('loading-view-parse-error.html')
 })

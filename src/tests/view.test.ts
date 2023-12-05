@@ -1,21 +1,19 @@
-// eslint-disable-next-line eslint-comments/disable-enable-pair -- to not have problem
-/* eslint-disable jest/no-done-callback -- eslint-comment Find a good way to work with rxjs in jest */
-
 import { CdnMessageEvent, install, LoadingScreenView, monitoring } from '../lib'
 import { cleanDocument, installPackages$ } from './common'
 import './mock-requests'
 import { render } from '@youwol/rx-vdom'
+import { lastValueFrom } from 'rxjs'
 
-beforeAll((done) => {
-    installPackages$([
-        './.packages/root.zip',
-        './.packages/a.zip',
-        './.packages/b.zip',
-        './.packages/c.zip',
-        './.packages/d.zip',
-    ]).subscribe(() => {
-        done()
-    })
+beforeAll(async () => {
+    await lastValueFrom(
+        installPackages$([
+            './.packages/root.zip',
+            './.packages/a.zip',
+            './.packages/b.zip',
+            './.packages/c.zip',
+            './.packages/d.zip',
+        ]),
+    )
 })
 
 beforeEach(() => {

@@ -1,7 +1,3 @@
-// eslint-disable jest/no-conditional-expect
-// eslint-disable-next-line eslint-comments/disable-enable-pair -- to not have problem
-/* eslint-disable jest/no-done-callback -- eslint-comment Find a good way to work with rxjs in jest */
-
 import {
     Client,
     installTestWorkersPoolModule,
@@ -20,7 +16,7 @@ import {
     MessagePostError,
 } from '../lib/workers-pool'
 import { delay, last, map, mergeMap, takeWhile, tap } from 'rxjs/operators'
-import { from, Subject } from 'rxjs'
+import { firstValueFrom, from, lastValueFrom, Subject } from 'rxjs'
 import { render } from '@youwol/rx-vdom'
 import { StateImplementation } from '../lib/state'
 import {
@@ -41,19 +37,19 @@ WorkersPool.webWorkersProxy = new WebWorkersJest({
     cdnClient,
 })
 
-beforeAll((done) => {
+beforeAll(async () => {
     WorkersPool.BackendConfiguration = testBackendConfig
     Client.BackendConfiguration = testBackendConfig
-    installPackages$([
-        './.packages-test/rxjs#7.5.6/cdn.zip',
-        './.packages-test/rxjs#6.5.5/cdn.zip',
-        './.packages-test/flux-view#1.1.0/cdn.zip',
-        './.packages-test/rx-vdom#1.0.1/cdn.zip',
-        // to fetch the module 'WorkersPool' the current version of cdn is needed
-        './.packages-test/webpm-client/cdn.zip',
-    ]).subscribe(() => {
-        done()
-    })
+    await lastValueFrom(
+        installPackages$([
+            './.packages-test/rxjs#7.5.6/cdn.zip',
+            './.packages-test/rxjs#6.5.5/cdn.zip',
+            './.packages-test/flux-view#1.1.0/cdn.zip',
+            './.packages-test/rx-vdom#1.0.1/cdn.zip',
+            // to fetch the module 'WorkersPool' the current version of cdn is needed
+            './.packages-test/webpm-client/cdn.zip',
+        ]),
+    )
 })
 beforeEach(() => {
     cleanDocument()
@@ -148,7 +144,7 @@ function scheduleFunctionAsync({ args, workerScope }) {
     })
 }
 
-test('schedule', (done) => {
+test('schedule', async () => {
     const context = new NoContext()
     const pool = new WorkersPool({
         install: {
@@ -160,14 +156,15 @@ test('schedule', (done) => {
 
     context.info('Trigger schedule')
 
-    pool.schedule(
-        {
-            title: 'test',
-            entryPoint: scheduleFunctionSync,
-            args: { value: 21 },
-        },
-        context,
-    )
+    const test$ = pool
+        .schedule(
+            {
+                title: 'test',
+                entryPoint: scheduleFunctionSync,
+                args: { value: 21 },
+            },
+            context,
+        )
         .pipe(
             tap((d) => context.info(`Got message ${d.type} from schedule`)),
             takeWhile((m) => m.type != 'Exit', true),
@@ -183,12 +180,10 @@ test('schedule', (done) => {
                 expect(m.data['result']).toBe(42)
             }),
         )
-        .subscribe(() => {
-            done()
-        })
+    await firstValueFrom(test$)
 })
 
-test('schedule async with ready', (done) => {
+test('schedule async with ready', async () => {
     const pool = new WorkersPool({
         install: {
             modules: ['rxjs#^6.5.5'],
@@ -197,43 +192,39 @@ test('schedule async with ready', (done) => {
             startAt: 1,
         },
     })
-    from(pool.ready())
-        .pipe(
-            tap(() => {
-                const workers = pool.workers$.value
-                expect(Object.keys(workers)).toHaveLength(1)
-            }),
-            mergeMap(() => {
-                return pool.schedule({
-                    title: 'test',
-                    entryPoint: scheduleFunctionAsync,
-                    args: { value: 21 },
-                })
-            }),
-            takeWhile((m) => m.type != 'Exit', true),
-            last(),
-            // let the time to subscription (busy$ in particular) to be handled
-            delay(1),
-            tap((m) => {
-                const workers = Object.values(pool.workers$.value)
-                const busy = pool.busyWorkers$.value
-                expect(workers).toHaveLength(1)
-                expect(busy).toHaveLength(0)
-                const messages = workers[0].worker['messages']
+    const test$ = from(pool.ready()).pipe(
+        tap(() => {
+            const workers = pool.workers$.value
+            expect(Object.keys(workers)).toHaveLength(1)
+        }),
+        mergeMap(() => {
+            return pool.schedule({
+                title: 'test',
+                entryPoint: scheduleFunctionAsync,
+                args: { value: 21 },
+            })
+        }),
+        takeWhile((m) => m.type != 'Exit', true),
+        last(),
+        // let the time to subscription (busy$ in particular) to be handled
+        delay(1),
+        tap((m) => {
+            const workers = Object.values(pool.workers$.value)
+            const busy = pool.busyWorkers$.value
+            expect(workers).toHaveLength(1)
+            expect(busy).toHaveLength(0)
+            const messages = workers[0].worker['messages']
 
-                expect(messages.filter((m) => m.type == 'Start')).toHaveLength(
-                    2,
-                )
-                expect(messages.filter((m) => m.type == 'Exit')).toHaveLength(2)
-                expect(m.data['result']).toBe(42)
-            }),
-        )
-        .subscribe(() => {
-            done()
-        })
+            expect(messages.filter((m) => m.type == 'Start')).toHaveLength(2)
+            expect(messages.filter((m) => m.type == 'Exit')).toHaveLength(2)
+            expect(m.data['result']).toBe(42)
+        }),
+    )
+
+    await firstValueFrom(test$)
 })
 
-test('schedule async with ready on particular worker', (done) => {
+test('schedule async with ready on particular worker', async () => {
     const pool = new WorkersPool({
         install: {
             modules: ['rxjs#^6.5.5'],
@@ -243,37 +234,35 @@ test('schedule async with ready on particular worker', (done) => {
         },
     })
     let workerId
-    from(pool.ready())
-        .pipe(
-            tap(() => {
-                const workers = Object.values(pool.workers$.value)
-                workerId = workers[0].worker.uid
-            }),
-            mergeMap(() => {
-                return pool.schedule({
-                    title: 'test',
-                    entryPoint: scheduleFunctionAsync,
-                    args: { value: 21 },
-                    targetWorkerId: workerId,
-                })
-            }),
-            takeWhile((m) => m.type != 'Exit', true),
-            last(),
-            // let the time to subscription (busy$ in particular) to be handled
-            delay(1),
-            tap((m) => {
-                const workers = Object.values(pool.workers$.value)
-                expect(workers).toHaveLength(1)
-                expect(workers[0].worker.uid).toBe(workerId)
-                expect(m.data['result']).toBe(42)
-            }),
-        )
-        .subscribe(() => {
-            done()
-        })
+    const test$ = from(pool.ready()).pipe(
+        tap(() => {
+            const workers = Object.values(pool.workers$.value)
+            workerId = workers[0].worker.uid
+        }),
+        mergeMap(() => {
+            return pool.schedule({
+                title: 'test',
+                entryPoint: scheduleFunctionAsync,
+                args: { value: 21 },
+                targetWorkerId: workerId,
+            })
+        }),
+        takeWhile((m) => m.type != 'Exit', true),
+        last(),
+        // let the time to subscription (busy$ in particular) to be handled
+        delay(1),
+        tap((m) => {
+            const workers = Object.values(pool.workers$.value)
+            expect(workers).toHaveLength(1)
+            expect(workers[0].worker.uid).toBe(workerId)
+            expect(m.data['result']).toBe(42)
+        }),
+    )
+
+    await firstValueFrom(test$)
 })
 
-test('schedule with error', (done) => {
+test('schedule with error', async () => {
     const errorMessage = 'Expected error in test'
     function scheduleFunctionWithError() {
         throw Error(errorMessage)
@@ -285,32 +274,30 @@ test('schedule with error', (done) => {
             startAt: 1,
         },
     })
-    from(pool.ready())
-        .pipe(
-            mergeMap(() => {
-                return pool.schedule({
-                    title: 'test',
-                    entryPoint: scheduleFunctionWithError,
-                    args: {},
-                })
-            }),
-            takeWhile((m) => m.type != 'Exit', true),
-            last(),
-            // let the time to subscription (busy$ in particular) to be handled
-            delay(1),
-            map((m) => m.data as unknown as MessageExit),
-            tap((m: MessageExit) => {
-                expect(m.error).toBeTruthy()
-                expect(m.result['stack']).toBeTruthy()
-                expect(m.result['message']).toBe(errorMessage)
-            }),
-        )
-        .subscribe(() => {
-            done()
-        })
+    const test$ = from(pool.ready()).pipe(
+        mergeMap(() => {
+            return pool.schedule({
+                title: 'test',
+                entryPoint: scheduleFunctionWithError,
+                args: {},
+            })
+        }),
+        takeWhile((m) => m.type != 'Exit', true),
+        last(),
+        // let the time to subscription (busy$ in particular) to be handled
+        delay(1),
+        map((m) => m.data as unknown as MessageExit),
+        tap((m: MessageExit) => {
+            expect(m.error).toBeTruthy()
+            expect(m.result['stack']).toBeTruthy()
+            expect(m.result['message']).toBe(errorMessage)
+        }),
+    )
+
+    await firstValueFrom(test$)
 })
 
-test('schedule & send message', (done) => {
+test('schedule & send message', async () => {
     const result = 42
     function scheduleFunction({ context }) {
         return new Promise((resolve) => {
@@ -326,34 +313,32 @@ test('schedule & send message', (done) => {
             startAt: 1,
         },
     })
-    from(pool.ready())
-        .pipe(
-            mergeMap(() => {
-                return pool.schedule({
-                    title: 'test',
-                    entryPoint: scheduleFunction,
-                    args: {},
-                })
-            }),
-            tap((m) => {
-                pool.sendData({ taskId: m.data.taskId, data: result })
-            }),
-            takeWhile((m) => m.type != 'Exit', true),
-            last(),
-            // let the time to subscription (busy$ in particular) to be handled
-            delay(1),
-            map((m) => m.data as unknown as MessageExit),
-            tap((m: MessageExit) => {
-                expect(m.error).toBeFalsy()
-                expect(m.result).toBe(result)
-            }),
-        )
-        .subscribe(() => {
-            done()
-        })
+    const test$ = from(pool.ready()).pipe(
+        mergeMap(() => {
+            return pool.schedule({
+                title: 'test',
+                entryPoint: scheduleFunction,
+                args: {},
+            })
+        }),
+        tap((m) => {
+            pool.sendData({ taskId: m.data.taskId, data: result })
+        }),
+        takeWhile((m) => m.type != 'Exit', true),
+        last(),
+        // let the time to subscription (busy$ in particular) to be handled
+        delay(1),
+        map((m) => m.data as unknown as MessageExit),
+        tap((m: MessageExit) => {
+            expect(m.error).toBeFalsy()
+            expect(m.result).toBe(result)
+        }),
+    )
+
+    await firstValueFrom(test$)
 })
 
-test('send not cloneable data', (done) => {
+test('send not cloneable data', async () => {
     function scheduleFunction({ args, context }) {
         context.sendData(new NotCloneableData())
         return new Promise((resolve) => {
@@ -367,31 +352,28 @@ test('send not cloneable data', (done) => {
             startAt: 1,
         },
     })
-    from(pool.ready())
-        .pipe(
-            mergeMap(() => {
-                return pool.schedule({
-                    title: 'test',
-                    entryPoint: scheduleFunction,
-                    args: {},
-                })
-            }),
-            takeWhile((m) => m.type != 'PostError', true),
-            last(),
-            // let the time to subscription (busy$ in particular) to be handled
-            delay(1),
-            map((m) => m.data as unknown as MessagePostError),
-            tap((m: MessagePostError) => {
-                expect(m.error.message).toBeTruthy()
-                expect(m.error.stack).toBeTruthy()
-            }),
-        )
-        .subscribe(() => {
-            done()
-        })
+    const test$ = from(pool.ready()).pipe(
+        mergeMap(() => {
+            return pool.schedule({
+                title: 'test',
+                entryPoint: scheduleFunction,
+                args: {},
+            })
+        }),
+        takeWhile((m) => m.type != 'PostError', true),
+        last(),
+        // let the time to subscription (busy$ in particular) to be handled
+        delay(1),
+        map((m) => m.data as unknown as MessagePostError),
+        tap((m: MessagePostError) => {
+            expect(m.error.message).toBeTruthy()
+            expect(m.error.stack).toBeTruthy()
+        }),
+    )
+    await firstValueFrom(test$)
 })
 
-test('return not cloneable data', (done) => {
+test('return not cloneable data', async () => {
     function scheduleFunction() {
         return new Promise((resolve) => {
             resolve(new NotCloneableData())
@@ -404,28 +386,26 @@ test('return not cloneable data', (done) => {
             startAt: 1,
         },
     })
-    from(pool.ready())
-        .pipe(
-            mergeMap(() => {
-                return pool.schedule({
-                    title: 'test',
-                    entryPoint: scheduleFunction,
-                    args: {},
-                })
-            }),
-            takeWhile((m) => m.type != 'Exit', true),
-            last(),
-            map((m) => m.data as unknown as MessageExit),
-            tap((m: MessageExit) => {
-                expect(m.error).toBeTruthy()
-            }),
-        )
-        .subscribe(() => {
-            done()
-        })
+    const test$ = from(pool.ready()).pipe(
+        mergeMap(() => {
+            return pool.schedule({
+                title: 'test',
+                entryPoint: scheduleFunction,
+                args: {},
+            })
+        }),
+        takeWhile((m) => m.type != 'Exit', true),
+        last(),
+        map((m) => m.data as unknown as MessageExit),
+        tap((m: MessageExit) => {
+            expect(m.error).toBeTruthy()
+        }),
+    )
+
+    await firstValueFrom(test$)
 })
 
-test('view', (done) => {
+test('view', async () => {
     const pool = new WorkersPool({
         install: {
             modules: ['rxjs#^6.5.5'],
@@ -436,41 +416,39 @@ test('view', (done) => {
     })
     window.document.body.append(render(pool.view()))
     let workerId
-    from(pool.ready())
-        .pipe(
-            tap(() => {
-                const workers = Object.values(pool.workers$.value)
-                workerId = workers[0].worker.uid
-            }),
-            mergeMap(() => {
-                return pool.schedule({
-                    title: 'test',
-                    entryPoint: scheduleFunctionAsync,
-                    args: { value: 21 },
-                    targetWorkerId: workerId,
-                })
-            }),
-            takeWhile((m) => m.type != 'Exit', true),
-            last(),
-            // let the time to subscription (busy$ in particular) to be handled
-            delay(1),
-            tap(() => {
-                const elems = Array.from(
-                    document.querySelectorAll(`.${WorkerCard.Class}`),
-                )
-                expect(elems).toHaveLength(1)
-                const view = elems[0] as unknown as WorkerCard & HTMLDivElement
-                expect(view.workerId).toBe(workerId)
-                const cdnEvents = Array.from(
-                    view.querySelectorAll(`.${CdnEventView.Class}`),
-                )
-                // rxjs imported + install done
-                expect(cdnEvents).toHaveLength(2)
-            }),
-        )
-        .subscribe(() => {
-            done()
-        })
+    const test$ = from(pool.ready()).pipe(
+        tap(() => {
+            const workers = Object.values(pool.workers$.value)
+            workerId = workers[0].worker.uid
+        }),
+        mergeMap(() => {
+            return pool.schedule({
+                title: 'test',
+                entryPoint: scheduleFunctionAsync,
+                args: { value: 21 },
+                targetWorkerId: workerId,
+            })
+        }),
+        takeWhile((m) => m.type != 'Exit', true),
+        last(),
+        // let the time to subscription (busy$ in particular) to be handled
+        delay(1),
+        tap(() => {
+            const elems = Array.from(
+                document.querySelectorAll(`.${WorkerCard.Class}`),
+            )
+            expect(elems).toHaveLength(1)
+            const view = elems[0] as unknown as WorkerCard & HTMLDivElement
+            expect(view.workerId).toBe(workerId)
+            const cdnEvents = Array.from(
+                view.querySelectorAll(`.${CdnEventView.Class}`),
+            )
+            // rxjs imported + install done
+            expect(cdnEvents).toHaveLength(2)
+        }),
+    )
+
+    await firstValueFrom(test$)
 })
 
 test('before/after install callback', async () => {
