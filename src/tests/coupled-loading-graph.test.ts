@@ -41,10 +41,9 @@ test('loading graph coupled - error', async () => {
     StateImplementation.resetCache()
 
     const expectToThrow = async () => {
-        const resp = await queryLoadingGraph({
+        await queryLoadingGraph({
             modules: ['@youwol/rx-tree-views#latest'],
         })
-        console.log(resp)
     }
     await expect(expectToThrow).rejects.toThrow(LoadingGraphError)
 })
