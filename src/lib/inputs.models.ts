@@ -186,7 +186,7 @@ export type CustomInstaller = {
     /**
      * Inputs forwarded to 'async function install(inputs)'.
      */
-    installInputs: unknown
+    installInputs: unknown & { onEvent?: (cdnEvent: CdnEvent) => void }
 }
 
 /**

@@ -15,6 +15,7 @@ import {
     StartEvent,
     CdnLoadingGraphErrorEvent,
     InstallDoneEvent,
+    CdnEvent,
 } from './events.models'
 import { errorFactory, FetchErrors } from './errors.models'
 import { Monitoring, StateImplementation } from './state'
@@ -308,9 +309,14 @@ export class Client {
             })
         })
 
-        const customInstallersPromises = customInstallers.map((installer) =>
-            resolveCustomInstaller(installer),
-        )
+        const customInstallersPromises = customInstallers.map((installer) => {
+            const userOnEvent = installer.installInputs.onEvent
+            installer.installInputs.onEvent = (ev: CdnEvent) => {
+                loadingScreen?.next(ev)
+                userOnEvent?.(ev)
+            }
+            return resolveCustomInstaller(installer)
+        })
         return Promise.all([
             jsPromise,
             cssPromise,
