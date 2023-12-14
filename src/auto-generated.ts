@@ -1,8 +1,7 @@
 
 const runTimeDependencies = {
     "externals": {
-        "rxjs": "^7.5.6",
-        "@youwol/rx-vdom": "^1.0.1"
+        "rxjs": "^7.5.6"
     },
     "includedInBundle": {
         "semver": "^7.3.4"
@@ -13,11 +12,6 @@ const externals = {
         "commonjs": "rxjs",
         "commonjs2": "rxjs",
         "root": "rxjs_APIv7"
-    },
-    "@youwol/rx-vdom": {
-        "commonjs": "@youwol/rx-vdom",
-        "commonjs2": "@youwol/rx-vdom",
-        "root": "@youwol/rx-vdom_APIv1"
     },
     "rxjs/operators": {
         "commonjs": "rxjs/operators",
@@ -32,10 +26,6 @@ const exportedSymbols = {
     "rxjs": {
         "apiKey": "7",
         "exportedSymbol": "rxjs"
-    },
-    "@youwol/rx-vdom": {
-        "apiKey": "1",
-        "exportedSymbol": "@youwol/rx-vdom"
     }
 }
 
@@ -48,8 +38,7 @@ const secondaryEntries : {[k:string]:{entryFile: string, name: string, loadDepen
     "workersPool": {
         "entryFile": "./lib/workers-pool/index.ts",
         "loadDependencies": [
-            "rxjs",
-            "@youwol/rx-vdom"
+            "rxjs"
         ],
         "name": "workersPool"
     },
