@@ -18,7 +18,6 @@ folder_path = Path(__file__).parent
 pkg_json = parse_json(folder_path / "package.json")
 externals = {
     "rxjs": "^7.5.6",
-    "@youwol/rx-vdom": "^1.0.1"
 }
 template = Template(
     path=folder_path,
