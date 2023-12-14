@@ -9,7 +9,7 @@ import {
     getFullExportedSymbolAlias,
     getExpectedFullExportedSymbol,
 } from './utils'
-import { ChildrenLike, VirtualDOM } from '@youwol/rx-vdom'
+import { ChildrenLike, VirtualDOM } from './rx-vdom.types'
 import { setup } from '../auto-generated'
 
 export type LibraryName = string

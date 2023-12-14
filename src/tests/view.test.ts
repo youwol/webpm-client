@@ -1,17 +1,14 @@
 import { CdnMessageEvent, install, LoadingScreenView, monitoring } from '../lib'
 import { cleanDocument, installPackages$ } from './common'
 import './mock-requests'
-import { render } from '@youwol/rx-vdom'
 import { lastValueFrom } from 'rxjs'
+import { RxVDom } from '../lib/rx-vdom.types'
 
 beforeAll(async () => {
     await lastValueFrom(
         installPackages$([
             './.packages/root.zip',
-            './.packages/a.zip',
-            './.packages/b.zip',
-            './.packages/c.zip',
-            './.packages/d.zip',
+            './.packages-test/rx-vdom#1.0.1/cdn.zip',
         ]),
     )
 })
@@ -37,10 +34,11 @@ test('install success & custom message', async () => {
 })
 
 test('state.view()', async () => {
-    await install({
-        modules: ['root'],
-    })
-    document.body.append(render(monitoring().view))
+    const { rxVdom } = (await install({
+        modules: ['@youwol/rx-vdom#^1.0.1 as rxVdom'],
+    })) as unknown as { rxVdom: RxVDom }
+
+    document.body.append(rxVdom.render(monitoring().view))
     const elem = document.querySelector('.StateView')
     expect(elem).toBeTruthy()
 })
