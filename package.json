@@ -1,7 +1,7 @@
 {
     "name": "@youwol/webpm-client",
     "description": "Library for dynamic npm's libraries installation from YouWol's CDN.",
-    "version": "3.0.2-wip",
+    "version": "3.0.3-wip",
     "author": "greinisch@youwol.com",
     "homepage": "https://github.com/youwol/webpm-client#README.md",
     "main": "dist/@youwol/webpm-client.js",
@@ -29,7 +29,6 @@
     },
     "dependencies": {
         "rxjs": "^7.5.6",
-        "@youwol/rx-vdom": "^1.0.1",
         "semver": "^7.3.4"
     },
     "devDependencies": {

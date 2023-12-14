@@ -1,5 +1,6 @@
 import {
     Client,
+    install,
     installTestWorkersPoolModule,
     installWorkersPoolModule,
 } from '../lib'
@@ -17,7 +18,6 @@ import {
 } from '../lib/workers-pool'
 import { delay, last, map, mergeMap, takeWhile, tap } from 'rxjs/operators'
 import { firstValueFrom, from, lastValueFrom, Subject } from 'rxjs'
-import { render } from '@youwol/rx-vdom'
 import { StateImplementation } from '../lib/state'
 import {
     isInstanceOfWebWorkersJest,
@@ -25,6 +25,7 @@ import {
     WebWorkersJest,
 } from '../lib/test-utils'
 import * as cdnClient from '..'
+import { RxVDom } from '../lib/rx-vdom.types'
 jest.setTimeout(20 * 1000)
 
 console['ensureLog'] = console.log
@@ -406,6 +407,10 @@ test('return not cloneable data', async () => {
 })
 
 test('view', async () => {
+    const { rxVdom } = (await install({
+        modules: ['@youwol/rx-vdom#^1.0.1 as rxVdom'],
+    })) as unknown as { rxVdom: RxVDom }
+
     const pool = new WorkersPool({
         install: {
             modules: ['rxjs#^6.5.5'],
@@ -414,7 +419,7 @@ test('view', async () => {
             startAt: 1,
         },
     })
-    window.document.body.append(render(pool.view()))
+    window.document.body.append(rxVdom.render(pool.view()))
     let workerId
     const test$ = from(pool.ready()).pipe(
         tap(() => {

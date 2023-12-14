@@ -1,4 +1,4 @@
-import { VirtualDOM, ChildrenLike } from '@youwol/rx-vdom'
+import { VirtualDOM, ChildrenLike } from '../rx-vdom.types'
 import { EventStatus } from '..'
 import { filter, map } from 'rxjs/operators'
 import {
