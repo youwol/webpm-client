@@ -68,7 +68,7 @@ for file in [
     "LICENSE",
     "README.md",
     "package.json",
-    # "tsconfig.json", because of rx-vdom-config
+    "tsconfig.json",
     "webpack.config.ts",
 ]:
     shutil.copyfile(src=folder_path / ".template" / file, dst=folder_path / file)
