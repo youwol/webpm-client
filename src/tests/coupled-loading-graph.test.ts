@@ -9,6 +9,7 @@ async function encodeExtraIndex(
         version: string
         bundle: string
         fingerprint: string
+        type: 'js/wasm' | 'backend'
         dependencies: string[]
         aliases: string[]
     }[],
@@ -60,6 +61,7 @@ test('loading graph coupled - 1', async () => {
             dependencies: [],
             bundle: 'dist/@youwol/rx-vdom.js',
             fingerprint: '9bb534b31cc287963fbb39a03c3016d5',
+            type: 'js/wasm' as const,
         },
     ]
 
@@ -77,7 +79,7 @@ test('loading graph coupled - 1', async () => {
                 version: '0.3.1',
                 id: 'QHlvdXdvbC9yeC10cmVlLXZpZXdz',
                 namespace: 'youwol',
-                type: 'library',
+                type: 'js/wasm',
                 fingerprint: 'fea277a0660fea584103a9cae56bfdb9',
                 exportedSymbol: '@youwol/rx-tree-views',
                 aliases: [],
@@ -88,7 +90,7 @@ test('loading graph coupled - 1', async () => {
                 version: '7.5.6',
                 id: 'cnhqcw==',
                 namespace: '',
-                type: 'core_library',
+                type: 'js/wasm',
                 fingerprint: '346a2238d49d9ae171c72317ac6780bd',
                 exportedSymbol: 'rxjs',
                 aliases: ['aliasRxjs7'],
@@ -99,7 +101,7 @@ test('loading graph coupled - 1', async () => {
                 version: '1.0.1',
                 id: 'QHlvdXdvbC9yeC12ZG9t',
                 namespace: '@youwol',
-                type: 'library',
+                type: 'js/wasm',
                 fingerprint: '9bb534b31cc287963fbb39a03c3016d5',
                 exportedSymbol: '@youwol/rx-vdom',
                 aliases: [],
@@ -137,6 +139,7 @@ test('loading graph coupled - 2', async () => {
             dependencies: [],
             bundle: 'dist/@youwol/rx-vdom.js',
             fingerprint: '9bb534b31cc287963fbb39a03c3016d5',
+            type: 'js/wasm' as const,
         },
         {
             library_name: 'rxjs',
@@ -145,6 +148,7 @@ test('loading graph coupled - 2', async () => {
             dependencies: [],
             bundle: 'dist/rxjs.js',
             fingerprint: '5935b636004a5e07e898b6d7e1260a01',
+            type: 'js/wasm' as const,
         },
     ]
 
@@ -162,7 +166,7 @@ test('loading graph coupled - 2', async () => {
                 version: '0.3.1',
                 id: 'QHlvdXdvbC9yeC10cmVlLXZpZXdz',
                 namespace: 'youwol',
-                type: 'library',
+                type: 'js/wasm',
                 fingerprint: 'fea277a0660fea584103a9cae56bfdb9',
                 exportedSymbol: '@youwol/rx-tree-views',
                 aliases: [],
@@ -173,7 +177,7 @@ test('loading graph coupled - 2', async () => {
                 version: '7.8.1',
                 id: 'cnhqcw==',
                 namespace: 'rxjs',
-                type: 'library',
+                type: 'js/wasm',
                 fingerprint: '5935b636004a5e07e898b6d7e1260a01',
                 exportedSymbol: 'rxjs',
                 aliases: [],
@@ -184,7 +188,7 @@ test('loading graph coupled - 2', async () => {
                 version: '1.0.1',
                 id: 'QHlvdXdvbC9yeC12ZG9t',
                 namespace: '@youwol',
-                type: 'library',
+                type: 'js/wasm',
                 fingerprint: '9bb534b31cc287963fbb39a03c3016d5',
                 exportedSymbol: '@youwol/rx-vdom',
                 aliases: [],
@@ -222,6 +226,7 @@ test('loading graph coupled - 3', async () => {
             dependencies: ['rxjs#^7.5.6', '@youwol/rx-vdom#^1.0.1'],
             bundle: 'dist/@youwol/rx-tree-views.js',
             fingerprint: 'fea277a0660fea584103a9cae56bfdb9',
+            type: 'js/wasm' as const,
         },
         {
             library_name: '@youwol/rx-vdom',
@@ -230,6 +235,7 @@ test('loading graph coupled - 3', async () => {
             dependencies: [],
             bundle: 'dist/@youwol/rx-vdom.js',
             fingerprint: '9bb534b31cc287963fbb39a03c3016d5',
+            type: 'js/wasm' as const,
         },
     ]
 
@@ -247,7 +253,7 @@ test('loading graph coupled - 3', async () => {
                 version: '0.3.999',
                 id: 'QHlvdXdvbC9yeC10cmVlLXZpZXdz',
                 namespace: '@youwol',
-                type: 'library',
+                type: 'js/wasm',
                 fingerprint: 'fea277a0660fea584103a9cae56bfdb9',
                 exportedSymbol: '@youwol/rx-tree-views',
                 aliases: [],
@@ -258,7 +264,7 @@ test('loading graph coupled - 3', async () => {
                 version: '7.5.6',
                 id: 'cnhqcw==',
                 namespace: '',
-                type: 'core_library',
+                type: 'js/wasm',
                 fingerprint: '346a2238d49d9ae171c72317ac6780bd',
                 exportedSymbol: 'rxjs',
                 aliases: ['aliasRxjs7'],
@@ -269,7 +275,7 @@ test('loading graph coupled - 3', async () => {
                 version: '1.0.1',
                 id: 'QHlvdXdvbC9yeC12ZG9t',
                 namespace: '@youwol',
-                type: 'library',
+                type: 'js/wasm',
                 fingerprint: '9bb534b31cc287963fbb39a03c3016d5',
                 exportedSymbol: '@youwol/rx-vdom',
                 aliases: [],
