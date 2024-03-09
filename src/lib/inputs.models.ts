@@ -259,6 +259,12 @@ export type InstallInputs = {
     modules?: LightLibraryWithAliasQueryString[]
 
     /**
+     * List of backends to install, see {@link LightLibraryWithAliasQueryString} for specification.
+     *
+     */
+    backends?: LightLibraryWithAliasQueryString[]
+
+    /**
      * Override the 'natural' version used for some libraries coming from the dependency graph when resolving
      * the installation. Items are provided in the form {@link LightLibraryQueryString}.
      *

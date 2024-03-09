@@ -8,6 +8,7 @@ import {
     QueryLoadingGraphInputs,
     InstallInputs,
     FetchedScript,
+    Library,
 } from './inputs.models'
 import {
     SourceLoadedEvent,
@@ -36,6 +37,7 @@ import {
 } from './utils'
 import { BackendConfiguration } from './backend-configuration'
 import { FrontendConfiguration } from './frontend-configuration'
+import { installBackends } from './backends'
 
 /**
  *
@@ -288,7 +290,7 @@ export class Client {
         }
 
         const bundlesPromise = this.installModules({
-            modules: inputs.modules,
+            modules: [...(inputs.modules || []), ...(inputs.backends || [])],
             modulesSideEffects: inputs.modulesSideEffects,
             usingDependencies: inputs.usingDependencies,
             aliases: aliases,
@@ -337,6 +339,19 @@ export class Client {
      * @param inputs
      */
     async installLoadingGraph(inputs: InstallLoadingGraphInputs) {
+        const all = inputs.loadingGraph.lock
+            .map((pack) => [pack.id, pack])
+            .reduce(
+                (acc, [k, v]: [string, Library]) => ({ ...acc, [k]: v }),
+                {},
+            )
+
+        const graph_fronts = inputs.loadingGraph.definition.map((layer) =>
+            layer.filter((l) => all[l[0]].type !== 'backend'),
+        )
+        const graph_backs = inputs.loadingGraph.definition.map((layer) =>
+            layer.filter((l) => all[l[0]].type === 'backend'),
+        )
         const executingWindow = inputs.executingWindow || window
         const customInstallers = inputs.customInstallers || []
         Client.state.updateExportedSymbolsDict(inputs.loadingGraph.lock)
@@ -344,7 +359,7 @@ export class Client {
         const customInstallersFuture = customInstallers.map((installer) => {
             return resolveCustomInstaller(installer)
         })
-        const packagesSelected = inputs.loadingGraph.definition
+        const packagesSelected = graph_fronts
             .flat()
             .map(([assetId, cdn_url]) => {
                 const version = cdn_url.split('/')[1]
@@ -375,6 +390,13 @@ export class Client {
         const sourcesOrErrors = await Promise.all([
             ...customInstallersFuture,
             ...futures,
+            this.installBackends(
+                {
+                    ...inputs.loadingGraph,
+                    definition: graph_backs,
+                },
+                inputs.executingWindow,
+            ),
         ])
         if (errors.length > 0) {
             throw new FetchErrors({ errors })
@@ -423,6 +445,17 @@ export class Client {
         if (inputs.aliases) {
             installAliases(inputs.aliases, executingWindow)
         }
+    }
+
+    private async installBackends(
+        graph: LoadingGraph,
+        executingWindow: WindowOrWorkerGlobalScope,
+    ) {
+        return await installBackends({
+            graph,
+            executingWindow,
+            webpmClient: this,
+        })
     }
 
     private async installModules(

@@ -11,10 +11,11 @@ import {
 } from './utils'
 import { ChildrenLike, VirtualDOM } from './rx-vdom.types'
 import { setup } from '../auto-generated'
+import { installBackendClientDeps } from './backends'
 
 export type LibraryName = string
 export type Version = string
-
+export type Observable = unknown
 /**
  * Encapsulates installations data at the time of instance creation.
  *
@@ -208,6 +209,19 @@ export class StateImplementation {
     static latestVersion = new Map<string, Version>([
         [setup.name, setup.version],
     ])
+
+    static webSocketsStore: { [k: string]: Promise<Observable> } = {}
+
+    static getWebSocket(wsUrl: string): Promise<unknown> {
+        if (StateImplementation.webSocketsStore[wsUrl]) {
+            return StateImplementation.webSocketsStore[wsUrl]
+        }
+        StateImplementation.webSocketsStore[wsUrl] =
+            installBackendClientDeps().then(({ http }) => {
+                return new http.WebSocketClient(wsUrl).connectWs()
+            })
+        return StateImplementation.webSocketsStore[wsUrl]
+    }
 
     /**
      * Return whether a library at particular version hase been already installed with a compatible version.

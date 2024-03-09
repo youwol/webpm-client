@@ -6,6 +6,17 @@
 export class CdnError extends Error {}
 
 /**
+ * Error related to the usage of features requiring the local youwol server while it is not detected.
+ *
+ * @category Errors
+ */
+export class LocalYouwolRequired extends CdnError {
+    constructor(public readonly detail: string) {
+        super()
+    }
+}
+
+/**
  * Base class of errors related to loading graph resolution. See also {@link CdnLoadingGraphErrorEvent}.
  *
  * @category Errors
