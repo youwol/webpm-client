@@ -13,9 +13,12 @@ import { ChildrenLike, VirtualDOM } from './rx-vdom.types'
 import { setup } from '../auto-generated'
 import { installBackendClientDeps } from './backends'
 
+import type { Observable } from 'rxjs'
+import { LocalYouwol } from '@youwol/http-primitives'
+
 export type LibraryName = string
 export type Version = string
-export type Observable = unknown
+
 /**
  * Encapsulates installations data at the time of instance creation.
  *
@@ -210,9 +213,13 @@ export class StateImplementation {
         [setup.name, setup.version],
     ])
 
-    static webSocketsStore: { [k: string]: Promise<Observable> } = {}
+    static webSocketsStore: {
+        [k: string]: Promise<Observable<LocalYouwol.ContextMessage>>
+    } = {}
 
-    static getWebSocket(wsUrl: string): Promise<unknown> {
+    static getWebSocket(
+        wsUrl: string,
+    ): Promise<Observable<LocalYouwol.ContextMessage>> {
         if (StateImplementation.webSocketsStore[wsUrl]) {
             return StateImplementation.webSocketsStore[wsUrl]
         }

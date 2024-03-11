@@ -1,4 +1,5 @@
 import {
+    BackendEvent,
     CdnEvent,
     CdnLoadingGraphErrorEvent,
     isCdnEvent,
@@ -218,7 +219,10 @@ export class LoadingScreenView {
                 event as CdnLoadingGraphErrorEvent,
             )
         }
-        if (isCdnEvent(event) && event.step == 'CdnMessageEvent') {
+        if (
+            (isCdnEvent(event) && event.step == 'CdnMessageEvent') ||
+            event instanceof BackendEvent
+        ) {
             let divLib: HTMLDivElement = this.wrapperDiv.querySelector(
                 `#${sanitizeCssId(event.id)}`,
             )
@@ -231,7 +235,6 @@ export class LoadingScreenView {
                 divLib.textContent = '> ' + event.text
                 this.contentDiv.appendChild(divLib)
             }
-            return
         }
         const libraryName = event.id
         const cssId = sanitizeCssId(libraryName)

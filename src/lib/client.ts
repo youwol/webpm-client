@@ -395,6 +395,7 @@ export class Client {
                     ...inputs.loadingGraph,
                     definition: graph_backs,
                 },
+                inputs.onEvent,
                 inputs.executingWindow,
             ),
         ])
@@ -449,10 +450,12 @@ export class Client {
 
     private async installBackends(
         graph: LoadingGraph,
+        onEvent: (event: CdnEvent) => void,
         executingWindow: WindowOrWorkerGlobalScope,
     ) {
         return await installBackends({
             graph,
+            onEvent,
             executingWindow,
             webpmClient: this,
         })

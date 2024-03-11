@@ -147,6 +147,22 @@ export class CircularDependencies extends LoadingGraphError {
 }
 
 /**
+ * Errors related to backends installation (download, install or start).
+ *
+ * @category Errors
+ */
+export class BackendException extends CdnError {
+    static exceptionType = 'DownloadBackendFailed'
+    public readonly name: string
+    public readonly version: string
+    public readonly detail: string
+    constructor(params: { name: string; version: string; detail: string }) {
+        super()
+        Object.assign(this, params)
+    }
+}
+
+/**
  * Errors factory.
  *
  * @category Errors
