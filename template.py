@@ -31,7 +31,7 @@ template = Template(
         devTime={
             "brotli": "^1.3.2",
             "@youwol/http-clients": "^3.0.0",
-            "@youwol/http-primitives": "^0.2.0",
+            "@youwol/http-primitives": "^0.2.4",
             "util": "^0.12.5",
             "@jest/test-sequencer": "^29.5.0",
         },
