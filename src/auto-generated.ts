@@ -69,7 +69,7 @@ export const setup = {
     entries,
     secondaryEntries,
     getDependencySymbolExported: (module:string) => {
-        return `${exportedSymbols[module].exportedClientSymbol}_APIv${exportedSymbols[module].apiKey}`
+        return `${exportedSymbols[module].exportedSymbol}_APIv${exportedSymbols[module].apiKey}`
     },
 
     installMainModule: ({cdnClient, installParameters}:{
