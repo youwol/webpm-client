@@ -1,5 +1,5 @@
 from youwol.app.environment import YouwolEnvironment
-from youwol.app.environment.models_project import (
+from youwol.app.routers.projects import (
     IPipelineFactory,
     JsBundle,
     Artifact,

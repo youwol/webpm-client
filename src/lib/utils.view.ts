@@ -1,4 +1,5 @@
 import {
+    BackendErrorEvent,
     CdnEvent,
     CdnLoadingGraphErrorEvent,
     ParseErrorEvent,
@@ -94,6 +95,10 @@ export function updateLibStatusView(
     if (event instanceof ParseErrorEvent) {
         setErrorCssProperties(divLib)
         divLib.textContent = `> ${libraryName} : an error occurred while parsing the source`
+    }
+    if (event instanceof BackendErrorEvent) {
+        setErrorCssProperties(divLib)
+        divLib.textContent = `> ${libraryName} : ${event.detail}`
     }
 }
 

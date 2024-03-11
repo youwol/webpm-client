@@ -6,6 +6,17 @@
 export class CdnError extends Error {}
 
 /**
+ * Error related to the usage of features requiring the local youwol server while it is not detected.
+ *
+ * @category Errors
+ */
+export class LocalYouwolRequired extends CdnError {
+    constructor(public readonly detail: string) {
+        super()
+    }
+}
+
+/**
  * Base class of errors related to loading graph resolution. See also {@link CdnLoadingGraphErrorEvent}.
  *
  * @category Errors
@@ -132,6 +143,22 @@ export class CircularDependencies extends LoadingGraphError {
 
     static isInstance(resp): resp is CircularDependencies {
         return resp.exceptionType == CircularDependencies.exceptionType
+    }
+}
+
+/**
+ * Errors related to backends installation (download, install or start).
+ *
+ * @category Errors
+ */
+export class BackendException extends CdnError {
+    static exceptionType = 'DownloadBackendFailed'
+    public readonly name: string
+    public readonly version: string
+    public readonly detail: string
+    constructor(params: { name: string; version: string; detail: string }) {
+        super()
+        Object.assign(this, params)
     }
 }
 

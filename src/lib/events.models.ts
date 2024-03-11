@@ -14,6 +14,10 @@ export type EventType =
     | 'UrlNotFoundEvent'
     | 'ParseErrorEvent'
     | 'CdnLoadingGraphErrorEvent'
+    | 'DownloadBackendEvent'
+    | 'InstallBackendEvent'
+    | 'StartBackendEvent'
+    | 'BackendErrorEvent'
 
 /**
  * @category Events
@@ -46,6 +50,9 @@ export function isCdnEvent(event: unknown): event is CdnEvent {
         'UrlNotFoundEvent',
         'ParseErrorEvent',
         'CdnLoadingGraphErrorEvent',
+        'DownloadBackendEvent',
+        'InstallBackendEvent',
+        'StartBackendEvent',
     ]
     return types.includes((event as CdnEvent).step)
 }
@@ -240,4 +247,77 @@ export class InstallDoneEvent implements CdnEvent {
     public readonly step = 'InstallDoneEvent'
     public readonly text = 'Installation successful'
     public readonly status = 'Succeeded'
+}
+
+export class BackendEvent implements CdnEvent {
+    public readonly id: string
+    public readonly text: string
+    public readonly status: 'Pending' | 'Failed'
+    constructor(
+        public readonly step:
+            | 'DownloadBackendEvent'
+            | 'InstallBackendEvent'
+            | 'StartBackendEvent'
+            | 'BackendErrorEvent',
+        public readonly name: string,
+        public readonly version: string,
+        public readonly title: string,
+        public readonly event: string,
+    ) {
+        this.id = `${name}_${version.replace('.', '-')}`
+        this.text = `${name}#${version}: ${title}`
+        this.status = event === 'failed' ? 'Failed' : 'Pending'
+    }
+}
+export class DownloadBackendEvent extends BackendEvent {
+    constructor(params: { name: string; version: string; event: string }) {
+        super(
+            'DownloadBackendEvent',
+            params.name,
+            params.version,
+            'downloading...',
+            params.event,
+        )
+    }
+}
+export class InstallBackendEvent extends BackendEvent {
+    constructor(params: { name: string; version: string; event: string }) {
+        super(
+            'InstallBackendEvent',
+            params.name,
+            params.version,
+            'installing...',
+            params.event,
+        )
+    }
+}
+export class StartBackendEvent extends BackendEvent {
+    constructor(params: { name: string; version: string; event: string }) {
+        super(
+            'StartBackendEvent',
+            params.name,
+            params.version,
+            'starting...',
+            params.event,
+        )
+    }
+}
+
+export class BackendErrorEvent extends BackendEvent {
+    public readonly detail: string
+    constructor(params: {
+        name: string
+        version: string
+        detail: string
+        event: string
+    }) {
+        super(
+            'BackendErrorEvent',
+            params.name,
+            params.version,
+            params.detail,
+            params.event,
+        )
+        this.detail = params.detail
+    }
 }
