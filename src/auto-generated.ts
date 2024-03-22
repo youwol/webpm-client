@@ -19,16 +19,6 @@ const externals = {
         "commonjs2": "@youwol/http-primitives",
         "root": "@youwol/http-primitives_APIv02"
     },
-    "@youwol/http-primitives/src/lib/local-youwol": {
-        "commonjs": "@youwol/http-primitives/src/lib/local-youwol",
-        "commonjs2": "@youwol/http-primitives/src/lib/local-youwol",
-        "root": [
-            "@youwol/http-primitives_APIv02",
-            "src",
-            "lib",
-            "local-youwol"
-        ]
-    },
     "rxjs/operators": {
         "commonjs": "rxjs/operators",
         "commonjs2": "rxjs/operators",
@@ -76,7 +66,7 @@ const entries = {
 export const setup = {
     name:'@youwol/webpm-client',
         assetId:'QHlvdXdvbC93ZWJwbS1jbGllbnQ=',
-    version:'3.0.4-wip',
+    version:'3.0.4',
     shortDescription:"Library for dynamic npm's libraries installation from YouWol's CDN.",
     developerDocumentation:'https://platform.youwol.com/applications/@youwol/cdn-explorer/latest?package=@youwol/webpm-client&tab=doc',
     npmPackage:'https://www.npmjs.com/package/@youwol/webpm-client',
@@ -122,7 +112,7 @@ export const setup = {
         const parameters = installParameters || {}
         const scripts = [
             ...(parameters.scripts || []),
-            `@youwol/webpm-client#3.0.4-wip~dist/@youwol/webpm-client/${entry.name}.js`
+            `@youwol/webpm-client#3.0.4~dist/@youwol/webpm-client/${entry.name}.js`
         ]
         const modules = [
             ...(parameters.modules || []),
