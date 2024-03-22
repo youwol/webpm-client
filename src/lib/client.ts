@@ -38,6 +38,7 @@ import {
 import { BackendConfiguration } from './backend-configuration'
 import { FrontendConfiguration } from './frontend-configuration'
 import { installBackends } from './backends'
+import { installPython } from './python'
 
 /**
  *
@@ -289,6 +290,15 @@ export class Client {
             inputs.onEvent?.(ev)
         }
 
+        const pythonPromise = inputs.pyodide
+            ? installPython({
+                  ...inputs.pyodide,
+                  urlPyodide: Client.BackendConfiguration.urlPyodide,
+                  urlPypi: Client.BackendConfiguration.urlPypi,
+                  onEvent,
+              })
+            : Promise.resolve()
+
         const bundlesPromise = this.installModules({
             modules: [...(inputs.modules || []), ...(inputs.backends || [])],
             modulesSideEffects: inputs.modulesSideEffects,
@@ -322,6 +332,7 @@ export class Client {
         return Promise.all([
             jsPromise,
             cssPromise,
+            pythonPromise,
             ...customInstallersPromises,
         ]).then(() => {
             onEvent?.(new InstallDoneEvent())

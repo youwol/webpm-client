@@ -146,17 +146,26 @@ if (globalThis.document?.currentScript?.getAttribute('src')) {
         'webpm-client.config.json',
     ].join('/')
 
-    // Using a synchronous request here is on purpose: the objective is to provide a module fully initialized.
-    // Using a promise over `backendConfiguration` can be tempting, but:
-    // *  promise will propagate and make the API more difficult to use for some functions
-    // *  in any practical cases, no installation can start until the following request resolve (so it is like 'frozen')
-    // *  the request is usually a couple of 10ms, and is most of the time cached
-    const request = new XMLHttpRequest()
-    request.open('GET', pathConfig, false) // `false` makes the request synchronous
-    request.send(null)
-    cdnClient.Client.BackendConfiguration = cdnClient.backendConfiguration(
-        JSON.parse(request.responseText),
-    )
+    const ywCookie = cdnClient.getLocalYouwolCookie()
+
+    if (ywCookie) {
+        cdnClient.Client.BackendConfiguration = cdnClient.backendConfiguration({
+            origin: ywCookie.origin,
+            ...ywCookie.webpm,
+        })
+    } else {
+        // Using a synchronous request here is on purpose: the objective is to provide a module fully initialized.
+        // Using a promise over `backendConfiguration` can be tempting, but:
+        // *  promise will propagate and make the API more difficult to use for some functions
+        // *  in any practical cases, no installation can start until the following request resolve (so it is like 'frozen')
+        // *  the request is usually a couple of 10ms, and is most of the time cached
+        const request = new XMLHttpRequest()
+        request.open('GET', pathConfig, false) // `false` makes the request synchronous
+        request.send(null)
+        cdnClient.Client.BackendConfiguration = cdnClient.backendConfiguration(
+            JSON.parse(request.responseText),
+        )
+    }
     const crossOrigin = document.currentScript.getAttribute('crossorigin')
     if (crossOrigin != null) {
         cdnClient.Client.FrontendConfiguration = {
