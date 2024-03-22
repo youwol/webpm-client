@@ -17,7 +17,11 @@ folder_path = Path(__file__).parent
 
 pkg_json = parse_json(folder_path / "package.json")
 externals = {
+    # `rxjs` is required by the 'workersPool' auxiliary module
     "rxjs": "^7.5.6",
+    # `@youwol/http-primitives` is only used for typing & test, not in dev. dependencies to let consuming packages
+    # have it in their `node_modules`.
+    "@youwol/http-primitives": "^0.2.4",
 }
 template = Template(
     path=folder_path,
@@ -31,7 +35,6 @@ template = Template(
         devTime={
             "brotli": "^1.3.2",
             "@youwol/http-clients": "^3.0.0",
-            "@youwol/http-primitives": "^0.2.4",
             "util": "^0.12.5",
             "@jest/test-sequencer": "^29.5.0",
         },
@@ -47,7 +50,7 @@ template = Template(
             AuxiliaryModule(
                 name="workersPool",
                 entryFile="./lib/workers-pool/index.ts",
-                loadDependencies=list(externals.keys()),
+                loadDependencies=["rxjs"],
             ),
             AuxiliaryModule(
                 name="testUtils",
