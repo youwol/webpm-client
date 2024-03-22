@@ -14,7 +14,7 @@ import { setup } from '../auto-generated'
 import { installBackendClientDeps } from './backends'
 
 import type { Observable } from 'rxjs'
-import { LocalYouwol } from '@youwol/http-primitives'
+import type { LocalYouwol } from '@youwol/http-primitives'
 
 export type LibraryName = string
 export type Version = string

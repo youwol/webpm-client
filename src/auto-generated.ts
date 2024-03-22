@@ -1,7 +1,8 @@
 
 const runTimeDependencies = {
     "externals": {
-        "rxjs": "^7.5.6"
+        "rxjs": "^7.5.6",
+        "@youwol/http-primitives": "^0.2.4"
     },
     "includedInBundle": {
         "semver": "^7.3.4"
@@ -12,6 +13,11 @@ const externals = {
         "commonjs": "rxjs",
         "commonjs2": "rxjs",
         "root": "rxjs_APIv7"
+    },
+    "@youwol/http-primitives": {
+        "commonjs": "@youwol/http-primitives",
+        "commonjs2": "@youwol/http-primitives",
+        "root": "@youwol/http-primitives_APIv02"
     },
     "rxjs/operators": {
         "commonjs": "rxjs/operators",
@@ -26,6 +32,10 @@ const exportedSymbols = {
     "rxjs": {
         "apiKey": "7",
         "exportedSymbol": "rxjs"
+    },
+    "@youwol/http-primitives": {
+        "apiKey": "02",
+        "exportedSymbol": "@youwol/http-primitives"
     }
 }
 
@@ -56,7 +66,7 @@ const entries = {
 export const setup = {
     name:'@youwol/webpm-client',
         assetId:'QHlvdXdvbC93ZWJwbS1jbGllbnQ=',
-    version:'3.0.4-wip',
+    version:'3.0.5-wip',
     shortDescription:"Library for dynamic npm's libraries installation from YouWol's CDN.",
     developerDocumentation:'https://platform.youwol.com/applications/@youwol/cdn-explorer/latest?package=@youwol/webpm-client&tab=doc',
     npmPackage:'https://www.npmjs.com/package/@youwol/webpm-client',
@@ -102,7 +112,7 @@ export const setup = {
         const parameters = installParameters || {}
         const scripts = [
             ...(parameters.scripts || []),
-            `@youwol/webpm-client#3.0.4-wip~dist/@youwol/webpm-client/${entry.name}.js`
+            `@youwol/webpm-client#3.0.5-wip~dist/@youwol/webpm-client/${entry.name}.js`
         ]
         const modules = [
             ...(parameters.modules || []),

@@ -12,7 +12,8 @@ import {
     StartBackendEvent,
 } from './events.models'
 import type * as rxjsModuleType from 'rxjs'
-import type { ContextMessage } from '@youwol/http-primitives/src/lib/local-youwol'
+import type { LocalYouwol } from '@youwol/http-primitives'
+import { getLocalYouwolCookie } from './backend-configuration'
 
 export type BackendInstallResponse = {
     clientBundle: string
@@ -23,26 +24,6 @@ export type BackendInstallResponse = {
 
 export type BackendsGraphInstallResponse = {
     backends: BackendInstallResponse[]
-}
-
-export type YwCookie = {
-    type: 'local'
-    wsDataUrl: string
-    port: number
-}
-
-export function getLocalYouwolCookie(): YwCookie | undefined {
-    const name = 'youwol'
-    const regex = new RegExp(`(^| )${name}=([^;]+)`)
-    const match = document.cookie.match(regex)
-    if (match) {
-        try {
-            return JSON.parse(decodeURIComponent(match[2]))
-        } catch (error) {
-            console.error('Can not retrieved local youwol cookie', error)
-            return undefined
-        }
-    }
 }
 
 type Install = {
@@ -93,7 +74,7 @@ export async function installBackends({
 
     const all$ = wsData$.pipe(
         rxjs.filter((m) => m.attributes?.[installKey] === installId),
-        rxjs.map((m) => m as ContextMessage<Message>),
+        rxjs.map((m) => m as LocalYouwol.ContextMessage<Message>),
         rxjs.shareReplay({ bufferSize: 1, refCount: true }),
     )
     type EventKind =
@@ -119,7 +100,7 @@ export async function installBackends({
         },
     }
 
-    const isDone = (m: ContextMessage<Message>) =>
+    const isDone = (m: LocalYouwol.ContextMessage<Message>) =>
         (m.labels?.includes('StartBackendEvent') &&
             m.data.event === 'listening') ||
         m.attributes?.event === 'failed'

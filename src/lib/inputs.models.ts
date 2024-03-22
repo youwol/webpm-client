@@ -192,6 +192,20 @@ export type CustomInstaller = {
 }
 
 /**
+ * Installer description for the pyodide runtime environment.
+ */
+export type PyodideInstaller = {
+    /**
+     * Pyodide version.
+     */
+    version: string
+    /**
+     * Modules to install.
+     */
+    modules: string[]
+}
+
+/**
  * Inputs for the method {@link Client.install}, here is a somewhat complete example:
  *
  * <iframe id="iFrameExampleModules" src="" width="100%" height="600px"></iframe>
@@ -263,6 +277,11 @@ export type InstallInputs = {
      *
      */
     backends?: LightLibraryWithAliasQueryString[]
+
+    /**
+     * Specification of pyodide installer, see {@link PyodideInstaller} for specification.
+     */
+    pyodide?: PyodideInstaller
 
     /**
      * Override the 'natural' version used for some libraries coming from the dependency graph when resolving
