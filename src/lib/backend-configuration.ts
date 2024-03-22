@@ -44,6 +44,26 @@ function computeOrigin(
     return `http${secure ? 's' : ''}://${hostname}${port ? ':' : ''}${port}`
 }
 
+export type YwCookie = {
+    type: 'local'
+    wsDataUrl: string
+    port: number
+}
+
+export function getLocalYouwolCookie(): YwCookie | undefined {
+    const name = 'youwol'
+    const regex = new RegExp(`(^| )${name}=([^;]+)`)
+    const match = document.cookie.match(regex)
+    if (match) {
+        try {
+            return JSON.parse(decodeURIComponent(match[2]))
+        } catch (error) {
+            console.error('Can not retrieved local youwol cookie', error)
+            return undefined
+        }
+    }
+}
+
 /**
  * Construct a backend configuration.
  *
