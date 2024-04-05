@@ -14,6 +14,7 @@ import '../lib/inputs.models'
 import {
     cleanDocument,
     expectEvents,
+    installLightErrorsWarnings,
     installPackages$,
     testBackendConfig,
 } from './common'
@@ -22,6 +23,7 @@ import { StateImplementation } from '../lib/state'
 import { lastValueFrom } from 'rxjs'
 
 const originString = 'http://localhost:2001'
+installLightErrorsWarnings()
 
 beforeAll(async () => {
     Client.BackendConfiguration = testBackendConfig

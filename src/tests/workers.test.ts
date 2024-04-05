@@ -4,7 +4,12 @@ import {
     installTestWorkersPoolModule,
     installWorkersPoolModule,
 } from '../lib'
-import { cleanDocument, installPackages$, testBackendConfig } from './common'
+import {
+    cleanDocument,
+    installLightErrorsWarnings,
+    installPackages$,
+    testBackendConfig,
+} from './common'
 import './mock-requests'
 import {
     CdnEventView,
@@ -27,6 +32,8 @@ import {
 import * as cdnClient from '..'
 import { RxVDom } from '../lib/rx-vdom.types'
 jest.setTimeout(20 * 1000)
+
+installLightErrorsWarnings()
 
 console['ensureLog'] = console.log
 console.log = () => {

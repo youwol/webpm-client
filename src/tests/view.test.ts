@@ -1,8 +1,14 @@
 import { CdnMessageEvent, install, LoadingScreenView, monitoring } from '../lib'
-import { cleanDocument, installPackages$ } from './common'
+import {
+    cleanDocument,
+    installLightErrorsWarnings,
+    installPackages$,
+} from './common'
 import './mock-requests'
 import { lastValueFrom } from 'rxjs'
 import { RxVDom } from '../lib/rx-vdom.types'
+
+installLightErrorsWarnings()
 
 beforeAll(async () => {
     await lastValueFrom(

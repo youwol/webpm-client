@@ -1,5 +1,10 @@
 import { getUrlBase, install, SourceParsingFailed } from '../lib'
-import { cleanDocument, expectEvents, installPackages$ } from './common'
+import {
+    cleanDocument,
+    expectEvents,
+    installLightErrorsWarnings,
+    installPackages$,
+} from './common'
 import './mock-requests'
 import {
     of,
@@ -11,6 +16,8 @@ import {
 } from 'rxjs'
 import { tap, mergeMap } from 'rxjs/operators'
 import { StateImplementation } from '../lib/state'
+
+installLightErrorsWarnings()
 
 beforeAll(async () => {
     await lastValueFrom(
@@ -255,36 +262,6 @@ test('install flux-view#1 using rxjs#6.5.5 (failure expected)', async () => {
         })
     }
     await expect(expectToThrow).rejects.toThrow(SourceParsingFailed)
-    // from(
-    //     install({
-    //         modules: [`${packageName}#1.x`],
-    //         usingDependencies: ['rxjs#6.5.5'],
-    //         aliases: {
-    //             fv1: '@youwol/flux-view_APIv1',
-    //         },
-    //         onEvent: (event) => {
-    //             events.push(event)
-    //         },
-    //     }) as Promise<unknown>,
-    // )
-    //     .pipe(
-    //         map(({ fv1 }) => {
-    //             try {
-    //                 fv1.attr$(
-    //                     of('whatever: it should fail'),
-    //                     (d) => d,
-    //                 ).subscribe()
-    //                 return false
-    //             } catch (e) {
-    //                 return e
-    //             }
-    //         }),
-    //         tap((error) => {
-    //             expect(error).toBeTruthy()
-    //         }),
-    //     )
-    //     .subscribe(() => done())
-    // done()
 })
 
 test('Sequential installation with version upgrade', async () => {
