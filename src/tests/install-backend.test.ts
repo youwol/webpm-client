@@ -3,7 +3,9 @@ import { cleanDocument, installPackages$ } from './common'
 import { StateImplementation } from '../lib/state'
 import { install } from '../lib'
 
-jest.setTimeout(30 * 1000)
+// Timeout has been adapted for testing in CI, 30s is enough in practice for Ubuntu, but not macOS.
+jest.setTimeout(60 * 1000)
+
 beforeAll(async () => {
     await lastValueFrom(
         installPackages$([

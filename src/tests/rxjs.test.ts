@@ -1,9 +1,16 @@
 import { getUrlBase, install, State } from '../lib'
-import { cleanDocument, expectEvents, installPackages$ } from './common'
+import {
+    cleanDocument,
+    expectEvents,
+    installLightErrorsWarnings,
+    installPackages$,
+} from './common'
 
 import './mock-requests'
 import { StateImplementation } from '../lib/state'
 import { lastValueFrom } from 'rxjs'
+
+installLightErrorsWarnings()
 
 beforeAll(async () => {
     await lastValueFrom(

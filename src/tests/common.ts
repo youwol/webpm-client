@@ -153,3 +153,16 @@ export class TestContext implements ContextTrait {
         console['ensureLog'](`${delta}: ${this.prefix}: ${text}`)
     }
 }
+
+export function installLightErrorsWarnings() {
+    /**
+     * To be improved to target specific messages.
+     */
+    const lightPrint = console.log
+    console.error = (e) => {
+        lightPrint('Error:', typeof e === 'string' ? e : e.message)
+    }
+    console.warn = (e) => {
+        lightPrint('Warning:', typeof e === 'string' ? e : e.message)
+    }
+}

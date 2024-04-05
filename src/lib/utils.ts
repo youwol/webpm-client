@@ -124,12 +124,11 @@ export function patchExportedSymbolForBackwardCompatibility(
         !executingWindow[symbolBase]
     ) {
         console.warn(
-            `Can not find exported symbol of library ${origin.name}#${origin.version} in current context`,
+            `Can not find exported symbol of library ${origin.name}#${origin.version} in current scope`,
             {
                 exportedName: deprecatedExportedName,
                 aliasExportedName,
                 symbolBase,
-                contextKeys: Object.keys(executingWindow),
             },
         )
         return
