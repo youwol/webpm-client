@@ -10,9 +10,10 @@ beforeAll(async () => {
     await lastValueFrom(
         installPackages$([
             './.packages-test/demo_yw_backend#0.1.0/cdn.zip',
-            // rxjs & http-primitives need to be fetched from CDN when installing backends
+            // Following components need to be fetched from CDN when installing backends
             './.packages-test/rxjs#7.5.6/cdn.zip',
             './.packages-test/http-primitives#0.2.4/cdn.zip',
+            './.packages-test/uuid#8.3.2/cdn.zip',
         ]),
     )
 })
@@ -34,15 +35,15 @@ test('install demo_yw_backend', async () => {
             fromFetchJson: (
                 path: string,
             ) => Observable<{ [k: string]: unknown }>
-            channel: (path: string) => Observable<{ [k: string]: unknown }>
+            stream: (path: string) => Observable<{ [k: string]: unknown }>
         }
     }
 
-    expect(document.scripts).toHaveLength(2) // rxjs & http-primitives
+    expect(document.scripts).toHaveLength(3) // rxjs, http-primitives & uuid
     expect(client).toBeTruthy()
     expect(client.fetch).toBeTruthy()
     expect(client.fromFetch).toBeTruthy()
-    expect(client.channel).toBeTruthy()
+    expect(client.stream).toBeTruthy()
 
     const resp = await client.fetch('/hello-world').then((resp) => resp.json())
     expect(resp).toBeTruthy()
@@ -54,7 +55,7 @@ test('install demo_yw_backend', async () => {
     const resp3 = await lastValueFrom(client.fromFetchJson('/hello-world'))
     expect(resp3.endpoint).toBe('/hello-world')
 
-    const resp4 = await firstValueFrom(client.channel('/async-job'))
+    const resp4 = await firstValueFrom(client.stream('/async-job'))
     expect(resp4.data).toEqual({ result: 'Second 1' })
 
     const targetEvents = [
