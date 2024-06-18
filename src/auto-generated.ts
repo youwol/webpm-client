@@ -1,23 +1,23 @@
 
 const runTimeDependencies = {
     "externals": {
-        "rxjs": "^7.5.6",
-        "@youwol/http-primitives": "^0.2.4"
+        "@youwol/http-primitives": "^0.2.4",
+        "rxjs": "^7.5.6"
     },
     "includedInBundle": {
         "semver": "^7.3.4"
     }
 }
 const externals = {
-    "rxjs": {
-        "commonjs": "rxjs",
-        "commonjs2": "rxjs",
-        "root": "rxjs_APIv7"
-    },
     "@youwol/http-primitives": {
         "commonjs": "@youwol/http-primitives",
         "commonjs2": "@youwol/http-primitives",
         "root": "@youwol/http-primitives_APIv02"
+    },
+    "rxjs": {
+        "commonjs": "rxjs",
+        "commonjs2": "rxjs",
+        "root": "rxjs_APIv7"
     },
     "rxjs/operators": {
         "commonjs": "rxjs/operators",
@@ -29,13 +29,13 @@ const externals = {
     }
 }
 const exportedSymbols = {
-    "rxjs": {
-        "apiKey": "7",
-        "exportedSymbol": "rxjs"
-    },
     "@youwol/http-primitives": {
         "apiKey": "02",
         "exportedSymbol": "@youwol/http-primitives"
+    },
+    "rxjs": {
+        "apiKey": "7",
+        "exportedSymbol": "rxjs"
     }
 }
 
@@ -45,17 +45,17 @@ const mainEntry : {entryFile: string,loadDependencies:string[]} = {
 }
 
 const secondaryEntries : {[k:string]:{entryFile: string, name: string, loadDependencies:string[]}}= {
+    "testUtils": {
+        "entryFile": "./lib/test-utils/index.ts",
+        "loadDependencies": [],
+        "name": "testUtils"
+    },
     "workersPool": {
         "entryFile": "./lib/workers-pool/index.ts",
         "loadDependencies": [
             "rxjs"
         ],
         "name": "workersPool"
-    },
-    "testUtils": {
-        "entryFile": "./lib/test-utils/index.ts",
-        "loadDependencies": [],
-        "name": "testUtils"
     }
 }
 
