@@ -1,4 +1,4 @@
-import { LoadingGraph } from './inputs.models'
+import { BackendConfig, LoadingGraph } from './inputs.models'
 import { BackendException, LocalYouwolRequired } from './errors.models'
 import { StateImplementation } from './state'
 import { Client, install } from './client'
@@ -38,11 +38,15 @@ export async function installBackendClientDeps(): Promise<Install> {
 
 export async function installBackends({
     graph,
+    backendsConfig,
+    backendsPartitionId,
     onEvent,
     webpmClient,
     executingWindow,
 }: {
     graph: LoadingGraph
+    backendsConfig: { [k: string]: BackendConfig }
+    backendsPartitionId: string
     onEvent: (event: CdnEvent) => void
     webpmClient: Client
     executingWindow: WindowOrWorkerGlobalScope
@@ -131,13 +135,18 @@ export async function installBackends({
         .pipe(rxjs.takeWhile((m) => !isDone(m)))
         .subscribe()
 
-    await fetch('/admin/system/backends/install', {
+    const body = {
+        ...graph,
+        backendsConfig,
+        partitionId: backendsPartitionId,
+    }
+    return await fetch('/admin/system/backends/install', {
         method: 'POST',
         headers: {
             'Content-Type': 'application/json',
             'x-trace-attributes': `{"${installKey}": "${installId}"}`,
         },
-        body: JSON.stringify(graph),
+        body: JSON.stringify(body),
     })
         .then((resp) => {
             return resp.json()
@@ -150,8 +159,8 @@ export async function installBackends({
                 )
                 throw new BackendException(error)
             }
-            await Promise.all(
-                backends.map(async (backend) => {
+            return Promise.all(
+                backends.map((backend) => {
                     return new Function(backend.clientBundle)()({
                         window: executingWindow,
                         webpmClient,
@@ -159,6 +168,8 @@ export async function installBackends({
                     })
                 }),
             )
+        })
+        .then((backends) => {
             StateImplementation.registerImportedModules(
                 backends,
                 executingWindow,

@@ -485,6 +485,7 @@ export function entryPointWorker(messageEvent: MessageEvent) {
  * @category Worker's Message
  */
 export interface MessageInstall {
+    backendsPartitionId: string
     backendConfiguration: BackendConfiguration
     frontendConfiguration: FrontendConfiguration
     cdnUrl: string
@@ -542,7 +543,7 @@ function entryPointInstall(input: EntryPointArguments<MessageInstall>) {
     self['customImportScripts'](input.args.cdnUrl)
     const cdn = self['@youwol/webpm-client']
     cdn.Client.BackendConfiguration = input.args.backendConfiguration
-
+    cdn.Client.backendsPartitionId = input.args.backendsPartitionId
     const onEvent = (cdnEvent) => {
         const message = { type: 'CdnEvent', event: cdnEvent }
         input.context.sendData(message)
@@ -729,6 +730,7 @@ export type ScheduleInput<TArgs> = {
  * @category Getting Started
  */
 export class WorkersPool {
+    static backendsPartitionId: string
     static BackendConfiguration: BackendConfiguration
     static FrontendConfiguration: FrontendConfiguration = {}
     static webWorkersProxy: IWWorkerProxy = new WebWorkersBrowser()
@@ -1138,6 +1140,7 @@ export class WorkersPool {
             }/${getAssetId(cdnPackage)}/${setup.version}/dist/${cdnPackage}.js`
 
             const argsInstall: MessageInstall = {
+                backendsPartitionId: WorkersPool.backendsPartitionId,
                 backendConfiguration: WorkersPool.BackendConfiguration,
                 frontendConfiguration: WorkersPool.FrontendConfiguration,
                 cdnUrl: cdnUrl,

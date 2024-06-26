@@ -5,6 +5,8 @@ import {
     ScriptSideEffectCallback,
     CustomInstaller,
     LightLibraryWithAliasQueryString,
+    InstallInputs,
+    BackendInstaller,
 } from './inputs.models'
 import {
     CdnEvent,
@@ -473,6 +475,7 @@ export function extractModulesToInstall(
 
 export function extractInlinedAliases(
     modules: LightLibraryWithAliasQueryString[],
+    suffix: string = '',
 ) {
     const getKey = (module: string) => {
         const key = module.split(' as ')[0].trim()
@@ -497,8 +500,36 @@ export function extractInlinedAliases(
         .reduce(
             (acc, module) => ({
                 ...acc,
-                [getValue(module)]: getKey(module),
+                [getValue(module)]: getKey(module).replace(
+                    '_APIv',
+                    `${suffix}_APIv`,
+                ),
             }),
             {},
         )
+}
+
+export const PARTITION_PREFIX = '%p-'
+
+export function normalizeBackendInputs(
+    inputs: InstallInputs,
+): BackendInstaller {
+    const emptyInstaller = {
+        modules: [],
+        configurations: {},
+        partition: Client.backendsPartitionId,
+    }
+    if (!inputs.backends) {
+        return emptyInstaller
+    }
+    if (Array.isArray(inputs.backends)) {
+        return {
+            ...emptyInstaller,
+            modules: inputs.backends,
+        }
+    }
+    return {
+        ...emptyInstaller,
+        ...inputs.backends,
+    }
 }
