@@ -9,6 +9,7 @@ import {
     InstallInputs,
     FetchedScript,
     Library,
+    BackendConfig,
 } from './inputs.models'
 import {
     SourceLoadedEvent,
@@ -34,11 +35,31 @@ import {
     isInstanceOfWindow,
     extractInlinedAliases,
     extractModulesToInstall,
+    normalizeBackendInputs,
+    PARTITION_PREFIX,
 } from './utils'
 import { BackendConfiguration } from './backend-configuration'
 import { FrontendConfiguration } from './frontend-configuration'
 import { installBackends } from './backends'
 import { installPython } from './python'
+
+export function getBackendsPartitionUID() {
+    const uid = `${Math.floor(Math.random() * 1e6)}`
+    if (!globalThis.document) {
+        // This branch is executed within web worker.
+        // The initial value returned here will be overridden from the one forwarded from the
+        // 'master' module running in the main thread.
+        // See {@link setupWorkersPoolModule} & {@link WorkersModule.entryPointInstall}
+        return uid
+    }
+    const key = 'backendsPartitionID'
+    const generateTabId = () => `${document.title}~${uid}`
+
+    if (!sessionStorage.getItem(key)) {
+        sessionStorage.setItem(key, generateTabId())
+    }
+    return sessionStorage.getItem(key)
+}
 
 /**
  *
@@ -106,6 +127,8 @@ export function monitoring() {
  * @category Entry Points
  */
 export class Client {
+    static readonly backendsPartitionId = getBackendsPartitionUID()
+
     private static state = StateImplementation
     /**
      * Backend configuration.
@@ -299,14 +322,27 @@ export class Client {
               })
             : Promise.resolve()
 
+        const backendInputs = normalizeBackendInputs(inputs)
+        const backendAliases = extractInlinedAliases(
+            backendInputs.modules,
+            `${PARTITION_PREFIX}${backendInputs.partition}`,
+        )
+
         const bundlesPromise = this.installModules({
-            modules: [...(inputs.modules || []), ...(inputs.backends || [])],
+            modules: [...(inputs.modules || []), ...backendInputs.modules],
+            backendsConfig: backendInputs.configurations,
+            backendsPartitionId: backendInputs.partition,
             modulesSideEffects: inputs.modulesSideEffects,
             usingDependencies: inputs.usingDependencies,
-            aliases: aliases,
+            aliases: {
+                ...aliases,
+                ...extractInlinedAliases(inputs.modules || []),
+                ...backendAliases,
+            },
             executingWindow,
             onEvent,
         })
+
         const cssPromise = isInstanceOfWindow(executingWindow)
             ? this.installStyleSheets({
                   css,
@@ -356,6 +392,9 @@ export class Client {
                 (acc, [k, v]: [string, Library]) => ({ ...acc, [k]: v }),
                 {},
             )
+        inputs.backendsPartitionId =
+            inputs.backendsPartitionId || Client.backendsPartitionId
+        inputs.backendsConfig = inputs.backendsConfig || {}
 
         const graph_fronts = inputs.loadingGraph.definition.map((layer) =>
             layer.filter((l) => all[l[0]].type !== 'backend'),
@@ -365,7 +404,10 @@ export class Client {
         )
         const executingWindow = inputs.executingWindow || window
         const customInstallers = inputs.customInstallers || []
-        Client.state.updateExportedSymbolsDict(inputs.loadingGraph.lock)
+        Client.state.updateExportedSymbolsDict(
+            inputs.loadingGraph.lock,
+            inputs.backendsPartitionId,
+        )
 
         const customInstallersFuture = customInstallers.map((installer) => {
             return resolveCustomInstaller(installer)
@@ -406,6 +448,8 @@ export class Client {
                     ...inputs.loadingGraph,
                     definition: graph_backs,
                 },
+                inputs.backendsConfig,
+                inputs.backendsPartitionId,
                 inputs.onEvent,
                 inputs.executingWindow,
             ),
@@ -461,11 +505,15 @@ export class Client {
 
     private async installBackends(
         graph: LoadingGraph,
+        backendsConfig: { [k: string]: BackendConfig },
+        backendsPartitionId: string,
         onEvent: (event: CdnEvent) => void,
         executingWindow: WindowOrWorkerGlobalScope,
     ) {
         return await installBackends({
             graph,
+            backendsConfig,
+            backendsPartitionId,
             onEvent,
             executingWindow,
             webpmClient: this,
@@ -480,7 +528,7 @@ export class Client {
             ...(inputs.usingDependencies || []),
         ]
         inputs.modules = inputs.modules || []
-        const aliases = extractInlinedAliases(inputs.modules)
+
         const inputsModules = extractModulesToInstall(inputs.modules)
         const modules = sanitizeModules(inputsModules)
         const body = {
@@ -500,9 +548,11 @@ export class Client {
             await this.installLoadingGraph({
                 loadingGraph,
                 modulesSideEffects,
+                backendsConfig: inputs.backendsConfig,
+                backendsPartitionId: inputs.backendsPartitionId,
                 executingWindow: inputs.executingWindow,
                 onEvent: inputs.onEvent,
-                aliases: { ...aliases, ...inputs.aliases },
+                aliases: inputs.aliases,
             })
             return loadingGraph
         } catch (error) {

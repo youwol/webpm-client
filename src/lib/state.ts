@@ -8,6 +8,7 @@ import {
     getInstalledFullExportedSymbol,
     getFullExportedSymbolAlias,
     getExpectedFullExportedSymbol,
+    PARTITION_PREFIX,
 } from './utils'
 import { ChildrenLike, VirtualDOM } from './rx-vdom.types'
 import { setup } from '../auto-generated'
@@ -164,19 +165,24 @@ export class StateImplementation {
             exportedSymbol: string
             apiKey: string
             aliases: string[]
+            type: 'js/wasm' | 'backend'
         }[],
+        backendPartitionId: string,
     ) {
-        const newEntries = modules.reduce(
-            (acc, e) => ({
+        const newEntries = modules.reduce((acc, e) => {
+            const suffix =
+                e.type == 'js/wasm'
+                    ? ''
+                    : `${PARTITION_PREFIX}${backendPartitionId}`
+            return {
                 ...acc,
-                [`${e.name}#${e.version}`]: {
-                    symbol: e.exportedSymbol,
+                [`${e.name}${suffix}#${e.version}`]: {
+                    symbol: `${e.exportedSymbol}${suffix}`,
                     apiKey: e.apiKey,
                     aliases: e.aliases,
                 },
-            }),
-            {},
-        )
+            }
+        }, {})
         StateImplementation.exportedSymbolsDict = {
             ...StateImplementation.exportedSymbolsDict,
             ...newEntries,

@@ -146,6 +146,16 @@ export type InstallLoadingGraphInputs = {
     loadingGraph: LoadingGraph
 
     /**
+     * Backends configuration, keys are backend names.
+     */
+    backendsConfig?: { [k: string]: BackendConfig }
+
+    /**
+     * Partition ID.
+     */
+    backendsPartitionId?: string
+
+    /**
      * See `customInstallers` of {@link InstallInputs}.
      */
     customInstallers?: CustomInstaller[]
@@ -203,6 +213,14 @@ export type PyodideInstaller = {
      * Modules to install.
      */
     modules: string[]
+}
+
+export type BackendConfig = { buildArgs: { [k: string]: string } }
+
+export type BackendInstaller = {
+    modules: LightLibraryWithAliasQueryString[]
+    configurations: { [k: string]: BackendConfig }
+    partition?: string
 }
 
 /**
@@ -276,7 +294,7 @@ export type InstallInputs = {
      * List of backends to install, see {@link LightLibraryWithAliasQueryString} for specification.
      *
      */
-    backends?: LightLibraryWithAliasQueryString[]
+    backends?: LightLibraryWithAliasQueryString[] | BackendInstaller
 
     /**
      * Specification of pyodide installer, see {@link PyodideInstaller} for specification.
@@ -416,6 +434,10 @@ export type InstallModulesInputs = {
      * See {@link InstallInputs.aliases}
      */
     aliases?: { [key: string]: string | ((Window) => unknown) }
+
+    backendsConfig: { [k: string]: BackendConfig }
+
+    backendsPartitionId: string
 
     /**
      * See {@link InstallInputs.executingWindow}
@@ -602,7 +624,7 @@ export type Library = {
     /**
      * Type of the library, e.g. '*library*, *flux-pack*
      */
-    type: string
+    type: 'js/wasm' | 'backend'
 
     /**
      * Name of the exported symbol

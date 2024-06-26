@@ -25,6 +25,8 @@ function setupWorkersPoolModule(module: WorkersModule) {
                     : window.location.ancestorOrigins[0],
         })
     }
+    module.WorkersPool.backendsPartitionId =
+        webpmClient.Client.backendsPartitionId
     module.WorkersPool.BackendConfiguration = config
     module.WorkersPool.FrontendConfiguration =
         webpmClient.Client.FrontendConfiguration
