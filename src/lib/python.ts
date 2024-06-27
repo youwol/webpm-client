@@ -1,6 +1,7 @@
 import { CdnEvent, CdnMessageEvent } from './events.models'
 import { addScriptElements } from './utils'
 import { PyodideInstaller } from './inputs.models'
+import { StateImplementation } from './state'
 
 export type PythonIndexes = {
     urlPyodide: string
@@ -11,12 +12,18 @@ export async function installPython(
         onEvent?: (cdnEvent: CdnEvent) => void
     } & PythonIndexes,
 ) {
+    const modulesRequired = pyodideInstaller.modules.filter(
+        (module) => !StateImplementation.importedPyModules.includes(module),
+    )
+    if (modulesRequired.length === 0) {
+        return Promise.resolve()
+    }
+
     const onEvent =
         pyodideInstaller.onEvent ||
         (() => {
             /*no op*/
         })
-
     onEvent(
         new CdnMessageEvent(
             `pyodide runtime`,
@@ -24,29 +31,29 @@ export async function installPython(
             'Pending',
         ),
     )
-    const indexURL = pyodideInstaller.urlPyodide.replace(
-        '$VERSION',
-        pyodideInstaller.version,
-    )
+    if (!globalThis['pyodide']) {
+        const indexURL = pyodideInstaller.urlPyodide.replace(
+            '$VERSION',
+            pyodideInstaller.version,
+        )
 
-    const content = await fetch(`${indexURL}/pyodide.js`).then((resp) =>
-        resp.text(),
-    )
-    await addScriptElements([
-        {
-            name: 'pyodide',
-            version: pyodideInstaller.version,
-            assetId: '',
-            url: `${indexURL}/pyodide.js`,
-            content,
-            progressEvent: undefined,
-        },
-    ])
-    const pyodide = await globalThis['loadPyodide']({ indexURL })
+        const content = await fetch(`${indexURL}/pyodide.js`).then((resp) =>
+            resp.text(),
+        )
+        await addScriptElements([
+            {
+                name: 'pyodide',
+                version: pyodideInstaller.version,
+                assetId: '',
+                url: `${indexURL}/pyodide.js`,
+                content,
+                progressEvent: undefined,
+            },
+        ])
+        globalThis['pyodide'] = await globalThis['loadPyodide']({ indexURL })
+    }
 
-    const modules = pyodideInstaller.modules
-    globalThis['pyodide'] = pyodide
-
+    const pyodide = globalThis['pyodide']
     onEvent(
         new CdnMessageEvent(
             `pyodide runtime`,
@@ -63,7 +70,7 @@ export async function installPython(
     )
     await pyodide.loadPackage('micropip')
 
-    modules.forEach((module) => {
+    modulesRequired.forEach((module) => {
         onEvent(
             new CdnMessageEvent(
                 `${module}`,
@@ -74,7 +81,7 @@ export async function installPython(
     })
 
     await Promise.all(
-        modules.map((module) => {
+        modulesRequired.map((module) => {
             const parameters = pyodideInstaller.urlPypi.includes('https')
                 ? ''
                 : `, index_urls='${pyodideInstaller.urlPypi}'`
@@ -85,6 +92,7 @@ import micropip
 await micropip.install(requirements='${module}'${parameters})`,
                 )
                 .then(() => {
+                    StateImplementation.registerImportedPyModules([module])
                     onEvent(
                         new CdnMessageEvent(
                             `${module}`,

@@ -212,6 +212,8 @@ export class StateImplementation {
      */
     static importedScripts = new Map<string, Promise<FetchedScript>>()
 
+    static importedPyModules: string[] = []
+
     /**
      * Latest version of modules installed: mapping between library name and latest version
      */
@@ -401,6 +403,19 @@ export class StateImplementation {
         })
         StateImplementation.updateLatestBundleVersion(modules, executingWindow)
     }
+    /**
+     * Register imported python modules.
+     *
+     * @param pyModules Name of the python modules.
+     * @hidden
+     */
+    static registerImportedPyModules(pyModules: string[]) {
+        StateImplementation.importedPyModules = [
+            ...StateImplementation.importedPyModules,
+            ...pyModules,
+        ]
+    }
+
     /**
      * Update {@link StateImplementation.latestVersion} given a provided installed {@link LoadingGraph}.
      * It also exposes the latest version in `executingWindow` using original symbol name if need be.

@@ -1,4 +1,9 @@
-import { getUrlBase, install, SourceParsingFailed } from '../lib'
+import {
+    getUrlBase,
+    install,
+    InstallDoneEvent,
+    SourceParsingFailed,
+} from '../lib'
 import {
     cleanDocument,
     expectEvents,
@@ -294,7 +299,7 @@ test('Sequential installation with version upgrade', async () => {
         mergeMap(() => {
             return from(
                 install({
-                    modules: [`${packageName}#0.x`],
+                    modules: [`${packageName}#0.1.2`],
                     aliases: {
                         fv0: '@youwol/flux-view#01',
                     },
@@ -309,6 +314,39 @@ test('Sequential installation with version upgrade', async () => {
             )
             expect(fv0).toBeTruthy()
             expect(fv0['__yw_set_from_version__']).toBe('0.1.2')
+        }),
+    )
+    await firstValueFrom(test$)
+})
+
+test('Sequential installation with redundancy', async () => {
+    const packageName = '@youwol/flux-view'
+    const events = []
+    const test$ = from(
+        install({
+            modules: [`${packageName}#0.x`],
+            usingDependencies: ['@youwol/flux-view#0.1.1'],
+            aliases: {
+                fv0: '@youwol/flux-view_APIv01',
+            },
+        }) as Promise<unknown>,
+    ).pipe(
+        mergeMap(() => {
+            return from(
+                install({
+                    modules: [`${packageName}#0.1.x`],
+                    aliases: {
+                        fv0: '@youwol/flux-view#01',
+                    },
+                    onEvent: (ev) => events.push(ev),
+                }) as Promise<unknown>,
+            )
+        }),
+        tap(() => {
+            // A version satisfying 0.1.x has already been installed, nothing happened.
+            expect(document.scripts).toHaveLength(2)
+            expect(events).toHaveLength(1)
+            expect(events[0]).toBeInstanceOf(InstallDoneEvent)
         }),
     )
     await firstValueFrom(test$)

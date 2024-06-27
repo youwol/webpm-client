@@ -522,7 +522,7 @@ export class Client {
 
     private async installModules(
         inputs: InstallModulesInputs,
-    ): Promise<LoadingGraph> {
+    ): Promise<LoadingGraph | undefined> {
         const usingDependencies = [
             ...Client.state.getPinedDependencies(),
             ...(inputs.usingDependencies || []),
@@ -531,6 +531,19 @@ export class Client {
 
         const inputsModules = extractModulesToInstall(inputs.modules)
         const modules = sanitizeModules(inputsModules)
+        const alreadyInstalled = modules.every(({ name, version }) => {
+            const latestInstalled = StateImplementation.latestVersion.get(name)
+            return latestInstalled
+                ? satisfies(latestInstalled.replace('-wip', ''), version)
+                : false
+        })
+
+        if (alreadyInstalled) {
+            inputs.aliases &&
+                installAliases(inputs.aliases, inputs.executingWindow)
+            return Promise.resolve(undefined)
+        }
+
         const body = {
             modules: inputsModules,
             usingDependencies,
