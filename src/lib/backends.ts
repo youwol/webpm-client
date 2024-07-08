@@ -14,7 +14,6 @@ import {
 import type * as rxjsModuleType from 'rxjs'
 import type { LocalYouwol } from '@youwol/http-primitives'
 import { getLocalYouwolCookie } from './backend-configuration'
-import { type Observable } from 'rxjs'
 
 export type BackendInstallResponse = {
     clientBundle: string
@@ -245,7 +244,10 @@ export type BackendClient = {
      * @param fetchOptions <a target="_blank" href="https://developer.mozilla.org/en-US/docs/Web/API/RequestInit">
      * Fetch options </a>.
      */
-    fromFetch(endPoint: string, fetchOptions: RequestInit): Observable<Response>
+    fromFetch(
+        endPoint: string,
+        fetchOptions: RequestInit,
+    ): rxjsModuleType.Observable<Response>
 
     /**
      * Same as `fetchJson` but returning an RxJS Observable.
@@ -254,7 +256,10 @@ export type BackendClient = {
      * @param fetchOptions <a target="_blank" href="https://developer.mozilla.org/en-US/docs/Web/API/RequestInit">
      * Fetch options </a>.
      */
-    fromFetchJson(endPoint: string, fetchOptions: RequestInit): Observable<JSON>
+    fromFetchJson(
+        endPoint: string,
+        fetchOptions: RequestInit,
+    ): rxjsModuleType.Observable<JSON>
 
     /**
      * Same as `fetchText` but returning an RxJS Observable.
@@ -266,5 +271,5 @@ export type BackendClient = {
     fromFetchText(
         endPoint: string,
         fetchOptions: RequestInit,
-    ): Observable<string>
+    ): rxjsModuleType.Observable<string>
 }
