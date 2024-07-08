@@ -6,11 +6,16 @@ import {
     InstallLoadingGraphInputs,
     FetchScriptInputs,
     QueryLoadingGraphInputs,
-    InstallInputs,
     FetchedScript,
     Library,
     BackendConfig,
+    InstallInputs,
 } from './inputs.models'
+import {
+    InstallInputsDeprecated,
+    isDeprecatedInputs,
+    upgradeInstallInputs,
+} from './inputs.models.deprecated'
 import {
     SourceLoadedEvent,
     SourceLoadingEvent,
@@ -30,13 +35,15 @@ import {
     onHttpRequestLoad,
     sanitizeModules,
     parseResourceId,
-    resolveCustomInstaller,
     installAliases,
     isInstanceOfWindow,
     extractInlinedAliases,
     extractModulesToInstall,
     normalizeBackendInputs,
     PARTITION_PREFIX,
+    normalizeEsmInputs,
+    normalizePyodideInputs,
+    normalizeLoadingGraphInputs,
 } from './utils'
 import { BackendConfiguration } from './backend-configuration'
 import { FrontendConfiguration } from './frontend-configuration'
@@ -63,53 +70,46 @@ export function getBackendsPartitionUID() {
 
 /**
  *
- * Use default {@link Client} to install resources; see documentation provided for {@link InstallInputs}.
+ * Install resources; see documentation provided for {@link InstallInputs}.
  *
  * @category Getting Started
  * @category Entry Points
  * @param inputs
+ *
  */
 export function install(
-    inputs: InstallInputs,
+    inputs: InstallInputsDeprecated | InstallInputs,
 ): Promise<WindowOrWorkerGlobalScope> {
     return new Client().install(inputs)
 }
 
 /**
+ * Query the loading graph of modules, the direct & indirect dependencies as well as their relation.
  *
- * Use default {@link Client} query a loading graph; see documentation provided for {@link QueryLoadingGraphInputs}.
- *
- * @param inputs
- * @category Entry Points
+ * @param inputs Query inputs.
+ * @returns The loading graph response from the server.
  */
 export function queryLoadingGraph(inputs: QueryLoadingGraphInputs) {
     return new Client().queryLoadingGraph(inputs)
 }
 
-/**
- * Use default {@link Client} to fetch content of a javascript file.
- *
- * @param inputs
- * @category Entry Points
- */
 export function fetchScript(inputs: FetchScriptInputs): Promise<FetchedScript> {
+    /**
+     * Deprecated.
+     */
     return new Client().fetchScript(inputs)
 }
 
-/**
- * Use default {@link Client} to install {@link LoadingGraph}; see documentation provided for
- * {@link InstallLoadingGraphInputs}.
- *
- * @category Entry Points
- * @param inputs
- */
 export function installLoadingGraph(inputs: InstallLoadingGraphInputs) {
+    /**
+     * Deprecated
+     */
     return new Client().installLoadingGraph(inputs)
 }
 
 /**
  * Returns {@link Monitoring} object that encapsulates read-only access to the
- * installation state at the time of call.
+ * environment state regarding installed resources at the time of call.
  *
  * @category Entry Points
  */
@@ -118,13 +118,10 @@ export function monitoring() {
 }
 
 /**
- * Gathers configuration & methods to dynamically install various set of resources (modules, scripts, stylesheets).
  *
- * For default client's configuration, the methods are also available as standalone functions:
- * {@link install}, {@link queryLoadingGraph}, {@link fetchScript}, {@link installLoadingGraph}, {@link installModules},
- * {@link installScripts},{@link installStyleSheets}.
+ * The client.
  *
- * @category Entry Points
+ * @hidden
  */
 export class Client {
     static readonly backendsPartitionId = getBackendsPartitionUID()
@@ -174,15 +171,17 @@ export class Client {
      * Query a loading graph provided a list of modules, see {@link QueryLoadingGraphInputs}.
      *
      * @param inputs
+     *
+     * @hidden
      */
     async queryLoadingGraph(
         inputs: QueryLoadingGraphInputs,
     ): Promise<LoadingGraph> {
+        inputs = normalizeLoadingGraphInputs(inputs)
         const key = JSON.stringify(inputs)
-        const usingDependencies = inputs.usingDependencies || []
         const body = {
             libraries: sanitizeModules(inputs.modules),
-            using: usingDependencies.reduce((acc, dependency) => {
+            using: inputs.usingDependencies.reduce((acc, dependency) => {
                 return {
                     ...acc,
                     [dependency.split('#')[0]]: dependency.split('#')[1],
@@ -293,16 +292,20 @@ export class Client {
     }
 
     /**
-     * Install a various set of modules, scripts & stylesheets; see documentation in {@link InstallInputs}.
+     * Install a various set of modules, scripts & stylesheets; see documentation in {@link InstallInputsDeprecated}.
      *
      * @param inputs
      */
-    install(inputs: InstallInputs): Promise<WindowOrWorkerGlobalScope> {
+    install(
+        inputs: InstallInputs | InstallInputsDeprecated,
+    ): Promise<WindowOrWorkerGlobalScope> {
+        const sanitizedInputs = isDeprecatedInputs(inputs)
+            ? upgradeInstallInputs(inputs)
+            : inputs
+
         const css = inputs.css || []
         const executingWindow = inputs.executingWindow || globalThis
-        const aliases = inputs.aliases || {}
-        const display = inputs.displayLoadingScreen || false
-        const customInstallers = inputs.customInstallers || []
+        const display = sanitizedInputs.displayLoadingScreen || false
         let loadingScreen = undefined
         if (display) {
             loadingScreen = new LoadingScreenView()
@@ -310,34 +313,37 @@ export class Client {
         }
         const onEvent = (ev) => {
             loadingScreen?.next(ev)
-            inputs.onEvent?.(ev)
+            sanitizedInputs.onEvent?.(ev)
         }
+        const esmInputs = normalizeEsmInputs(sanitizedInputs)
+        const esmInlinedAliases = extractInlinedAliases(esmInputs.modules || [])
+        const pyodideInputs = normalizePyodideInputs(sanitizedInputs)
+        const backendInputs = normalizeBackendInputs(sanitizedInputs)
 
-        const pythonPromise = inputs.pyodide
+        const pyodidePromise = sanitizedInputs.pyodide
             ? installPython({
-                  ...inputs.pyodide,
+                  ...pyodideInputs,
                   urlPyodide: Client.BackendConfiguration.urlPyodide,
                   urlPypi: Client.BackendConfiguration.urlPypi,
                   onEvent,
               })
             : Promise.resolve()
 
-        const backendInputs = normalizeBackendInputs(inputs)
-        const backendAliases = extractInlinedAliases(
+        const backendInlinedAliases = extractInlinedAliases(
             backendInputs.modules,
             `${PARTITION_PREFIX}${backendInputs.partition}`,
         )
 
-        const bundlesPromise = this.installModules({
-            modules: [...(inputs.modules || []), ...backendInputs.modules],
+        const modulesPromise = this.installModules({
+            modules: [...esmInputs.modules, ...backendInputs.modules],
             backendsConfig: backendInputs.configurations,
             backendsPartitionId: backendInputs.partition,
-            modulesSideEffects: inputs.modulesSideEffects,
-            usingDependencies: inputs.usingDependencies,
+            modulesSideEffects: esmInputs.modulesSideEffects,
+            usingDependencies: esmInputs.usingDependencies,
             aliases: {
-                ...aliases,
-                ...extractInlinedAliases(inputs.modules || []),
-                ...backendAliases,
+                ...esmInputs.aliases,
+                ...esmInlinedAliases,
+                ...backendInlinedAliases,
             },
             executingWindow,
             onEvent,
@@ -349,32 +355,22 @@ export class Client {
                   renderingWindow: executingWindow,
               })
             : Promise.resolve()
-        const jsPromise = bundlesPromise.then(() => {
+
+        const scriptsPromise = modulesPromise.then(() => {
             return this.installScripts({
-                scripts: inputs.scripts || [],
+                scripts: esmInputs.scripts || [],
                 executingWindow,
-                aliases: inputs.aliases,
+                aliases: esmInputs.aliases,
             })
         })
 
-        const customInstallersPromises = customInstallers.map((installer) => {
-            const userOnEvent = installer.installInputs.onEvent
-            installer.installInputs.onEvent = (ev: CdnEvent) => {
-                loadingScreen?.next(ev)
-                userOnEvent?.(ev)
-            }
-            return resolveCustomInstaller(installer)
-        })
-        return Promise.all([
-            jsPromise,
-            cssPromise,
-            pythonPromise,
-            ...customInstallersPromises,
-        ]).then(() => {
-            onEvent?.(new InstallDoneEvent())
-            loadingScreen?.done()
-            return executingWindow
-        })
+        return Promise.all([scriptsPromise, cssPromise, pyodidePromise]).then(
+            () => {
+                onEvent?.(new InstallDoneEvent())
+                loadingScreen?.done()
+                return executingWindow
+            },
+        )
     }
 
     /**
@@ -403,15 +399,12 @@ export class Client {
             layer.filter((l) => all[l[0]].type === 'backend'),
         )
         const executingWindow = inputs.executingWindow || window
-        const customInstallers = inputs.customInstallers || []
+
         Client.state.updateExportedSymbolsDict(
             inputs.loadingGraph.lock,
             inputs.backendsPartitionId,
         )
 
-        const customInstallersFuture = customInstallers.map((installer) => {
-            return resolveCustomInstaller(installer)
-        })
         const packagesSelected = graph_fronts
             .flat()
             .map(([assetId, cdn_url]) => {
@@ -441,7 +434,6 @@ export class Client {
             })
         })
         const sourcesOrErrors = await Promise.all([
-            ...customInstallersFuture,
             ...futures,
             this.installBackends(
                 {
@@ -458,7 +450,6 @@ export class Client {
             throw new FetchErrors({ errors })
         }
         const sources = sourcesOrErrors
-            .slice(customInstallersFuture.length)
             .filter((d) => d != undefined)
             .map((d) => d as FetchedScript)
             .map((origin: FetchedScript) => {

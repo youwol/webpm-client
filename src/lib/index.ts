@@ -10,7 +10,6 @@ export { Monitoring, State } from './state'
 export * from './loader.view'
 export {
     FetchScriptInputs,
-    InstallInputs,
     InstallLoadingGraphInputs,
     QueryLoadingGraphInputs,
     FullLibraryQueryString,
@@ -19,7 +18,6 @@ export {
     ModuleSideEffectCallbackArgument,
     ScriptInput,
     CssInput,
-    CustomInstaller,
     FetchedScript,
     CssSideEffectCallbackArgument,
     CssSideEffectCallback,
@@ -27,7 +25,13 @@ export {
     ScriptSideEffectCallbackArgument,
     LoadingGraph,
     Library,
+    LightLibraryWithAliasQueryString,
+    EsmInputs,
+    BackendInputs,
+    PyModule,
+    PyodideInputs,
     FileLocationString,
+    InstallInputs,
 } from './inputs.models'
 export {
     backendConfiguration,

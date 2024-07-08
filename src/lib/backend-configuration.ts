@@ -2,6 +2,8 @@
  * Defines the target backend used by {@link Client}.
  *
  * Should be constructed using {@link backendConfiguration}.
+ *
+ * @hidden
  */
 export interface BackendConfiguration {
     /**

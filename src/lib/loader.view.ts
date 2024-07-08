@@ -97,8 +97,7 @@ export class DefaultLoadingScreenOptions implements LoadingScreenOptions {
 }
 
 /**
- * Class providing granular controls on how loading screen is displayed when using {@link Client.install}
- * or {@link install}.
+ * Class providing granular controls on how loading screen is displayed when using {@link install}.
  *
  * Here is an example:
  * ```
@@ -138,7 +137,7 @@ export class DefaultLoadingScreenOptions implements LoadingScreenOptions {
  * })
  * ```
  *
- * > For default display, setting `displayLoadingScreen: true` from {@link InstallInputs} is enough:
+ * > For default display, setting `displayLoadingScreen: true` from InstallInputsDeprecated is enough:
  * > creation and management of {@link LoadingScreenView} will be automatic.
  *
  * @category Loading screen
