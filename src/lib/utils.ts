@@ -102,12 +102,34 @@ export function patchExportedSymbolForBackwardCompatibility(
     origin: FetchedScript,
     executingWindow: WindowOrWorkerGlobalScope,
 ) {
+    /**
+     * Those symbols can be removed when no applications/libraries are using them anymore.
+     * See property 'externals' in the files 'auto-generated.ts'.
+     */
+    const exportedSymbols = {
+        lodash: '_',
+        three: 'THREE',
+        typescript: 'ts',
+        'three-trackballcontrols': 'TrackballControls',
+        codemirror: 'CodeMirror',
+        'highlight.js': 'hljs',
+        'plotly.js': 'Plotly',
+        'plotly.js-gl2d-dist': 'Plotly',
+        jquery: '$',
+        'popper.js': 'Popper',
+        'reflect-metadata': 'Reflect',
+        'js-beautify': 'js_beautify',
+        mathjax: 'Mathjax',
+        '@tweenjs/tween.js': 'TWEEN',
+        '@youwol/potree': 'Potree',
+    }
+
     const regularExported = getRegularFullExportedSymbol(
         origin.name,
         origin.version,
     )
     /**
-     * All 3 variables below corresponds to deprecated symbols
+     * All 4 variables below corresponds to deprecated symbols
      */
     const deprecatedExportedName = getInstalledFullExportedSymbol(
         origin.name,
@@ -121,6 +143,19 @@ export function patchExportedSymbolForBackwardCompatibility(
         origin.name,
         origin.version,
     )
+    const explicitOldExportedName =
+        exportedSymbols[origin.name] &&
+        `${exportedSymbols[origin.name]}_APIv${getApiKey(origin.version)}`
+
+    if (
+        !executingWindow[regularExported] &&
+        explicitOldExportedName &&
+        executingWindow[explicitOldExportedName]
+    ) {
+        executingWindow[regularExported] =
+            executingWindow[explicitOldExportedName]
+    }
+
     if (
         !executingWindow[regularExported] &&
         !executingWindow[deprecatedExportedName] &&
@@ -139,6 +174,10 @@ export function patchExportedSymbolForBackwardCompatibility(
     if (executingWindow[regularExported]) {
         executingWindow[deprecatedExportedName] =
             executingWindow[regularExported]
+        if (explicitOldExportedName) {
+            executingWindow[explicitOldExportedName] =
+                executingWindow[regularExported]
+        }
     }
     if (!executingWindow[regularExported]) {
         console.warn('The export symbol of the package is deprecated', {

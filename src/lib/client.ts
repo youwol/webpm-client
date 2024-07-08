@@ -210,9 +210,15 @@ export class Client {
                 },
             },
         )
-        Client.state.fetchedLoadingGraph[key] = fetch(request).then((resp) =>
-            resp.json(),
-        )
+        Client.state.fetchedLoadingGraph[key] = fetch(request)
+            .then((resp) => resp.json())
+            .then((resp) => {
+                resp.lock &&
+                    resp.lock.forEach((lock) => {
+                        lock.exportedSymbol = lock.name
+                    })
+                return resp
+            })
         return finalize()
     }
 
