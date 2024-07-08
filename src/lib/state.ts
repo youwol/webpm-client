@@ -468,11 +468,23 @@ export class StateImplementation {
                     )
                 const toRemove = [symbol, ...aliases]
                 toRemove.forEach((alias) => {
+                    if (alias.includes(':')) {
+                        const baseName = alias.split(':')[0]
+                        delete executingWindow[baseName]
+                        return
+                    }
                     delete executingWindow[alias]
                 })
             }
             const toAdd = [symbol, ...aliases]
             toAdd.forEach((alias) => {
+                if (alias.includes(':')) {
+                    const baseName = alias.split(':')[0]
+                    const property = alias.split(':')[1]
+                    executingWindow[baseName] =
+                        executingWindow[exportedName][property]
+                    return
+                }
                 executingWindow[alias] = executingWindow[exportedName]
             })
             StateImplementation.latestVersion.set(name, version)
