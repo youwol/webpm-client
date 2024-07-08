@@ -1,7 +1,7 @@
 {
     "name": "@youwol/webpm-client-doc",
     "description": "Documentation app for the library @youwol/webpm-client",
-    "version": "3.0.6-wip",
+    "version": "3.0.6",
     "author": "greinisch@youwol.com",
     "homepage": "https://github.com/youwol/webpm-client-doc#README.md",
     "main": "dist/index.html",
