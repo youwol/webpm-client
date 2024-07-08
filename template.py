@@ -67,11 +67,11 @@ shutil.copyfile(
     dst=folder_path / "src" / "auto-generated.ts",
 )
 for file in [
-    ".npmignore",
+    # ".npmignore",  added 'webpm-client-doc'
     "LICENSE",
     "README.md",
     "package.json",
-    "tsconfig.json",
+    # "tsconfig.json", added '"exclude": ["./webpm-client-doc"]'
     "webpack.config.ts",
 ]:
     shutil.copyfile(src=folder_path / ".template" / file, dst=folder_path / file)

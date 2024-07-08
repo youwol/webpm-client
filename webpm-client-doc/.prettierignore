@@ -11,8 +11,4 @@ LICENSE
 yarn-error.log
 /*.iml
 src/auto-generated.ts
-/src/tests/.html-outputs/**/*
-/src/tests/.packages/**/*
-/src/tests/.packages-test/**/*
-webpm-client-doc
 
