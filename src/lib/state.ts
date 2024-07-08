@@ -45,7 +45,7 @@ export class Monitoring {
         [k: string]: string
     }
     /**
-     * Create a VirtualDOM (see [fluxView](https://github.com/youwol/flux-view))
+     * Create a VirtualDOM (see [rx-vdom](https://l.youwol.com/doc/@youwol/rx-vdom))
      * representing the current state of installation (modules installed & available symbols).
      */
     public readonly view: VirtualDOM<'div'>
@@ -534,8 +534,17 @@ export class StateImplementation {
             tag: 'div',
             class: 'StateView',
             children: [
-                { tag: 'h5', innerText: `I'm ${setup.name}#${setup.version}` },
-                { tag: 'h3', innerText: 'Modules installed' },
+                {
+                    tag: 'div',
+                    class: 'w-100 text-center',
+                    style: { fontSize: 'larger', fontWeight: 'bolder' },
+                    innerText: `${setup.name}#${setup.version}`,
+                },
+                {
+                    tag: 'div',
+                    style: { fontWeight: 'bolder' },
+                    innerText: 'Modules installed',
+                },
                 {
                     tag: 'div',
                     class: 'px-3 py-2 container',
@@ -546,7 +555,11 @@ export class StateImplementation {
                         }),
                     ],
                 },
-                { tag: 'h3', innerText: 'Available symbols' },
+                {
+                    tag: 'div',
+                    style: { fontWeight: 'bolder' },
+                    innerText: 'Available symbols',
+                },
                 {
                     tag: 'div',
                     class: 'px-3 py-2 container',
@@ -575,7 +588,6 @@ class ModulesView implements VirtualDOM<'div'> {
                         {
                             tag: 'div',
                             class: 'col-sm',
-                            style: { fontWeight: 'bolder' },
                             innerText: k,
                         },
                         {
@@ -617,7 +629,6 @@ class SymbolsView implements VirtualDOM<'div'> {
                         {
                             tag: 'div',
                             class: 'col-sm',
-                            style: { fontWeight: 'bolder' },
                             innerText: k,
                         },
                         {
@@ -626,12 +637,7 @@ class SymbolsView implements VirtualDOM<'div'> {
                             children: [symbolKey, ...aliases].map((v) => ({
                                 tag: 'div',
                                 class: 'border rounded p-1 mx-2 d-flex align-items-center',
-                                children: [
-                                    /*{
-                                    class: 'fas fa-tag mx-1',
-                                },*/
-                                    { tag: 'div', innerText: v },
-                                ],
+                                children: [{ tag: 'div', innerText: v }],
                             })),
                         },
                     ],

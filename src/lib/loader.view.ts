@@ -92,6 +92,7 @@ export class DefaultLoadingScreenOptions implements LoadingScreenOptions {
         height: '100vh',
         padding: 'inherit',
         'font-weight': 'bolder',
+        'z-index': '10',
     }
 }
 
@@ -172,7 +173,10 @@ export class LoadingScreenView {
      * `options` with {@link DefaultLoadingScreenOptions} : `Object.assign(LoadingScreenView.DefaultOptions, options)`
      */
     constructor(options: LoadingScreenOptions = {}) {
-        this.options = Object.assign(LoadingScreenView.DefaultOptions, options)
+        this.options = {
+            ...LoadingScreenView.DefaultOptions,
+            ...options,
+        }
         this.options.container = this.options.container || document.body
         const wrapperStyle = {
             ...this.options.wrapperStyle,

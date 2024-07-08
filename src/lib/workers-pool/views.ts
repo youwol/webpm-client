@@ -201,8 +201,8 @@ export class CdnEventView implements VirtualDOM<'div'> {
 
     constructor(event: EventData) {
         const icons: Record<EventStatus, string> = {
-            Succeeded: 'fas fa-check fv-text-success',
-            Failed: 'fas fa-times fv-text-error',
+            Succeeded: 'fas fa-check text-success',
+            Failed: 'fas fa-times text-danger',
             Pending: 'fas fa-spinner fa-spin',
             None: '',
         }
@@ -272,7 +272,11 @@ export class WorkerCardTitleView implements VirtualDOM<'div'> {
         )
         this.children = [
             {
-                tag: 'h3',
+                tag: 'div',
+                style: {
+                    fontWeight: 'bolder',
+                    fontSize: 'larger',
+                },
                 innerText: `Worker ${this.workerId}`,
             },
             {
@@ -280,7 +284,7 @@ export class WorkerCardTitleView implements VirtualDOM<'div'> {
                 class: {
                     source$: statusWorker$,
                     vdomMap: (status: WorkerStatus): string => classes[status],
-                    wrapper: (d) => `fas ${d} fv-text-success fv-blink mx-2`,
+                    wrapper: (d) => `fas ${d} text-success fa-fade mx-2`,
                 },
             },
         ]
