@@ -43,6 +43,6 @@ export * from './events.models'
 export { getAssetId, getUrlBase, parseResourceId } from './utils'
 export { youwolSvgLogo } from './utils.view'
 export * from './add-ons'
-
+export { BackendClient } from './backends'
 export * as WorkersPoolTypes from './workers-pool/index-types'
 export * as TestUtilsTypes from './test-utils/index-types'

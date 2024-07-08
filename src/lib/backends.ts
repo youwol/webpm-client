@@ -14,6 +14,7 @@ import {
 import type * as rxjsModuleType from 'rxjs'
 import type { LocalYouwol } from '@youwol/http-primitives'
 import { getLocalYouwolCookie } from './backend-configuration'
+import { type Observable } from 'rxjs'
 
 export type BackendInstallResponse = {
     clientBundle: string
@@ -175,4 +176,95 @@ export async function installBackends({
                 executingWindow,
             )
         })
+}
+
+/**
+ * Backend client.
+ */
+export type BackendClient = {
+    /**
+     * Base URL of the service.
+     */
+    urlBase: string
+
+    /**
+     * Version of the service
+     */
+    version: string
+
+    /**
+     * Configuration.
+     */
+    config: {
+        // Build configuration (command line options).
+        build: { [k: string]: string }
+    }
+
+    /**
+     * The name of the symbol in the global scope pointing to the client.
+     */
+    exportedSymbol: string
+
+    /**
+     * Encapsulating partition Id.
+     */
+    partitionId: string
+
+    /**
+     * Proxy the standard <a target='_blank' href="https://developer.mozilla.org/en-US/docs/Web/API/fetch"> fetch </a>
+     * function.
+     *
+     * @param endPoint Target end-point.
+     * @param fetchOptions <a target="_blank" href="https://developer.mozilla.org/en-US/docs/Web/API/RequestInit">
+     * Fetch options </a>.
+     */
+    fetch(endPoint: string, fetchOptions: RequestInit): Promise<Response>
+
+    /**
+     * Same as `fetch` with an additional call to `.then((resp) => resp.json())`.
+     *
+     * @param endPoint Target end-point.
+     * @param fetchOptions <a target="_blank" href="https://developer.mozilla.org/en-US/docs/Web/API/RequestInit">
+     * Fetch options </a>.
+     */
+    fetchJson(endPoint: string, fetchOptions: RequestInit): Promise<JSON>
+
+    /**
+     * Same as `fetch` with an additional call to `.then((resp) => resp.text())`.
+     *
+     * @param endPoint Target end-point.
+     * @param fetchOptions <a target="_blank" href="https://developer.mozilla.org/en-US/docs/Web/API/RequestInit">
+     * Fetch options </a>.
+     */
+    fetchText(endPoint: string, fetchOptions: RequestInit): Promise<string>
+
+    /**
+     * Same as `fetch` but returning an RxJS Observable.
+     *
+     * @param endPoint Target end-point.
+     * @param fetchOptions <a target="_blank" href="https://developer.mozilla.org/en-US/docs/Web/API/RequestInit">
+     * Fetch options </a>.
+     */
+    fromFetch(endPoint: string, fetchOptions: RequestInit): Observable<Response>
+
+    /**
+     * Same as `fetchJson` but returning an RxJS Observable.
+     *
+     * @param endPoint Target end-point.
+     * @param fetchOptions <a target="_blank" href="https://developer.mozilla.org/en-US/docs/Web/API/RequestInit">
+     * Fetch options </a>.
+     */
+    fromFetchJson(endPoint: string, fetchOptions: RequestInit): Observable<JSON>
+
+    /**
+     * Same as `fetchText` but returning an RxJS Observable.
+     *
+     * @param endPoint Target end-point.
+     * @param fetchOptions <a target="_blank" href="https://developer.mozilla.org/en-US/docs/Web/API/RequestInit">
+     * Fetch options </a>.
+     */
+    fromFetchText(
+        endPoint: string,
+        fetchOptions: RequestInit,
+    ): Observable<string>
 }
