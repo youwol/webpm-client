@@ -3,10 +3,11 @@ import {
     ModuleInput,
     FetchedScript,
     ScriptSideEffectCallback,
-    CustomInstaller,
     LightLibraryWithAliasQueryString,
+    BackendInputs,
+    EsmInputs,
     InstallInputs,
-    BackendInstaller,
+    QueryLoadingGraphInputs,
 } from './inputs.models'
 import {
     CdnEvent,
@@ -19,7 +20,7 @@ import {
 import { UrlNotFound, SourceParsingFailed, Unauthorized } from './errors.models'
 import { StateImplementation } from './state'
 import { sanitizeCssId } from './utils.view'
-import { Client, install } from './client'
+import { Client } from './client'
 import { parse } from 'semver'
 
 export function onHttpRequestLoad(
@@ -101,12 +102,34 @@ export function patchExportedSymbolForBackwardCompatibility(
     origin: FetchedScript,
     executingWindow: WindowOrWorkerGlobalScope,
 ) {
+    /**
+     * Those symbols can be removed when no applications/libraries are using them anymore.
+     * See property 'externals' in the files 'auto-generated.ts'.
+     */
+    const exportedSymbols = {
+        lodash: '_',
+        three: 'THREE',
+        typescript: 'ts',
+        'three-trackballcontrols': 'TrackballControls',
+        codemirror: 'CodeMirror',
+        'highlight.js': 'hljs',
+        'plotly.js': 'Plotly',
+        'plotly.js-gl2d-dist': 'Plotly',
+        jquery: '$',
+        'popper.js': 'Popper',
+        'reflect-metadata': 'Reflect',
+        'js-beautify': 'js_beautify',
+        mathjax: 'Mathjax',
+        '@tweenjs/tween.js': 'TWEEN',
+        '@youwol/potree': 'Potree',
+    }
+
     const regularExported = getRegularFullExportedSymbol(
         origin.name,
         origin.version,
     )
     /**
-     * All 3 variables below corresponds to deprecated symbols
+     * All 4 variables below corresponds to deprecated symbols
      */
     const deprecatedExportedName = getInstalledFullExportedSymbol(
         origin.name,
@@ -120,6 +143,19 @@ export function patchExportedSymbolForBackwardCompatibility(
         origin.name,
         origin.version,
     )
+    const explicitOldExportedName =
+        exportedSymbols[origin.name] &&
+        `${exportedSymbols[origin.name]}_APIv${getApiKey(origin.version)}`
+
+    if (
+        !executingWindow[regularExported] &&
+        explicitOldExportedName &&
+        executingWindow[explicitOldExportedName]
+    ) {
+        executingWindow[regularExported] =
+            executingWindow[explicitOldExportedName]
+    }
+
     if (
         !executingWindow[regularExported] &&
         !executingWindow[deprecatedExportedName] &&
@@ -138,6 +174,10 @@ export function patchExportedSymbolForBackwardCompatibility(
     if (executingWindow[regularExported]) {
         executingWindow[deprecatedExportedName] =
             executingWindow[regularExported]
+        if (explicitOldExportedName) {
+            executingWindow[explicitOldExportedName] =
+                executingWindow[regularExported]
+        }
     }
     if (!executingWindow[regularExported]) {
         console.warn('The export symbol of the package is deprecated', {
@@ -432,28 +472,6 @@ export function getFullExportedSymbolAlias(name: string, version: string) {
     return getInstalledFullExportedSymbol(name, version).replace('_APIv', '#')
 }
 
-/**
- * Install resources using a custom installer.
- *
- * @param installer
- */
-export function resolveCustomInstaller(installer: CustomInstaller) {
-    const moduleName = installer.module.includes('#')
-        ? installer.module.split('#')[0]
-        : installer.module
-    const promise = install({
-        modules: [installer.module],
-        aliases: {
-            installerModule: moduleName,
-        },
-    }) as unknown as Promise<{
-        installerModule: { install: (unknown) => unknown }
-    }>
-    return promise.then(({ installerModule }) => {
-        return installerModule.install(installer.installInputs)
-    })
-}
-
 export function installAliases(
     aliases: { [key: string]: string | ((Window) => unknown) },
     executingWindow: WindowOrWorkerGlobalScope,
@@ -511,9 +529,7 @@ export function extractInlinedAliases(
 
 export const PARTITION_PREFIX = '%p-'
 
-export function normalizeBackendInputs(
-    inputs: InstallInputs,
-): BackendInstaller {
+export function normalizeBackendInputs(inputs: InstallInputs): BackendInputs {
     const emptyInstaller = {
         modules: [],
         configurations: {},
@@ -531,5 +547,53 @@ export function normalizeBackendInputs(
     return {
         ...emptyInstaller,
         ...inputs.backends,
+    }
+}
+
+export function normalizeEsmInputs(inputs: InstallInputs): EsmInputs {
+    const emptyInstaller = {
+        modules: [],
+        scripts: [],
+    }
+    if (!inputs.esm) {
+        return emptyInstaller
+    }
+    if (Array.isArray(inputs.esm)) {
+        return {
+            ...emptyInstaller,
+            modules: inputs.esm,
+        }
+    }
+    return {
+        ...emptyInstaller,
+        ...inputs.esm,
+    }
+}
+
+export function normalizePyodideInputs(inputs: InstallInputs): EsmInputs {
+    const emptyInstaller = {
+        modules: [],
+    }
+    if (!inputs.pyodide) {
+        return emptyInstaller
+    }
+    if (Array.isArray(inputs.pyodide)) {
+        return {
+            ...emptyInstaller,
+            modules: inputs.pyodide,
+        }
+    }
+    return {
+        ...emptyInstaller,
+        ...inputs.pyodide,
+    }
+}
+
+export function normalizeLoadingGraphInputs(
+    inputs: QueryLoadingGraphInputs,
+): QueryLoadingGraphInputs {
+    return {
+        usingDependencies: [],
+        ...inputs,
     }
 }

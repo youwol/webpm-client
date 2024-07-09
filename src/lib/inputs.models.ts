@@ -1,4 +1,5 @@
 import { CdnEvent, CdnFetchEvent } from './events.models'
+
 /**
  * A FileLocationString is a string that specifies location in the files structure of a module using the format:
  * `{moduleName}#{version}~{rest-of-path}`
@@ -46,9 +47,195 @@ export type LightLibraryWithAliasQueryString = string
  *
  * Where:
  * *  `moduleName` is the name of the module
- * *  `semver` any valid [semantic versioning specifiers](https://devhints.io/semver)
+ * *  `semver` any valid [semantic versioning specifiers](https://devhints.io/semver), see warning below.
+ *
+ * <note level="warning" label="Important">
+ * It is recommended to use version ranges defined with the `^` operator, which signifies compatibility with
+ * the specified version.
+ * Using other symbols can lead to version conflicts at runtime.
+ *
+ * *Example:* If your project uses `libFoo` version `1.2.3`, `libBar` version `0.4.5`, and `libBaz` version `0.0.3`,
+ * specify them as `libFoo#^1.2.3`, `libBar#^0.4.5`, and `libBaz#^0.0.3`, respectively.
+ * <note>
+
  */
 export type FullLibraryQueryString = string
+
+/**
+ * A string interpreted as a python module specification.
+ *
+ * They are forwarded to <a target="_blank" href="https://pyodide.org/en/stable/usage/loading-packages.html#micropip">
+ * micropip.install</a> for installation within the Pyodide environment.
+ */
+export type PyModule = string
+
+/**
+ * Specifies the installation of various components in the environment.
+ *
+ * This is the input for the method {@link install}.
+ */
+export type InstallInputs = {
+    /**
+     * Specifies the ESM modules to install, using one of the following:
+     * *  {@link LightLibraryWithAliasQueryString} for a simpler specification with limited control.
+     * *  {@link EsmInputs} for a comprehensive specification.
+     */
+    esm?: LightLibraryWithAliasQueryString[] | EsmInputs
+
+    /**
+     * Specifies the backend modules to install, using one of the following:
+     * *  {@link LightLibraryWithAliasQueryString} for a simpler specification with limited control.
+     * *  {@link EsmInputs} for a comprehensive specification.
+     */
+    backends?: LightLibraryWithAliasQueryString[] | BackendInputs
+
+    /**
+     * Specifies the pyodide (python running in the browser) modules to install, using one of the following:
+     * *  {@link PyModule} for a simpler specification with limited control.
+     * *  {@link PyodideInputs} for a comprehensive specification.
+     */
+    pyodide?: PyModule[] | PyodideInputs
+
+    /**
+     * Specify a list of stylesheets to install.
+     */
+    css?: CssInput[]
+
+    /**
+     * Window global in which installation occurs. If not provided, `window` is used.
+     *
+     * If the client is running in a Web Worker, it is the worker's global scope.
+     */
+    executingWindow?: WindowOrWorkerGlobalScope
+
+    /**
+     * If provided, any {@link CdnEvent} emitted are forwarded to this callback.
+     *
+     * @param event event emitted
+     */
+    onEvent?: (event: CdnEvent) => void
+
+    /**
+     * If `true`: loading screen is displayed and cover the all screen
+     *
+     * For a granular control of the loading screen display see {@link LoadingScreenView}
+     */
+    displayLoadingScreen?: boolean
+}
+/**
+ * Specifies the installation of ESM modules.
+ */
+export type EsmInputs = {
+    /**
+     * List of modules to install.
+     */
+    modules: LightLibraryWithAliasQueryString[]
+
+    /**
+     * Specifies standalone scripts to install in the browser.
+     * By opposition to `modules`, a script is installed as a standalone element:
+     * there is no direct or indirect dependencies' installation triggered.
+     *
+     * They are installed after all modules have been installed.
+     */
+    scripts?: ScriptInput[]
+
+    /**
+     * Override the 'natural' version used for some libraries coming from the dependency graph when resolving
+     * the installation. Items are provided in the form {@link LightLibraryQueryString}.
+     *
+     * Whenever a library is required in the dependency graph, the version(s) will be replaced by the (only) one
+     * coming from the relevant element (if any).
+     * This in turn disables multiple versions installation for the provided library
+     *
+     * Here is a fictive example of installing a module `@youwol/fictive-package` with 2 versions `0.x` & `1.x`:
+     * *  the version `0.x` linked to `rxjs#6.x`
+     * *  the version `1.x` linked to `rxjs#7.x`
+     *
+     * When executed, the following snippet overrides the actual versions resolution of rxjs and always uses `rxjs#6.5.5`
+     * (which will probably break at installation of `@youwol/fictive-package#1.x` as the two versions of RxJS are not
+     * compatible).
+     * ```
+     * import {install} from `@youwol/webpm-client`
+     *
+     * await install({
+     *     esm:{
+     *         modules: [`@youwol/fictive-package#0.x`, `@youwol/fictive-package#1.x`],
+     *         usingDependencies: ['rxjs#6.5.5']
+     *     }
+     * })
+     * ```
+     */
+    usingDependencies?: LightLibraryQueryString[]
+    /**
+     * Specify side effects to execute when modules are installed.
+     *
+     * The key is in the form `{libraryName}#{semver}` (see {@link FullLibraryQueryString}):
+     * any module installed matching some keys will trigger execution
+     * of associated side effects.
+     *
+     */
+    modulesSideEffects?: {
+        [key: string]: ModuleSideEffectCallback
+    }
+
+    /**
+     * Provide aliases to exported symbols name of module.
+     */
+    aliases?: { [key: string]: string | ((Window) => unknown) }
+}
+
+/**
+ * Specifies configuration for a backend.
+ *
+ */
+export type BackendConfig = {
+    /**
+     * Arguments regarding the build stage provided as key-value pairs.
+     *
+     * The available keys and values are backend specifics and should be documented by them.
+     */
+    buildArgs: { [k: string]: string }
+}
+
+/**
+ * Specifies the installation of backends.
+ */
+export type BackendInputs = {
+    /**
+     * List of modules to install.
+     */
+    modules: LightLibraryWithAliasQueryString[]
+    /**
+     * Configuration of the backend.
+     */
+    configurations?: { [k: string]: BackendConfig }
+    /**
+     * Partition ID in which the backends are installed.
+     */
+    partition?: string
+}
+
+/**
+ * Installer description for the pyodide runtime environment.
+ */
+export type PyodideInputs = {
+    /**
+     * Pyodide target version (no semver allowed).
+     *
+     * If not provided, get the latest release tag from `https://api.github.com/repos/pyodide/pyodide/releases/latest`.
+     */
+    version?: string
+    /**
+     * Modules to install.
+     */
+    modules?: PyModule[]
+
+    /**
+     * Alias for the pyodide runtime (exposed as `pyodide`).
+     */
+    pyodideAlias?: string
+}
 
 /**
  * Specification of a module.
@@ -99,46 +286,6 @@ export type InstallStyleSheetsInputs = {
     renderingWindow?: Window
 }
 
-/**
- * Inputs for the method {@link Client.installLoadingGraph}.
- *
- * <iframe id="iFrameExample" src="" width="100%" height="600px"></iframe>
- * <script>
- *   const src = `<!--<!DOCTYPE html>
- * <html lang="en">
- *   <head><script src="https://webpm.org/^3.0.0/webpm-client.js"></script></head>
- *
- *   <body id="content"></body>
- *
- *   <script type="module">
- *      // get a loading graph, this data could have been saved at some point in time
- *      const loadingGraph = await webpm.queryLoadingGraph({
- *          modules:['@youwol/flux-view#^1.1.0', 'rxjs#^7.5.6', 'lodash#*'],
- *      })
- *      // install the loading graph with custom aliases
- *      await webpm.installLoadingGraph({
- *          loadingGraph,
- *          aliases: { FV: '@youwol/flux-view' }
- *      })
- *      // To get the correct display of the next view.
- *      await webpm.install({css:[
- *          'bootstrap#^5.3.0~bootstrap.min.css',
- *          'fontawesome#5.12.1~css/all.min.css'
- *      ]})
- *      const vDOM = {
- *          class:'fv-text-primary p-2',
- *          children:[
- *              webpm.monitoring().view
- *          ]
- *      };
- *      document.getElementById('content').appendChild(FV.render(vDOM));
- *   </script>
- * </html>
- * -->`
- *     const url = '/applications/@youwol/js-playground/latest?content='+encodeURIComponent(src.substring(4,src.length-4))
- *     document.getElementById('iFrameExample').setAttribute("src",url);
- * </script>
- */
 export type InstallLoadingGraphInputs = {
     /**
      * Specification of the loading graph, usually retrieved from {@link queryLoadingGraph}.
@@ -154,11 +301,6 @@ export type InstallLoadingGraphInputs = {
      * Partition ID.
      */
     backendsPartitionId?: string
-
-    /**
-     * See `customInstallers` of {@link InstallInputs}.
-     */
-    customInstallers?: CustomInstaller[]
 
     /**
      * See `modulesSideEffects` of {@link InstallInputs}
@@ -182,219 +324,7 @@ export type InstallLoadingGraphInputs = {
      */
     onEvent?: (event: CdnFetchEvent) => void
 }
-/**
- *
- * A custom installer is a module exporting a function 'async function install(inputs)'.
- *
- */
-export type CustomInstaller = {
-    /**
-     * module name of the custom installer
-     */
-    module: string
 
-    /**
-     * Inputs forwarded to 'async function install(inputs)'.
-     */
-    installInputs: { [k: string]: unknown } & {
-        onEvent?: (cdnEvent: CdnEvent) => void
-    }
-}
-
-/**
- * Installer description for the pyodide runtime environment.
- */
-export type PyodideInstaller = {
-    /**
-     * Pyodide version.
-     */
-    version: string
-    /**
-     * Modules to install.
-     */
-    modules: string[]
-}
-
-export type BackendConfig = { buildArgs: { [k: string]: string } }
-
-export type BackendInstaller = {
-    modules: LightLibraryWithAliasQueryString[]
-    configurations: { [k: string]: BackendConfig }
-    partition?: string
-}
-
-/**
- * Inputs for the method {@link Client.install}, here is a somewhat complete example:
- *
- * <iframe id="iFrameExampleModules" src="" width="100%" height="600px"></iframe>
- * <script>
- *    const src = `<!--<!DOCTYPE html>
- * <html lang="en">
- *   <head><script src="https://webpm.org/^3.0.0/webpm-client.js"></script></head>
- *
- *   <body id="content"></body>
- *
- *   <script type="module">
- *      const {FV, rx, rx6, rx7} = await webpm.install({
- *          modules:['@youwol/flux-view#^1.1.0 as FV', 'rxjs#^7.5.6 as rx7', 'lodash#*'],
- *          modulesSideEffects: {
- *              'rxjs#6.x': (d) => console.log("Rxjs 6 installed", d),
- *              'rxjs#7.x': (d) => console.log("Rxjs 7 installed", d),
- *              'rxjs#*': (d) => console.log("A version of Rxjs has been  installed", d)
- *          },
- *          aliases: {
- *              // no API version on value -> implicitly latest installed (^7.5.6)
- *              rx: 'rxjs',
- *              // rxjs#6 is installed as dependency of @youwol/flux-view
- *              rx6: 'rxjs_APIv6'
- *          },
- *          scripts: [
- *              'codemirror#5.52.0~addons/lint/lint.js',
- *              {
- *                  location: 'codemirror#5.52.0~mode/python.min.js',
- *                  sideEffects: ({origin, htmlScriptElement}) => {
- *                      console.log("CodeMirror's python mode loaded")
- *                  }
- *              }
- *          ],
- *          css: [
- *              'bootstrap#4.4.1~bootstrap.min.css',
- *              {
- *                  location: 'fontawesome#5.12.1~css/all.min.css',
- *                  sideEffects: (d) => console.log("FontAwesome CSS imported", d)
- *              }
- *          ],
- *          onEvent: (ev) => console.log("CDN event", ev),
- *          displayLoadingScreen: true
- *      })
- *      console.log('🎉 installation done', {FV, rx, rx6, rx7})
- *      const vDOM = {
- *          class:'fv-text-primary p-2',
- *          children:[
- *              webpm.monitoring().view
- *          ]
- *      }
- *      document.getElementById('content').appendChild(FV.render(vDOM));
- *  </script>
- * </html>
- * -->`
- *     const url = '/applications/@youwol/js-playground/latest?content='+encodeURIComponent(src.substring(4,src.length-4))
- *     document.getElementById('iFrameExampleModules').setAttribute("src",url);
- * </script>
- *
- */
-export type InstallInputs = {
-    /**
-     * List of modules to install, see {@link LightLibraryWithAliasQueryString} for specification.
-     *
-     */
-    modules?: LightLibraryWithAliasQueryString[]
-
-    /**
-     * List of backends to install, see {@link LightLibraryWithAliasQueryString} for specification.
-     *
-     */
-    backends?: LightLibraryWithAliasQueryString[] | BackendInstaller
-
-    /**
-     * Specification of pyodide installer, see {@link PyodideInstaller} for specification.
-     */
-    pyodide?: PyodideInstaller
-
-    /**
-     * Override the 'natural' version used for some libraries coming from the dependency graph when resolving
-     * the installation. Items are provided in the form {@link LightLibraryQueryString}.
-     *
-     * Whenever a library is required in the dependency graph, the version(s) will be replaced by the (only) one
-     * coming from the relevant element (if any).
-     * This in turn disable multiple versions installation for the provided library
-     *
-     * Here is a fictive example of installing a module `@youwol/fictive-package` with 2 versions `0.x` & `1.x`:
-     * *  the version `0.x` linked to `rxjs#6.x`
-     * *  the version `1.x` linked to `rxjs#7.x`
-     *
-     * When executed, the following snippet override the actual versions resolution of rxjs and always use `rxjs#6.5.5`
-     * (which will probably break at installation of `@youwol/flux-view#1.x` as the two versions of RxJS are not
-     * compatible).
-     * ```
-     * import {install} from `@youwol/webpm-client`
-     *
-     * await install({
-     *     modules: [`@youwol/fictive-package#0.x`, `@youwol/fictive-package#1.x`],
-     *     usingDependencies: ['rxjs#6.5.5']
-     * })
-     * ```
-     */
-    usingDependencies?: LightLibraryQueryString[]
-
-    /**
-     * Specify side effects to execute when modules are installed.
-     *
-     * The key is in the form `{libraryName}#{semver}` (see {@link FullLibraryQueryString}):
-     * any module installed matching some keys will trigger execution
-     * of associated side effects.
-     *
-     */
-    modulesSideEffects?: {
-        [key: string]: ModuleSideEffectCallback
-    }
-
-    /**
-     * Specify a list of scripts to install.
-     * By opposition to module, a script is installed as a standalone element:
-     * there are no direct or indirect dependencies' installation triggered.
-     *
-     * Installation of the script elements always happen after all modules have been installed.
-     *
-     * See {@link ScriptInput} for format specification.
-     *
-     */
-    scripts?: ScriptInput[]
-
-    /**
-     *
-     * Specify a list of stylesheets to install.
-     *
-     * See {@link CssInput} for format specification.
-     *
-     */
-    css?: CssInput[]
-
-    /**
-     * Provide aliases to exported symbols name of module.
-     */
-    aliases?: { [key: string]: string | ((Window) => unknown) }
-
-    /**
-     * Window global in which installation occurs. If not provided, `window` is used.
-     */
-    executingWindow?: WindowOrWorkerGlobalScope
-
-    /**
-     * If provided, any {@link CdnEvent} emitted are forwarded to this callback.
-     *
-     * @param event event emitted
-     */
-    onEvent?: (event: CdnEvent) => void
-
-    /**
-     * If `true`: loading screen is displayed and cover the all screen
-     *
-     * For a granular control of the loading screen display see {@link LoadingScreenView}
-     */
-    displayLoadingScreen?: boolean
-
-    /**
-     * Install resources using 'custom installers'.
-     *
-     */
-    customInstallers?: CustomInstaller[]
-}
-
-/**
- * Inputs for the method {@link Client.fetchScript}
- *
- */
 export type FetchScriptInputs = {
     /**
      * url of the script, see {@link getUrlBase}.
@@ -562,27 +492,8 @@ export type ScriptSideEffectCallback = (
 ) => void | Promise<void>
 
 /**
- * Inputs for the method {@link Client.queryLoadingGraph}.
+ * Inputs for the method {@link queryLoadingGraph}.
  *
- * <iframe id="iFrameExampleModules" src="" width="100%" height="600px"></iframe>
- * <script>
- *      const src = `<!--<!DOCTYPE html>
- * <html lang="en">
- *   <head><script src="https://webpm.org/^3.0.0/webpm-client.js"></script></head>
- *
- *   <body><pre id='content'></pre></body>
- *
- *   <script type="module">
- *         const response = await webpm.queryLoadingGraph({
- *              modules:['@youwol/flux-view#^1.1.0', 'rxjs#^7.5.6', 'lodash#*']
- *         })
- *         document.getElementById('content').innerText = JSON.stringify(response, null, 4)
- *   </script>
- * </html>
- * -->`
- *     const url = '/applications/@youwol/js-playground/latest?content='+encodeURIComponent(src.substring(4,src.length-4))
- *     document.getElementById('iFrameExampleModules').setAttribute("src",url);
- * </script>
  */
 export type QueryLoadingGraphInputs = {
     /**
@@ -655,6 +566,7 @@ export type Library = {
  * The structure is defined by the backend service - and mostly an implementation details here for the consumer.
  * It will likely change in future release, but backward compatibility will be preserved.
  *
+ * @hidden
  */
 export type LoadingGraph = {
     /**
@@ -681,6 +593,8 @@ export type LoadingGraph = {
 
 /**
  * Output when a script has been fetched, see e.g. {@link Client.fetchScript}.
+ *
+ * @hidden
  */
 export type FetchedScript = {
     /**

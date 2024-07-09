@@ -92,12 +92,12 @@ export class DefaultLoadingScreenOptions implements LoadingScreenOptions {
         height: '100vh',
         padding: 'inherit',
         'font-weight': 'bolder',
+        'z-index': '10',
     }
 }
 
 /**
- * Class providing granular controls on how loading screen is displayed when using {@link Client.install}
- * or {@link install}.
+ * Class providing granular controls on how loading screen is displayed when using {@link install}.
  *
  * Here is an example:
  * ```
@@ -137,7 +137,7 @@ export class DefaultLoadingScreenOptions implements LoadingScreenOptions {
  * })
  * ```
  *
- * > For default display, setting `displayLoadingScreen: true` from {@link InstallInputs} is enough:
+ * > For default display, setting `displayLoadingScreen: true` from InstallInputsDeprecated is enough:
  * > creation and management of {@link LoadingScreenView} will be automatic.
  *
  * @category Loading screen
@@ -172,7 +172,10 @@ export class LoadingScreenView {
      * `options` with {@link DefaultLoadingScreenOptions} : `Object.assign(LoadingScreenView.DefaultOptions, options)`
      */
     constructor(options: LoadingScreenOptions = {}) {
-        this.options = Object.assign(LoadingScreenView.DefaultOptions, options)
+        this.options = {
+            ...LoadingScreenView.DefaultOptions,
+            ...options,
+        }
         this.options.container = this.options.container || document.body
         const wrapperStyle = {
             ...this.options.wrapperStyle,

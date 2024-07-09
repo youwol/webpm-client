@@ -1,18 +1,18 @@
 import { CdnEvent, CdnMessageEvent } from './events.models'
 import { addScriptElements } from './utils'
-import { PyodideInstaller } from './inputs.models'
 import { StateImplementation } from './state'
+import { PyodideInputs } from './inputs.models'
 
 export type PythonIndexes = {
     urlPyodide: string
     urlPypi: string
 }
 export async function installPython(
-    pyodideInstaller: PyodideInstaller & {
+    pyodideInputs: PyodideInputs & {
         onEvent?: (cdnEvent: CdnEvent) => void
     } & PythonIndexes,
 ) {
-    const modulesRequired = pyodideInstaller.modules.filter(
+    const modulesRequired = pyodideInputs.modules.filter(
         (module) => !StateImplementation.importedPyModules.includes(module),
     )
     if (modulesRequired.length === 0) {
@@ -20,7 +20,7 @@ export async function installPython(
     }
 
     const onEvent =
-        pyodideInstaller.onEvent ||
+        pyodideInputs.onEvent ||
         (() => {
             /*no op*/
         })
@@ -31,10 +31,18 @@ export async function installPython(
             'Pending',
         ),
     )
+
     if (!globalThis['pyodide']) {
-        const indexURL = pyodideInstaller.urlPyodide.replace(
+        let pyodideVersion = pyodideInputs.version
+        if (!pyodideVersion) {
+            const latest = await fetch(
+                'https://api.github.com/repos/pyodide/pyodide/releases/latest',
+            ).then((resp) => resp.json())
+            pyodideVersion = latest['tag_name']
+        }
+        const indexURL = pyodideInputs.urlPyodide.replace(
             '$VERSION',
-            pyodideInstaller.version,
+            pyodideVersion,
         )
 
         const content = await fetch(`${indexURL}/pyodide.js`).then((resp) =>
@@ -43,7 +51,7 @@ export async function installPython(
         await addScriptElements([
             {
                 name: 'pyodide',
-                version: pyodideInstaller.version,
+                version: pyodideVersion,
                 assetId: '',
                 url: `${indexURL}/pyodide.js`,
                 content,
@@ -52,7 +60,9 @@ export async function installPython(
         ])
         globalThis['pyodide'] = await globalThis['loadPyodide']({ indexURL })
     }
-
+    if (pyodideInputs.pyodideAlias) {
+        globalThis[pyodideInputs.pyodideAlias] = globalThis['pyodide']
+    }
     const pyodide = globalThis['pyodide']
     onEvent(
         new CdnMessageEvent(
@@ -82,9 +92,9 @@ export async function installPython(
 
     await Promise.all(
         modulesRequired.map((module) => {
-            const parameters = pyodideInstaller.urlPypi.includes('https')
+            const parameters = pyodideInputs.urlPypi.includes('https')
                 ? ''
-                : `, index_urls='${pyodideInstaller.urlPypi}'`
+                : `, index_urls='${pyodideInputs.urlPypi}'`
             return pyodide
                 .runPythonAsync(
                     `

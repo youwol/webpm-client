@@ -5,7 +5,6 @@ import {
     install,
     InstallDoneEvent,
     fetchScript,
-    InstallInputs,
     installLoadingGraph,
     parseResourceId,
     Client,
@@ -21,6 +20,7 @@ import {
 import './mock-requests'
 import { StateImplementation } from '../lib/state'
 import { lastValueFrom } from 'rxjs'
+import { InstallInputsDeprecated } from '../lib/inputs.models.deprecated'
 
 const originString = 'http://localhost:2001'
 installLightErrorsWarnings()
@@ -43,7 +43,10 @@ beforeEach(() => {
     StateImplementation.clear()
 })
 
-function doInstall(body: InstallInputs, version: 'deprecated' | 'regular') {
+function doInstall(
+    body: InstallInputsDeprecated,
+    version: 'deprecated' | 'regular',
+) {
     return version == 'deprecated'
         ? install({
               modules: body.modules,

@@ -238,7 +238,7 @@ export class CdnLoadingGraphErrorEvent implements CdnEvent {
 }
 
 /**
- * Event emitted when an installation is done ({@link install}, {@link Client.install}).
+ * Event emitted when an installation is done ({@link install}).
  *
  * @category Events
  */

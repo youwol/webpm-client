@@ -2,13 +2,7 @@
 
 import { BehaviorSubject, forkJoin, Observable, of, Subject } from 'rxjs'
 import { filter, last, map, mapTo, take, takeWhile, tap } from 'rxjs/operators'
-import {
-    CdnEvent,
-    getAssetId,
-    InstallInputs,
-    InstallLoadingGraphInputs,
-    isCdnEvent,
-} from '..'
+import { CdnEvent, getAssetId, isCdnEvent } from '..'
 import { WorkersPoolView } from './views'
 import {
     InWorkerAction,
@@ -19,6 +13,12 @@ import {
 import { setup } from '../../auto-generated'
 import { BackendConfiguration } from '../backend-configuration'
 import { FrontendConfiguration } from '../frontend-configuration'
+import {
+    InstallInputsDeprecated,
+    isDeprecatedInputs,
+    upgradeInstallInputs,
+} from '../inputs.models.deprecated'
+import { InstallInputs } from '../inputs.models'
 type WorkerId = string
 
 export interface ContextTrait {
@@ -130,7 +130,7 @@ export interface WorkerEnvironment {
     /**
      * Installation instruction to be executed in worker environment.
      */
-    cdnInstallation: InstallInputs | InstallLoadingGraphInputs
+    cdnInstallation: InstallInputs
     /**
      * Tasks to realized after installation is done and before marking a worker as ready.
      */
@@ -491,7 +491,7 @@ export interface MessageInstall {
     cdnUrl: string
     variables: WorkerVariable<unknown>[]
     functions: { id: string; target: string }[]
-    cdnInstallation: InstallInputs | InstallLoadingGraphInputs
+    cdnInstallation: InstallInputs
     postInstallTasks: {
         title: string
         entryPoint: string
@@ -532,11 +532,6 @@ function entryPointInstall(input: EntryPointArguments<MessageInstall>) {
     )
         ? importScriptsXMLHttpRequest
         : self['importScripts']
-    function isLoadingGraphInstallInputs(
-        body: InstallInputs | InstallLoadingGraphInputs,
-    ): body is InstallLoadingGraphInputs {
-        return (body as InstallLoadingGraphInputs).loadingGraph !== undefined
-    }
 
     console.log('Install environment in worker', input)
 
@@ -549,13 +544,9 @@ function entryPointInstall(input: EntryPointArguments<MessageInstall>) {
         input.context.sendData(message)
     }
     input.args.cdnInstallation.onEvent = onEvent
-    const customInstallers = input.args.cdnInstallation.customInstallers || []
-    customInstallers.map((installer) => {
-        installer.installInputs['onEvent'] = onEvent
-    })
-    const install = isLoadingGraphInstallInputs(input.args.cdnInstallation)
-        ? cdn.installLoadingGraph(input.args.cdnInstallation)
-        : cdn.install(input.args.cdnInstallation)
+
+    const install = cdn.install(input.args.cdnInstallation)
+
     input.context.info('Start install')
 
     return install
@@ -680,7 +671,7 @@ export type WorkersPoolInput = {
     /**
      * Installation to proceed in the workers.
      */
-    install?: InstallInputs | InstallLoadingGraphInputs
+    install?: InstallInputs | InstallInputsDeprecated
     /**
      * A list of tasks to execute in workers after installation is completed.
      */
@@ -845,6 +836,7 @@ export class WorkersPool {
 
             this.pickTask(workerId, this.backgroundContext)
         })
+        const installArgs = params.install || {}
         this.environment = {
             variables: Object.entries(params.globals || {})
                 .filter(([_, value]) => typeof value != 'function')
@@ -858,7 +850,9 @@ export class WorkersPool {
                     id,
                     target,
                 })),
-            cdnInstallation: params.install,
+            cdnInstallation: isDeprecatedInputs(installArgs)
+                ? upgradeInstallInputs(installArgs)
+                : installArgs,
             postInstallTasks: params.postInstallTasks || [],
         }
         this.pool = {

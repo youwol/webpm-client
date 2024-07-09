@@ -1,6 +1,7 @@
 /* eslint-env node -- eslint-comment add exception because the running context is node environment */
 module.exports = {
-    entryPoints: ['./src/index.ts', './src/lib/workers-pool/index.ts'],
+    // The order below is intentional, it is related to symbols being re-exported.
+    entryPoints: ['./src/lib/workers-pool/index.ts', './src/index.ts'],
     exclude: ['src/tests'],
     intentionallyNotExported: [
         'InstallModulesInputs',
