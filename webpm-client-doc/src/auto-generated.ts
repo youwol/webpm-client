@@ -45,7 +45,7 @@ const entries = {
 export const setup = {
     name:'@youwol/webpm-client-doc',
         assetId:'QHlvdXdvbC93ZWJwbS1jbGllbnQtZG9j',
-    version:'3.0.7-wip',
+    version:'3.0.7',
     shortDescription:"Documentation app for the library @youwol/webpm-client",
     developerDocumentation:'https://platform.youwol.com/applications/@youwol/cdn-explorer/latest?package=@youwol/webpm-client-doc&tab=doc',
     npmPackage:'https://www.npmjs.com/package/@youwol/webpm-client-doc',
@@ -91,7 +91,7 @@ export const setup = {
         const parameters = installParameters || {}
         const scripts = [
             ...(parameters.scripts || []),
-            `@youwol/webpm-client-doc#3.0.7-wip~dist/@youwol/webpm-client-doc/${entry.name}.js`
+            `@youwol/webpm-client-doc#3.0.7~dist/@youwol/webpm-client-doc/${entry.name}.js`
         ]
         const modules = [
             ...(parameters.modules || []),
