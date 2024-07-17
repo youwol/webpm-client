@@ -8,6 +8,7 @@ import {
     EsmInputs,
     InstallInputs,
     QueryLoadingGraphInputs,
+    PyodideInputs,
 } from './inputs.models'
 import {
     CdnEvent,
@@ -22,6 +23,11 @@ import { StateImplementation } from './state'
 import { sanitizeCssId } from './utils.view'
 import { Client } from './client'
 import { parse } from 'semver'
+import {
+    InstallInputsDeprecated,
+    isDeprecatedInputs,
+    upgradeInstallInputs,
+} from './inputs.models.deprecated'
 
 export function onHttpRequestLoad(
     req: XMLHttpRequest,
@@ -595,5 +601,30 @@ export function normalizeLoadingGraphInputs(
     return {
         usingDependencies: [],
         ...inputs,
+    }
+}
+
+export type InstallInputsNormalized = {
+    esm: EsmInputs
+    backends: BackendInputs
+    pyodide: PyodideInputs
+    css?: InstallInputs['css']
+    executingWindow?: InstallInputs['executingWindow']
+    onEvent?: InstallInputs['onEvent']
+    displayLoadingScreen?: InstallInputs['displayLoadingScreen']
+}
+
+export function normalizeInstallInputs(
+    inputs: InstallInputs | InstallInputsDeprecated,
+): InstallInputsNormalized {
+    const sanitizedInputs = isDeprecatedInputs(inputs)
+        ? upgradeInstallInputs(inputs)
+        : inputs
+
+    return {
+        ...sanitizedInputs,
+        backends: normalizeBackendInputs(sanitizedInputs),
+        esm: normalizeEsmInputs(sanitizedInputs),
+        pyodide: normalizePyodideInputs(sanitizedInputs),
     }
 }

@@ -40,7 +40,13 @@ export {
 } from './backend-configuration'
 export * from './errors.models'
 export * from './events.models'
-export { getAssetId, getUrlBase, parseResourceId } from './utils'
+export {
+    getAssetId,
+    getUrlBase,
+    parseResourceId,
+    normalizeInstallInputs,
+    InstallInputsNormalized,
+} from './utils'
 export { youwolSvgLogo } from './utils.view'
 export * from './add-ons'
 export { BackendClient } from './backends'
