@@ -9,7 +9,7 @@ jest.setTimeout(60 * 1000)
 beforeAll(async () => {
     await lastValueFrom(
         installPackages$([
-            './.packages-test/demo_yw_backend#0.1.0/cdn.zip',
+            './.packages-test/demo_yw_backend#0.1.1/cdn.zip',
             // Following components need to be fetched from CDN when installing backends
             './.packages-test/rxjs#7.5.6/cdn.zip',
             './.packages-test/http-primitives#0.2.4/cdn.zip',
@@ -24,7 +24,7 @@ beforeEach(() => {
 test('install demo_yw_backend', async () => {
     const events = []
     const { client } = (await install({
-        backends: ['demo_yw_backend#^0.1.0 as client'],
+        backends: ['demo_yw_backend#0.1.1 as client'],
         onEvent: (event) => {
             events.push(event)
         },
@@ -57,46 +57,47 @@ test('install demo_yw_backend', async () => {
 
     const resp4 = await firstValueFrom(client.stream('/async-job'))
     expect(resp4.data).toEqual({ result: 'Second 1' })
-
+    const version = '0.1.1'
+    const id = 'demo_yw_backend_0-1.1'
     const targetEvents = [
         {
             step: 'InstallBackendEvent',
             name: 'demo_yw_backend',
-            version: '0.1.0',
+            version,
             title: 'installing...',
             event: 'started',
-            id: 'demo_yw_backend_0-1.0',
-            text: 'demo_yw_backend#0.1.0: installing...',
+            id,
+            text: `demo_yw_backend#${version}: installing...`,
             status: 'Pending',
         },
         {
             step: 'InstallBackendEvent',
             name: 'demo_yw_backend',
-            version: '0.1.0',
+            version,
             title: 'installing...',
             event: 'succeeded',
-            id: 'demo_yw_backend_0-1.0',
-            text: 'demo_yw_backend#0.1.0: installing...',
+            id,
+            text: `demo_yw_backend#${version}: installing...`,
             status: 'Pending',
         },
         {
             step: 'StartBackendEvent',
             name: 'demo_yw_backend',
-            version: '0.1.0',
+            version,
             title: 'starting...',
             event: 'starting',
-            id: 'demo_yw_backend_0-1.0',
-            text: 'demo_yw_backend#0.1.0: starting...',
+            id,
+            text: `demo_yw_backend#${version}: starting...`,
             status: 'Pending',
         },
         {
             step: 'StartBackendEvent',
             name: 'demo_yw_backend',
-            version: '0.1.0',
+            version,
             title: 'starting...',
             event: 'listening',
-            id: 'demo_yw_backend_0-1.0',
-            text: 'demo_yw_backend#0.1.0: starting...',
+            id,
+            text: `demo_yw_backend#${version}: starting...`,
             status: 'Pending',
         },
         {
